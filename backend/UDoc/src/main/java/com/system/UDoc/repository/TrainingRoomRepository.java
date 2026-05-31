@@ -35,12 +35,13 @@ public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long
                               @Param("active") Boolean active,
                               Pageable pageable);
 
-    /** Retorna salas vinculadas a uma trilha que têm empresa associada */
+    /** Retorna salas vinculadas a uma trilha com empresa, excluindo canceladas */
     @Query("""
         SELECT r FROM TrainingRoom r
         JOIN FETCH r.company
         WHERE r.trail.id = :trailId
           AND r.company IS NOT NULL
+          AND r.status <> com.system.UDoc.entity.TrainingRoomStatus.CANCELADA
         ORDER BY r.createdAt DESC
     """)
     List<TrainingRoom> findByTrailIdWithCompany(@Param("trailId") Long trailId);
