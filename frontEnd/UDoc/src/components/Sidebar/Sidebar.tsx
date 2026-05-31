@@ -19,7 +19,6 @@ import {
   IconLayoutKanban,
   IconListDetails,
   IconLogout,
-  IconMail,
   IconRoute,
   IconSchool,
   IconUserCog,
@@ -59,8 +58,7 @@ const NAV_ITEMS: NavItemType[] = [
       p.startsWith("/admin/empresa") ||
       p.startsWith("/admin/funcionario") ||
       p.startsWith("/admin/ism") ||
-      p.startsWith("/admin/usuario") ||
-      p === "/admin/email-config",
+      p.startsWith("/admin/usuario"),
     children: [
       {
         label: "Cadastro de Documentos",
@@ -97,12 +95,6 @@ const NAV_ITEMS: NavItemType[] = [
         path: "/admin/usuarios",
         Icon: IconUserCog,
         isActive: (p) => p.startsWith("/admin/usuario"),
-      },
-      {
-        label: "Config. E-mail",
-        path: "/admin/email-config",
-        Icon: IconMail,
-        isActive: (p) => p === "/admin/email-config",
       },
     ],
   },
