@@ -1,0 +1,16 @@
+package com.system.UDoc.dto;
+
+import jakarta.validation.constraints.*;
+
+public class ChangePasswordDTO {
+    @NotBlank(message = "New password is required") @Size(min = 6, message = "Password must be at least 6 characters")
+    private String newPassword;
+    @NotBlank(message = "Password confirmation is required")
+    private String confirmPassword;
+
+    public ChangePasswordDTO() {}
+    public String getNewPassword() { return newPassword; }
+    public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
+    public String getConfirmPassword() { return confirmPassword; }
+    public void setConfirmPassword(String confirmPassword) { this.confirmPassword = confirmPassword; }
+}

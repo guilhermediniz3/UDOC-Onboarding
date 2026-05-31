@@ -1,0 +1,55 @@
+# Dados sensíveis
+application-local.properties
+.env
+.env.*
+*.env
+
+# Backups e compactados
+baclup/
+backup/
+*.rar
+*.zip
+*.7z
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+
+# Logs
+*.log
+logs/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporários
+*.tmp
+*.temp
+*.swp
+
+# Docker
+.dockerenv
+docker-compose.override.yml
+docker-compose.local.yml

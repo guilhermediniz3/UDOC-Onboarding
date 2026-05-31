@@ -1,0 +1,131 @@
+.prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 80px;
+  z-index: 9999;
+}
+
+.prompt-dialog {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.25),
+    0 2px 6px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  animation: promptFadeIn 0.2s ease;
+}
+
+.prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 24px 8px;
+}
+
+.prompt-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.prompt-icon {
+  font-size: 18px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.prompt-message {
+  margin: 0;
+  padding: 0 24px 16px 54px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.prompt-body {
+  padding: 0 24px 24px;
+}
+
+.prompt-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.prompt-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+
+.prompt-cancel,
+.prompt-confirm {
+  min-width: 110px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prompt-cancel {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.prompt-cancel:hover {
+  background: #f9fafb;
+}
+
+.prompt-confirm {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.prompt-confirm:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.prompt-cancel:disabled,
+.prompt-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes promptFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,152 @@
+/* ==========================================================================\
+   ARQUIVO: src/components/RichTextEditor/extensions/video.css
+   ========================================================================== */
+
+/* Wrapper Externo do Vídeo: Ocupa 100% da largura do editor para permitir 
+   o Flexbox movimentar o card do vídeo dentro dele livremente.
+*/
+.editor-content .ProseMirror .udoc-resizable-video-wrapper {
+  position: relative;
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 16px 0;
+  clear: both;
+  box-sizing: border-box;
+}
+
+/* --- REGRAS DE ALINHAMENTO VIA FLEXBOX (Sem usar floats) --- */
+
+/* Alinhamento à Esquerda */
+.editor-content .ProseMirror .udoc-resizable-video-wrapper[data-align="left"] {
+  justify-content: flex-start !important;
+}
+
+/* Centralizado */
+.editor-content .ProseMirror .udoc-resizable-video-wrapper[data-align="center"] {
+  justify-content: center !important;
+}
+
+/* Alinhamento à Direita */
+.editor-content .ProseMirror .udoc-resizable-video-wrapper[data-align="right"] {
+  justify-content: flex-end !important;
+}
+
+/* --- CONTAINER INTERNO DO VÍDEO (O CARD) --- */
+.editor-content .ProseMirror .udoc-resizable-video-container {
+  position: relative;
+  display: inline-block;
+  background: #000000;
+  border-radius: 8px;
+  overflow: visible; /* Importante para a bolinha e menu não cortarem */
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- MENU FLUTUANTE DE OPÇÕES --- */
+.editor-content .ProseMirror .udoc-video-floating-menu {
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px;
+  display: none; /* Escondido por padrão */
+  align-items: center;
+  gap: 4px;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.15);
+}
+
+/* Exibe o menu apenas quando o container do vídeo estiver selecionado/focado */
+.editor-content .ProseMirror .udoc-resizable-video-container.is-selected .udoc-video-floating-menu {
+  display: flex !important;
+}
+
+/* Botões do Menu */
+.editor-content .ProseMirror .udoc-video-floating-menu button {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-content .ProseMirror .udoc-video-floating-menu button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.editor-content .ProseMirror .udoc-video-floating-menu button.is-active-btn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.editor-content .ProseMirror .udoc-video-floating-menu button.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.editor-content .ProseMirror .udoc-video-floating-menu .menu-divider {
+  width: 1px;
+  height: 18px;
+  background-color: #e2e8f0;
+  margin: 0 4px;
+}
+
+/* --- SELEÇÃO E REDIMENSIONAMENTO (O ponto azul) --- */
+
+/* Borda pontilhada ao redor do vídeo selecionado */
+.editor-content .ProseMirror .udoc-resizable-video-container.is-selected {
+  outline: 2px dashed #2563eb;
+  outline-offset: 4px;
+}
+
+/* A ALÇA (Bolinha Azul): Posicionada no canto inferior direito */
+.editor-content .ProseMirror .udoc-resizable-video-container .video-resizer-handle {
+  position: absolute;
+  width: 10px;
+  height: 100%;
+  right: -5px; /* Alinhada à direita */
+  top: 0;
+  cursor: col-resize;
+  z-index: 50;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+/* O ponto azul real gerado antes do handle invisível */
+.editor-content .ProseMirror .udoc-resizable-video-container .video-resizer-handle::before {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #2563eb; /* Azul da seleção */
+  border: 2px solid #ffffff; /* Borda branca */
+  border-radius: 50%; /* Redonda */
+  right: -6px; /* Centralizada na borda direita */
+  bottom: -10px; /* Posicionada no canto inferior */
+  display: none; /* Escondida por padrão */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* 🚀 CORREÇÃO AQUI: Exibe a bolinha azul assim que o container for selecionado */
+.editor-content .ProseMirror .udoc-resizable-video-container.is-selected .video-resizer-handle::before {
+  display: block !important;
+}
+
+/* Mostra uma linha azul sutil ao passar o mouse na área de arrastar */
+.editor-content .ProseMirror .udoc-resizable-video-container .video-resizer-handle:hover {
+  background: rgba(37, 99, 235, 0.2);
+}

@@ -1,0 +1,11 @@
+.sidebar {
+  height: 100%;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+.sidebar-navlink {
+  border-radius: var(--mantine-radius-md) !important;
+  margin: 0 8px;
+  font-weight: 500;
+}

@@ -1,0 +1,29 @@
+.card {
+  background: white;
+
+  width: 350px;
+
+  padding: 24px;
+
+  border-radius: 12px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.card h2 {
+  margin-bottom: 12px;
+
+  color: #111827;
+}
+
+.card p {
+  color: #4b5563;
+
+  line-height: 1.5;
+}

@@ -1,0 +1,343 @@
+/* Container principal das abas */
+.tabs-container {
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(30, 64, 175, 0.08);
+  overflow: hidden;
+  margin: 24px;
+}
+
+/* Cabeçalho das abas  */
+.tabs-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+  border-bottom: 1px solid #dbeafe;
+  flex-wrap: wrap;
+}
+
+/* Botões das abas */
+.tab-button {
+  border: none;
+  background: transparent;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.tab-button:hover {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+/* Aba ativa */
+.tab-button.active {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+}
+
+/* Conteúdo da aba */
+.tabs-content {
+  padding: 32px;
+  min-height: 300px;
+  background: #ffffff;
+}
+
+/* =========================
+   CABEÇALHO DO FORMULÁRIO
+   ========================= */
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.form-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* =========================
+   SWITCH DE STATUS
+   ========================= */
+
+.status-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-switch input {
+  display: none;
+}
+
+.status-slider {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 4px 10px rgba(37, 99, 235, 0.15);
+}
+
+.status-slider::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 23px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e3a8a;
+  white-space: nowrap;
+}
+
+/* =========================
+   BOTÃO SALVAR
+   ========================= */
+
+.save-button {
+  border: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.20);
+  transition: all 0.25s ease;
+}
+
+.save-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.28);
+}
+
+.save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================
+   BOTÃO REMOVER
+   ========================= */
+
+.delete-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #fca5a5;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.delete-button:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================
+   MENSAGEM DE RETORNO
+   ========================= */
+
+.form-message {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* =========================
+   FORMULÁRIO
+   ========================= */
+
+.card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+  padding: 32px;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.06);
+}
+
+.card-form div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.card-form input,
+.card-form textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.card-form input:focus,
+.card-form textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+}
+
+.card-form textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+/* Botões internos do formulário (caso existam futuramente) */
+.card-form button {
+  align-self: flex-start;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20);
+  transition: all 0.25s ease;
+}
+
+.card-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.28);
+}
+
+.card-form button:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   RESPONSIVIDADE
+   ========================= */
+
+@media (max-width: 768px) {
+  .tabs-container {
+    margin: 16px;
+  }
+
+  .tabs-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tab-button {
+    width: 100%;
+    text-align: left;
+  }
+
+  .tabs-content {
+    padding: 24px;
+  }
+
+  .card-form {
+    padding: 24px;
+  }
+
+  .card-form button {
+    width: 100%;
+  }
+
+  .form-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-toolbar {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .save-button,
+  .delete-button {
+    width: auto;
+  }
+}
+.form-message-success {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+}
+
+.form-message-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+/* =========================
+   ABAS DESABILITADAS
+   ========================= */
+
+.tab-button.disabled,
+.tab-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+.tab-button.disabled:hover,
+.tab-button:disabled:hover {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+

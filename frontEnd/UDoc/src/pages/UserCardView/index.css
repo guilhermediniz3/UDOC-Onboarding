@@ -1,0 +1,309 @@
+/* =============================================================================
+   UserCardView — index.css
+   ============================================================================= */
+
+.user-card-view {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+}
+
+.user-card-loading {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+/* =============================================================================
+   BARRA DE AÇÕES (Voltar + PDF)
+   ============================================================================= */
+
+.user-card-actions {
+  width: 100%;
+  max-width: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.user-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-card-btn--back {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.user-card-btn--back:hover {
+  background: #e2e8f0;
+  transform: translateX(-2px);
+}
+
+.user-card-btn--pdf {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.user-card-btn--pdf:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+}
+
+/* =============================================================================
+   CONTEÚDO
+   ============================================================================= */
+
+.user-card-content {
+  width: 100%;
+  max-width: 1400px;
+}
+
+.user-card-content .ProseMirror {
+  border: none !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  background: transparent !important;
+  outline: none !important;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* Esconde apenas os controles de edição, não os NodeViews inteiros */
+.user-card-content .udoc-image-alignment-toolbar,
+.user-card-content .image-resizer-handle,
+.user-card-content .video-resizer-handle,
+.user-card-content .udoc-video-floating-menu,
+.user-card-content .udoc-callout-alignment-toolbar {
+  display: none !important;
+}
+
+/* =============================================================================
+   CÓDIGO (codeBlock e inline code)
+   ============================================================================= */
+
+.user-card-content pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 20px 0;
+  overflow-x: auto;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.user-card-content pre code {
+  background: none !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-family: inherit !important;
+}
+
+.user-card-content code {
+  background: #f1f5f9;
+  color: #7c3aed;
+  font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 0.875em;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+/* =============================================================================
+   VÍDEO
+   ============================================================================= */
+
+.user-card-content .udoc-resizable-video-wrapper {
+  position: relative;
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100%;
+  margin: 24px 0;
+  clear: both;
+  box-sizing: border-box;
+}
+
+.user-card-content .udoc-resizable-video-wrapper[data-align="left"] {
+  justify-content: flex-start !important;
+}
+
+.user-card-content .udoc-resizable-video-wrapper[data-align="center"] {
+  justify-content: center !important;
+}
+
+.user-card-content .udoc-resizable-video-wrapper[data-align="right"] {
+  justify-content: flex-end !important;
+}
+
+.user-card-content .udoc-resizable-video-container {
+  position: relative;
+  display: inline-block;
+  background: #000000;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.user-card-content .udoc-resizable-video-container iframe {
+  display: block;
+  border-radius: 12px;
+  border: none;
+}
+
+/* =============================================================================
+   IMAGEM
+   ============================================================================= */
+
+.user-card-content .udoc-resizable-image-wrapper {
+  margin: 24px 0;
+}
+
+.user-card-content .udoc-resizable-image-wrapper img {
+  max-width: 100%;
+  border-radius: 12px;
+  display: block;
+}
+
+/* =============================================================================
+   BADGE
+   ============================================================================= */
+
+.user-card-content .udoc-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  padding: 0 8px !important;
+  border-radius: 9999px !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+.user-card-content .udoc-badge::before {
+  content: attr(data-text) !important;
+}
+
+/* =============================================================================
+   CALLOUT
+   ============================================================================= */
+
+.user-card-content .udoc-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  border-left: 4px solid;
+}
+
+.user-card-content .udoc-callout[data-text-align="center"] { text-align: center; }
+.user-card-content .udoc-callout[data-text-align="right"]  { text-align: right; }
+.user-card-content .udoc-callout[data-text-align="justify"]{ text-align: justify; }
+
+.user-card-content .callout-info    { background: #eff6ff; border-color: #2563eb; color: #1e40af; }
+.user-card-content .callout-success { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+.user-card-content .callout-warning { background: #fffbeb; border-color: #d97706; color: #92400e; }
+.user-card-content .callout-error   { background: #fef2f2; border-color: #dc2626; color: #991b1b; }
+
+.user-card-content .udoc-callout-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+}
+
+.user-card-content .udoc-callout-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.user-card-content .udoc-callout-body { flex: 1; }
+.user-card-content .udoc-callout-content p { margin: 0; }
+
+/* =============================================================================
+   TIPOGRAFIA
+   ============================================================================= */
+
+.user-card-content p              { margin-bottom: 18px; }
+.user-card-content ul,
+.user-card-content ol             { padding-left: 24px; margin-bottom: 20px; }
+.user-card-content h1, .user-card-content h2,
+.user-card-content h3, .user-card-content h4,
+.user-card-content h5, .user-card-content h6 {
+  color: #111827;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.user-card-content [data-text-align="center"] { text-align: center; }
+.user-card-content [data-text-align="right"]  { text-align: right; }
+.user-card-content [data-text-align="left"]   { text-align: left; }
+
+/* =============================================================================
+   PRINT / EXPORTAÇÃO PDF
+   ============================================================================= */
+
+@media print {
+  body > *:not(.user-card-view),
+  .no-print {
+    display: none !important;
+  }
+
+  .user-card-view {
+    padding: 0 !important;
+  }
+
+  .user-card-content {
+    max-width: 100% !important;
+  }
+
+  .udoc-resizable-video-wrapper {
+    display: none !important;
+  }
+
+  pre {
+    background: #1e1e2e !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .udoc-callout {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .udoc-badge {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

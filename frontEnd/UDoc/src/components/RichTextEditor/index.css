@@ -1,0 +1,463 @@
+/* ==========================================================
+   CONTAINER PRINCIPAL DO EDITOR
+========================================================== */
+.editor-wrapper {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  box-sizing: border-box;
+}
+
+/* ==========================================================
+   TOOLBAR SUPERIOR (BARRA DE FERRAMENTAS PRINCIPAL)
+========================================================== */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+/* BOTÕES DA TOOLBAR PRINCIPAL */
+.editor-toolbar-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* Garante o tamanho correto dos ícones react-icons na Toolbar */
+.editor-toolbar-button svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.editor-toolbar-button:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.editor-toolbar-button.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* INDICADOR DE ZOOM */
+.editor-zoom-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* ==========================================================
+   ÁREA DE CONTEÚDO (PROSEMIRROR DO TIPTAP)
+========================================================== */
+.editor-content-wrapper {
+  background: #ffffff;
+  min-height: 600px;
+  transition: transform 0.2s ease;
+  transform-origin: top left;
+}
+
+.editor-content .ProseMirror {
+  min-height: 600px;
+  padding: 24px;
+  outline: none;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #111827;
+  background: #ffffff;
+  cursor: text;
+}
+
+/* PLACEHOLDER GERAL DO EDITOR */
+.editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+.editor-content .ProseMirror p {
+  margin: 0 0 16px;
+}
+
+.editor-content .ProseMirror h1 { font-size: 32px; font-weight: 700; margin: 24px 0 16px; color: #1e293b; }
+.editor-content .ProseMirror h2 { font-size: 26px; font-weight: 700; margin: 22px 0 14px; color: #1e293b; }
+.editor-content .ProseMirror h3 { font-size: 22px; font-weight: 700; margin: 20px 0 12px; color: #1e293b; }
+
+.editor-content .ProseMirror ul,
+.editor-content .ProseMirror ol {
+  padding-left: 28px;
+  margin: 16px 0;
+}
+
+.editor-content .ProseMirror blockquote {
+  margin: 20px 0;
+  padding: 12px 20px;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.editor-content .ProseMirror pre {
+  margin: 20px 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+  overflow-x: auto;
+}
+
+.editor-content .ProseMirror hr {
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid #d1d5db;
+}
+
+/* ALINHAMENTOS PADRÃO DO TEXTO */
+.editor-content .ProseMirror [data-text-align="left"] { text-align: left !important; }
+.editor-content .ProseMirror [data-text-align="center"] { text-align: center !important; }
+.editor-content .ProseMirror [data-text-align="right"] { text-align: right !important; }
+.editor-content .ProseMirror [data-text-align="justify"] { text-align: justify !important; }
+
+
+/* ==========================================================
+   ESTILIZAÇÃO DO CALLOUT (ESTRUTURA E TOOLBAR)
+========================================================== */
+.editor-content .ProseMirror .udoc-callout {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin: 24px 0;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  line-height: 1.6;
+  box-sizing: border-box;
+  width: fit-content;      
+  min-width: 12cm;         
+  max-width: 100%;         
+  transition: margin 0.2s ease, width 0.2s ease;
+}
+
+.editor-content .ProseMirror .udoc-callout[data-text-align="left"] { margin-left: 0 !important; margin-right: auto !important; }
+.editor-content .ProseMirror .udoc-callout[data-text-align="center"] { margin-left: auto !important; margin-right: auto !important; }
+.editor-content .ProseMirror .udoc-callout[data-text-align="right"] { margin-left: auto !important; margin-right: 0 !important; }
+.editor-content .ProseMirror .udoc-callout[data-text-align="justify"] { margin-left: 0 !important; margin-right: 0 !important; width: 100% !important; }
+
+/* TOOLBAR FLUTUANTE DO CALLOUT */
+.editor-content .ProseMirror .udoc-callout .udoc-callout-alignment-toolbar {
+  position: absolute;
+  top: -14px;
+  right: 14px;
+  display: flex !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  padding: 2px !important;
+  gap: 2px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 40;
+}
+
+.editor-content .ProseMirror .udoc-callout:hover .udoc-callout-alignment-toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.editor-content .ProseMirror .udoc-callout .udoc-callout-alignment-toolbar button.udoc-callout-toolbar-btn {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 4px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 11px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  color: #64748b !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+}
+
+.editor-content .ProseMirror .udoc-callout .udoc-callout-alignment-toolbar button.udoc-callout-toolbar-btn:hover {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+.editor-content .ProseMirror .udoc-callout .udoc-callout-alignment-toolbar button.udoc-callout-toolbar-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.editor-content .ProseMirror .udoc-callout-body { flex: 1; width: 100%; }
+.editor-content .ProseMirror .udoc-callout-content { color: inherit !important; font-size: 14px !important; }
+.editor-content .ProseMirror .udoc-callout-content p { margin: 0 0 8px 0 !important; }
+.editor-content .ProseMirror .udoc-callout-content p:last-child { margin-bottom: 0 !important; }
+
+/* Remove o placeholder interno do parágrafo genérico dentro do Callout */
+.editor-content .ProseMirror .udoc-callout-content p.is-editor-empty::before {
+  display: none !important;
+  content: "" !important;
+}
+
+
+/* ==========================================================
+   ÍCONES VAZADOS E CORES ORIGINAIS DOS CALLOUTS
+========================================================== */
+.editor-content .ProseMirror .udoc-callout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.editor-content .ProseMirror .udoc-callout-icon svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+
+.editor-content .ProseMirror .callout-warning .udoc-callout-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* INFO */
+.editor-content .ProseMirror .callout-info { 
+  background-color: #e0f2fe !important; 
+  border-left-color: #0284c7 !important; 
+  color: #0369a1 !important; 
+}
+.editor-content .ProseMirror .callout-info .udoc-callout-icon { 
+  background-color: #0284c7 !important; 
+  color: #ffffff !important; 
+}
+
+/* SUCCESS */
+.editor-content .ProseMirror .callout-success { 
+  background-color: #e6f4ea !important; 
+  border-left-color: #1e8e3e !important; 
+  color: #0d652d !important; 
+}
+.editor-content .ProseMirror .callout-success .udoc-callout-icon { 
+  background-color: #1e8e3e !important; 
+  color: #ffffff !important; 
+}
+
+/* WARNING */
+.editor-content .ProseMirror .callout-warning { 
+  background-color: #fef7e0 !important; 
+  border-left-color: #f9ab00 !important; 
+  color: #8f5d01 !important; 
+}
+.editor-content .ProseMirror .callout-warning .udoc-callout-icon { 
+  background-color: #f9ab00 !important; 
+  color: #ffffff !important; 
+}
+
+/* ERROR */
+.editor-content .ProseMirror .callout-error { 
+  background-color: #fce8e6 !important; 
+  border-left-color: #ea4335 !important; 
+  color: #c5221f !important; 
+}
+.editor-content .ProseMirror .callout-error .udoc-callout-icon { 
+  background-color: #ea4335 !important; 
+  color: #ffffff !important; 
+}
+
+
+/* ==========================================================
+   ESTILO DA IMAGEM INDIVIDUAL E REGRAS DE FLOAT
+========================================================== */
+.editor-content .ProseMirror .udoc-resizable-image-wrapper {
+  position: relative;
+  display: inline-flex !important;
+  vertical-align: baseline;
+  margin: 6px 12px;
+  max-width: 100%;
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-container {
+  position: relative;
+  display: inline-flex;
+}
+
+/* --- REGRAS DE ALINHAMENTOS INDIVIDUAIS (FLOAT ATRIBUTO) --- */
+.editor-content .ProseMirror .udoc-resizable-image-wrapper[data-align="left"] {
+  float: left;
+  margin: 6px 20px 10px 0 !important;
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-wrapper[data-align="right"] {
+  float: right;
+  margin: 6px 0 10px 20px !important;
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-wrapper[data-align="center"] {
+  display: flex !important;
+  justify-content: center;
+  width: 100%;
+  margin: 20px 0 !important;
+}
+
+
+/* ==========================================================
+   MENU FLUTUANTE DA IMAGEM
+========================================================== */
+.editor-content .ProseMirror .udoc-img-floating-menu {
+  position: absolute;
+  top: -44px; 
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, top 0.15s ease;
+  z-index: 999;
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-wrapper:hover .udoc-img-floating-menu,
+.editor-content .ProseMirror .udoc-resizable-image-container.is-selected ~ .udoc-img-floating-menu,
+.editor-content .ProseMirror .udoc-resizable-image-wrapper:focus-within .udoc-img-floating-menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.editor-content .ProseMirror .udoc-img-floating-menu::before {
+  content: "";
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+}
+
+.editor-content .ProseMirror .udoc-img-floating-menu button {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-content .ProseMirror .udoc-img-floating-menu button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.editor-content .ProseMirror .udoc-img-floating-menu button.is-active-btn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+
+/* ==========================================================
+   ALÇAS CIRCULARES E SELEÇÃO DA IMAGEM
+========================================================== */
+.editor-content .ProseMirror .udoc-resizable-image-container.is-selected img {
+  outline: 2px dashed #2563eb;
+  outline-offset: 4px;
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-container .image-resizer-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #2563eb;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: none;
+  z-index: 50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.editor-content .ProseMirror .udoc-resizable-image-container.is-selected .image-resizer-handle {
+  display: block;
+}
+
+.editor-content .ProseMirror .image-resizer-handle.tl { top: -5px; left: -5px; cursor: nwse-resize; }
+.editor-content .ProseMirror .image-resizer-handle.tr { top: -5px; right: -5px; cursor: nesw-resize; }
+.editor-content .ProseMirror .image-resizer-handle.bl { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.editor-content .ProseMirror .image-resizer-handle.br { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+/* =========================
+   ABAS DESABILITADAS
+   ========================= */
+
+.tab-button.disabled,
+.tab-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #94a3b8;
+  box-shadow: none;
+}
+
+.tab-button.disabled:hover,
+.tab-button:disabled:hover {
+  background: #f8fafc;
+  color: #94a3b8;
+}

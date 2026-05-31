@@ -1,0 +1,6 @@
+.home {
+  padding: 40px;
+}
+
+@import "./../../components/./RichTextEditor/extensions/video.css"; 
+
