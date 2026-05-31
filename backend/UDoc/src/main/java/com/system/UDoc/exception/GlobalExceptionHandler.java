@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -108,6 +109,26 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(exception.getStatusCode()).body(error);
     }
+
+    /**
+     * Captura erros de chamadas a APIs externas (ex: Groq) para evitar que
+     * um 401 da API externa cause logout no frontend do UDoc.
+     */
+    @ExceptionHandler(HttpClientErrorException.class)
+    public ResponseEntity<Map<String, Object>> handleExternalApiError(
+            HttpClientErrorException exception,
+            HttpServletRequest request) {
+
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        error.put("error", "External API Error");
+        error.put("message", "Erro ao chamar API externa (HTTP " + exception.getStatusCode().value() + "). Verifique as credenciais e configuracoes.");
+        error.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+    }
+
 
     @ExceptionHandler(ScheduleConflictException.class)
     public ResponseEntity<Map<String, Object>> handleScheduleConflict(

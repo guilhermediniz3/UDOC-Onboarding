@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long> {
 
     @Query(
@@ -32,4 +34,14 @@ public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long
     Page<TrainingRoom> search(@Param("search") String search,
                               @Param("active") Boolean active,
                               Pageable pageable);
+
+    /** Retorna salas vinculadas a uma trilha que têm empresa associada */
+    @Query("""
+        SELECT r FROM TrainingRoom r
+        JOIN FETCH r.company
+        WHERE r.trail.id = :trailId
+          AND r.company IS NOT NULL
+        ORDER BY r.createdAt DESC
+    """)
+    List<TrainingRoom> findByTrailIdWithCompany(@Param("trailId") Long trailId);
 }

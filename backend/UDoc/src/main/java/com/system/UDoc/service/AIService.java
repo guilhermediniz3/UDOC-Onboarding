@@ -42,6 +42,12 @@ public class AIService {
 
     public AIResponseDTO generate(String userPrompt) {
 
+        // Diagnóstico: mostra os primeiros 10 chars da key para confirmar que não está usando valor_padrao
+        String maskedKey = apiKey != null && apiKey.length() > 10
+                ? apiKey.substring(0, 10) + "..."
+                : "(vazia ou muito curta)";
+        System.out.println("[AIService] Chamando Groq com key: " + maskedKey + " | modelo: " + model);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(apiKey);
