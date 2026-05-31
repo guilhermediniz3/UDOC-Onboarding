@@ -8,6 +8,30 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-    @Query("SELECT e FROM Employee e JOIN FETCH e.company c WHERE (:search IS NULL OR TRIM(:search) = '' OR LOWER(e.name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(e.email) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))) AND (:active IS NULL OR e.active = :active) ORDER BY e.name ASC")
-    Page<Employee> search(@Param("search") String search, @Param("active") Boolean active, Pageable pageable);
+
+    @Query(
+        value = """
+            SELECT e.* FROM employee e
+            JOIN company c ON c.id = e.company_id
+            WHERE (:search IS NULL
+                   OR e.name  ILIKE CONCAT('%', :search, '%')
+                   OR e.email ILIKE CONCAT('%', :search, '%')
+                   OR c.name  ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR e.active = :active)
+            ORDER BY e.name ASC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM employee e
+            JOIN company c ON c.id = e.company_id
+            WHERE (:search IS NULL
+                   OR e.name  ILIKE CONCAT('%', :search, '%')
+                   OR e.email ILIKE CONCAT('%', :search, '%')
+                   OR c.name  ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR e.active = :active)
+        """,
+        nativeQuery = true
+    )
+    Page<Employee> search(@Param("search") String search,
+                          @Param("active") Boolean active,
+                          Pageable pageable);
 }

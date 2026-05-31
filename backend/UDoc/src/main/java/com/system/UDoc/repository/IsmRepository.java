@@ -8,6 +8,26 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface IsmRepository extends JpaRepository<Ism, Long> {
-    @Query("SELECT i FROM Ism i WHERE (:search IS NULL OR TRIM(:search) = '' OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(i.email) LIKE LOWER(CONCAT('%', :search, '%'))) AND (:active IS NULL OR i.active = :active) ORDER BY i.name ASC")
-    Page<Ism> search(@Param("search") String search, @Param("active") Boolean active, Pageable pageable);
+
+    @Query(
+        value = """
+            SELECT * FROM ism
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+            ORDER BY name ASC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM ism
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+        """,
+        nativeQuery = true
+    )
+    Page<Ism> search(@Param("search") String search,
+                     @Param("active") Boolean active,
+                     Pageable pageable);
 }

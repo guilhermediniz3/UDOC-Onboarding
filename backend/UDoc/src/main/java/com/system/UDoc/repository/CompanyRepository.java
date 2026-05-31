@@ -8,9 +8,31 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CompanyRepository extends JpaRepository<Company, Long> {
+
     boolean existsByCnpj(String cnpj);
     boolean existsByCnpjAndIdNot(String cnpj, Long id);
 
-    @Query("SELECT c FROM Company c WHERE (:search IS NULL OR TRIM(:search) = '' OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.cnpj) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%'))) AND (:active IS NULL OR c.active = :active) ORDER BY c.name ASC")
-    Page<Company> search(@Param("search") String search, @Param("active") Boolean active, Pageable pageable);
+    @Query(
+        value = """
+            SELECT * FROM company
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR cnpj  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+            ORDER BY name ASC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM company
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR cnpj  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+        """,
+        nativeQuery = true
+    )
+    Page<Company> search(@Param("search") String search,
+                         @Param("active") Boolean active,
+                         Pageable pageable);
 }

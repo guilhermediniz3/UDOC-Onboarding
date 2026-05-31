@@ -27,7 +27,11 @@ public class CompanyService {
 
     @Transactional(readOnly = true)
     public Page<CompanyDTO> getAllCompanies(String search, Boolean active, Pageable pageable) {
-        return companyRepository.search(search, active, pageable).map(CompanyDTO::new);
+        return companyRepository.search(normalize(search), active, pageable).map(CompanyDTO::new);
+    }
+
+    private String normalize(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     @Transactional(readOnly = true)

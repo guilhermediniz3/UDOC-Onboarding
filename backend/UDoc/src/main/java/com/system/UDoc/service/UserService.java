@@ -35,7 +35,11 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserDTO> getAllUsers(String search, Boolean active, Pageable pageable) {
-        return userRepository.search(search, active, pageable).map(UserDTO::new);
+        return userRepository.search(normalize(search), active, pageable).map(UserDTO::new);
+    }
+
+    private String normalize(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     @Transactional(readOnly = true)

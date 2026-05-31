@@ -46,9 +46,10 @@ public class CardService {
             Pageable pageable
     ) {
 
+        String s = (search == null || search.isBlank()) ? null : search;
         Page<Card> cards =
                 cardRepository.searchAdminCards(
-                        search,
+                        s,
                         active,
                         pageable
                 );

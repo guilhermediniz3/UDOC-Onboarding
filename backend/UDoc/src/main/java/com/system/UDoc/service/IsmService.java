@@ -21,7 +21,8 @@ public class IsmService {
     }
 
     @Transactional public IsmDTO createIsm(IsmRequestDTO request) { Ism ism = new Ism(); mapToEntity(request, ism); return new IsmDTO(ismRepository.save(ism)); }
-    @Transactional(readOnly = true) public Page<IsmDTO> getAllIsms(String search, Boolean active, Pageable pageable) { return ismRepository.search(search, active, pageable).map(IsmDTO::new); }
+    @Transactional(readOnly = true) public Page<IsmDTO> getAllIsms(String search, Boolean active, Pageable pageable) { return ismRepository.search(normalize(search), active, pageable).map(IsmDTO::new); }
+    private String normalize(String s) { return (s == null || s.isBlank()) ? null : s; }
     @Transactional(readOnly = true) public IsmDTO getIsmById(Long id) { return new IsmDTO(findById(id)); }
     @Transactional public IsmDTO updateIsm(Long id, IsmRequestDTO request) { Ism ism = findById(id); mapToEntity(request, ism); return new IsmDTO(ismRepository.save(ism)); }
     @Transactional public void deleteIsm(Long id) { if (!ismRepository.existsById(id)) throw new ResourceNotFoundException("ISM not found with id " + id); ismRepository.deleteById(id); }

@@ -61,7 +61,7 @@ public class TrailService {
     ) {
 
         return trailRepository
-                .searchTrails(search, active, pageable)
+                .searchTrails(normalize(search), active, pageable)
                 .map(TrailDTO::new);
     }
 
@@ -153,6 +153,10 @@ public class TrailService {
         trail.getCards().removeIf(c -> c.getId().equals(cardId));
 
         return new TrailDTO(trailRepository.save(trail));
+    }
+
+    private String normalize(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     private Trail findOrThrow(Long id) {

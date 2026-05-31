@@ -6,15 +6,35 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
     boolean existsByEmailAndIdNot(String email, Long id);
-
     Optional<User> findByResetToken(String resetToken);
 
-    @Query("SELECT u FROM User u WHERE (:search IS NULL OR TRIM(:search) = '' OR LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))) AND (:active IS NULL OR u.active = :active) ORDER BY u.name ASC")
-    Page<User> search(@Param("search") String search, @Param("active") Boolean active, Pageable pageable);
+    @Query(
+        value = """
+            SELECT * FROM users
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+            ORDER BY name ASC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM users
+            WHERE (:search IS NULL
+                   OR name  ILIKE CONCAT('%', :search, '%')
+                   OR email ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+        """,
+        nativeQuery = true
+    )
+    Page<User> search(@Param("search") String search,
+                      @Param("active") Boolean active,
+                      Pageable pageable);
 }

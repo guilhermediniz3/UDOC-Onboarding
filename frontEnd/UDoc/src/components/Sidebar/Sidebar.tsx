@@ -123,8 +123,24 @@ const NAV_ITEMS: NavItemType[] = [
   {
     label: "Sala de Treinamento",
     Icon: IconSchool,
-    path: "/admin/training-rooms",
-    isActive: (p) => p.startsWith("/admin/training-room"),
+    collapsedPath: "/admin/training-rooms",
+    isActive: (p) =>
+      p.startsWith("/admin/training-room") ||
+      p === "/admin/training-calendar",
+    children: [
+      {
+        label: "Salas",
+        path: "/admin/training-rooms",
+        Icon: IconListDetails,
+        isActive: (p) => p.startsWith("/admin/training-room") && !p.includes("calendar"),
+      },
+      {
+        label: "Calendário",
+        path: "/admin/training-calendar",
+        Icon: IconLayoutKanban,
+        isActive: (p) => p === "/admin/training-calendar",
+      },
+    ],
   },
 ];
 

@@ -10,40 +10,27 @@ import org.springframework.data.repository.query.Param;
 public interface TrailRepository extends JpaRepository<Trail, Long> {
 
     boolean existsBySortOrder(Integer sortOrder);
-
     boolean existsBySortOrderAndIdNot(Integer sortOrder, Long id);
 
-    @Query("""
-        SELECT t
-        FROM Trail t
-        WHERE
-
-            (
-                :search IS NULL
-                OR TRIM(:search) = ''
-                OR LOWER(t.name)
-                    LIKE LOWER(CONCAT('%', :search, '%'))
-                OR LOWER(t.description)
-                    LIKE LOWER(CONCAT('%', :search, '%'))
-            )
-
-            AND
-
-            (
-                :active IS NULL
-                OR t.active = :active
-            )
-
-        ORDER BY t.id DESC
-    """)
-    Page<Trail> searchTrails(
-
-            @Param("search")
-            String search,
-
-            @Param("active")
-            Boolean active,
-
-            Pageable pageable
-    );
+    @Query(
+        value = """
+            SELECT * FROM trail
+            WHERE (:search IS NULL
+                   OR name        ILIKE CONCAT('%', :search, '%')
+                   OR description ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+            ORDER BY id DESC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM trail
+            WHERE (:search IS NULL
+                   OR name        ILIKE CONCAT('%', :search, '%')
+                   OR description ILIKE CONCAT('%', :search, '%'))
+              AND (:active IS NULL OR active = :active)
+        """,
+        nativeQuery = true
+    )
+    Page<Trail> searchTrails(@Param("search") String search,
+                             @Param("active") Boolean active,
+                             Pageable pageable);
 }

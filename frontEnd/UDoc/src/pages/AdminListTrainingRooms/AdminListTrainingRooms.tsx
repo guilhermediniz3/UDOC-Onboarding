@@ -38,12 +38,14 @@ const STATUS_LABEL: Record<string, string> = {
   AGENDADA: "Agendada",
   EM_ANDAMENTO: "Em andamento",
   CONCLUIDA: "Concluída",
+  CANCELADA: "Cancelada",
 };
 
 const STATUS_COLOR: Record<string, string> = {
   AGENDADA: "blue",
   EM_ANDAMENTO: "orange",
   CONCLUIDA: "green",
+  CANCELADA: "red",
 };
 
 export default function AdminListTrainingRooms() {

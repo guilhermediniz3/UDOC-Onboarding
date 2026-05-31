@@ -30,7 +30,11 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public Page<EmployeeDTO> getAllEmployees(String search, Boolean active, Pageable pageable) {
-        return employeeRepository.search(search, active, pageable).map(EmployeeDTO::new);
+        return employeeRepository.search(normalize(search), active, pageable).map(EmployeeDTO::new);
+    }
+
+    private String normalize(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     @Transactional(readOnly = true)

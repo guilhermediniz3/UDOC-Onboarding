@@ -8,6 +8,7 @@ import AdminListTrails from "../pages/AdminListTrails/AdminListTrails";
 import AdminListTrainingRooms from "../pages/AdminListTrainingRooms/AdminListTrainingRooms";
 import AdminTrail from "../pages/AdminTrail/AdminTrail";
 import AdminTrainingRoom from "../pages/AdminTrainingRoom/AdminTrainingRoom";
+import TrainingCalendar from "../pages/TrainingCalendar/TrainingCalendar";
 import AdminListEmpresas from "../pages/AdminListEmpresas/AdminListEmpresas";
 import AdminEmpresa from "../pages/AdminEmpresa/AdminEmpresa";
 import AdminListFuncionarios from "../pages/AdminListFuncionarios/AdminListFuncionarios";
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/admin/training-rooms" element={<AdminListTrainingRooms />} />
       <Route path="/admin/training-room" element={<AdminTrainingRoom />} />
       <Route path="/admin/training-room/:id" element={<AdminTrainingRoom />} />
+      <Route path="/admin/training-calendar" element={<TrainingCalendar />} />
 
       {/* EMPRESAS */}
       <Route path="/admin/empresas" element={<AdminListEmpresas />} />

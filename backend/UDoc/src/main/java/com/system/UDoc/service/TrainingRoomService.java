@@ -4,6 +4,8 @@ import com.system.UDoc.dto.TrainingRoomDTO;
 import com.system.UDoc.dto.TrainingRoomRequestDTO;
 import com.system.UDoc.entity.*;
 import com.system.UDoc.exception.ResourceNotFoundException;
+
+import java.util.UUID;
 import com.system.UDoc.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +28,8 @@ public class TrainingRoomService {
     }
 
     @Transactional public TrainingRoomDTO createTrainingRoom(TrainingRoomRequestDTO request) { TrainingRoom r = new TrainingRoom(); mapToEntity(request, r); return new TrainingRoomDTO(trainingRoomRepository.save(r)); }
-    @Transactional(readOnly = true) public Page<TrainingRoomDTO> getAllTrainingRooms(String search, Boolean active, Pageable pageable) { return trainingRoomRepository.search(search, active, pageable).map(TrainingRoomDTO::new); }
+    @Transactional(readOnly = true) public Page<TrainingRoomDTO> getAllTrainingRooms(String search, Boolean active, Pageable pageable) { return trainingRoomRepository.search(normalize(search), active, pageable).map(TrainingRoomDTO::new); }
+    private String normalize(String s) { return (s == null || s.isBlank()) ? null : s; }
     @Transactional(readOnly = true) public TrainingRoomDTO getTrainingRoomById(Long id) { return new TrainingRoomDTO(findById(id)); }
     @Transactional public TrainingRoomDTO updateTrainingRoom(Long id, TrainingRoomRequestDTO request) { TrainingRoom r = findById(id); mapToEntity(request, r); return new TrainingRoomDTO(trainingRoomRepository.save(r)); }
     @Transactional public void deleteTrainingRoom(Long id) { if (!trainingRoomRepository.existsById(id)) throw new ResourceNotFoundException("Training room not found with id " + id); trainingRoomRepository.deleteById(id); }
@@ -37,7 +40,19 @@ public class TrainingRoomService {
         room.setTitle(r.getTitle()); room.setDescription(r.getDescription());
         room.setSortOrder(r.getSortOrder() != null ? r.getSortOrder() : 0); room.setActive(r.getActive());
         room.setVimeoUrl(r.getVimeoUrl()); room.setYoutubeUrl(r.getYoutubeUrl());
-        if (r.getStatus() != null && !r.getStatus().isBlank()) { try { room.setStatus(TrainingRoomStatus.valueOf(r.getStatus())); } catch (IllegalArgumentException ignored) { room.setStatus(TrainingRoomStatus.AGENDADA); } }
+
+        // Garante que jitsiRoomId nunca seja nulo (salas criadas antes do campo existir)
+        if (room.getJitsiRoomId() == null || room.getJitsiRoomId().isBlank()) {
+            room.setJitsiRoomId("udoc-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+        }
+
+        if (r.getStatus() != null && !r.getStatus().isBlank()) {
+            try {
+                room.setStatus(TrainingRoomStatus.valueOf(r.getStatus()));
+            } catch (IllegalArgumentException ignored) {
+                room.setStatus(TrainingRoomStatus.AGENDADA);
+            }
+        }
         room.setCompany(r.getCompanyId() != null ? companyRepository.findById(r.getCompanyId()).orElseThrow(() -> new ResourceNotFoundException("Company not found")) : null);
         room.setIsm(r.getIsmId() != null ? ismRepository.findById(r.getIsmId()).orElseThrow(() -> new ResourceNotFoundException("ISM not found")) : null);
         room.setTrail(r.getTrailId() != null ? trailRepository.findById(r.getTrailId()).orElseThrow(() -> new ResourceNotFoundException("Trail not found")) : null);

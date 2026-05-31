@@ -9,7 +9,7 @@ export interface TrainingRoom {
   trailId?: number;
   trailName?: string;
   sortOrder: number;
-  status: "AGENDADA" | "EM_ANDAMENTO" | "CONCLUIDA";
+  status: "AGENDADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
   vimeoUrl?: string;
   youtubeUrl?: string;
   jitsiRoomId?: string;

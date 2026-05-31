@@ -3,6 +3,10 @@ package com.system.UDoc.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import java.util.HashMap;
+import java.util.List;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
@@ -103,6 +107,66 @@ public class GlobalExceptionHandler {
         error.put("path", request.getRequestURI());
 
         return ResponseEntity.status(exception.getStatusCode()).body(error);
+    }
+
+    @ExceptionHandler(ScheduleConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleScheduleConflict(
+            ScheduleConflictException exception,
+            HttpServletRequest request) {
+
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.CONFLICT.value());
+        error.put("error", "Schedule Conflict");
+        error.put("message", "Conflito de horário detectado. Verifique os detalhes.");
+        error.put("path", request.getRequestURI());
+
+        List<Map<String, Object>> conflicts = new java.util.ArrayList<>();
+        for (var c : exception.getConflicts()) {
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("conflictType", c.conflictType());
+            detail.put("entityName", c.entityName());
+            detail.put("trainingRoomTitle", c.trainingRoomTitle());
+            detail.put("date", c.date());
+            detail.put("startTime", c.startTime());
+            detail.put("endTime", c.endTime());
+            conflicts.add(detail);
+        }
+        error.put("conflicts", conflicts);
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(
+            DataIntegrityViolationException exception,
+            HttpServletRequest request) {
+
+        Throwable cause = exception.getRootCause();
+        String rootMsg = cause != null ? cause.getMessage() : exception.getMessage();
+        String rootMsgLower = rootMsg != null ? rootMsg.toLowerCase() : "";
+
+        String message;
+        if (rootMsgLower.contains("unique") || rootMsgLower.contains("duplicate")) {
+            message = "Registro duplicado — verifique campos únicos como e-mail ou CNPJ.";
+        } else if (rootMsgLower.contains("not-null") || rootMsgLower.contains("nulo") || rootMsgLower.contains("null")) {
+            message = "Campo obrigatório sem valor — verifique os dados enviados.";
+        } else if (rootMsgLower.contains("foreign key") || rootMsgLower.contains("chave estrangeira")) {
+            message = "Referência inválida — o registro relacionado não existe.";
+        } else {
+            message = "Violação de integridade de dados.";
+        }
+
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.CONFLICT.value());
+        error.put("error", "Data Integrity Violation");
+        error.put("message", message);
+        // Expõe a mensagem real do banco para facilitar diagnóstico
+        error.put("detail", rootMsg);
+        error.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(DuplicateSortOrderException.class)
