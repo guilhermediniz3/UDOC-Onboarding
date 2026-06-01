@@ -5,9 +5,12 @@ import com.system.UDoc.entity.Card;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface CardRepository extends JpaRepository<Card, Long> {
@@ -39,4 +42,14 @@ public interface CardRepository extends JpaRepository<Card, Long> {
         FROM Card c WHERE c.id = :id
     """)
     Optional<UserCardViewDTO> findViewById(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE Card c SET c.accessCount = c.accessCount + 1 WHERE c.id = :id")
+    void incrementAccessCount(@Param("id") Long id);
+
+    @Query(value = """
+        SELECT id, title, access_count FROM card
+        ORDER BY access_count DESC LIMIT :lim
+    """, nativeQuery = true)
+    List<Map<String, Object>> findTopAccessedCards(@Param("lim") int lim);
 }

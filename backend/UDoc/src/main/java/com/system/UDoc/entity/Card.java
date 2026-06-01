@@ -25,6 +25,9 @@ public class Card {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(nullable = false, columnDefinition = "bigint not null default 0")
+    private Long accessCount = 0L;
+
     @Column(nullable = false, columnDefinition = "boolean not null default false")
     private Boolean trail = false;
 
@@ -120,4 +123,6 @@ public class Card {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
+    public Long getAccessCount() { return accessCount; }
+    public void setAccessCount(Long accessCount) { this.accessCount = accessCount; }
 }

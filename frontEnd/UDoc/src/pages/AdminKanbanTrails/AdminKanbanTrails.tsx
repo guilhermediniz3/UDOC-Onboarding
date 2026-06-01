@@ -25,6 +25,7 @@ import {
   Modal,
   Paper,
   ScrollArea,
+  Select,
   Stack,
   Switch,
   Text,
@@ -39,11 +40,21 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconEdit,
+  IconFileSpreadsheet,
+  IconFileTypePdf,
+  IconFilter,
   IconGripVertical,
   IconPlus,
   IconTrash,
   IconUser,
+  IconX,
 } from "@tabler/icons-react";
+
+// PDF
+import html2pdf from "html2pdf.js";
+
+// Excel
+import * as XLSX from "xlsx";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -59,7 +70,12 @@ import {
   type KanbanCompanyEntry,
 } from "../../services/trainingService";
 
+import { getAllCompaniesSimple } from "../../services/companyService";
+import { getEmployees } from "../../services/employeeService";
+
 import type { Trail } from "../../types/Trail";
+import type { Company } from "../../types/Company";
+import type { Employee } from "../../types/Employee";
 
 /* ── Ícone de certificado SVG ── */
 function CertIcon() {
@@ -73,13 +89,26 @@ function CertIcon() {
 }
 
 /* ── Linha de empresa dentro do card ── */
-function CompanyRow({ entry }: { entry: KanbanCompanyEntry }) {
-
+function CompanyRow({
+  entry,
+  filterEmployeeId,
+}: {
+  entry: KanbanCompanyEntry;
+  filterEmployeeId: number | null;
+}) {
   const [expanded, setExpanded] = useState(false);
+
+  // Se há filtro de funcionário, expande automaticamente para mostrar o match
+  const shouldAutoExpand = filterEmployeeId != null;
 
   const dataText = entry.dataInicio
     ? new Date(entry.dataInicio + "T00:00:00").toLocaleDateString("pt-BR")
     : "—";
+
+  // Filtra funcionários se houver filtro de funcionário
+  const displayFuncionarios = filterEmployeeId != null
+    ? entry.funcionarios.filter((f) => f.employeeId === filterEmployeeId)
+    : entry.funcionarios;
 
   return (
     <div>
@@ -90,7 +119,10 @@ function CompanyRow({ entry }: { entry: KanbanCompanyEntry }) {
         style={{ cursor: "pointer", padding: "3px 0" }}
         onClick={() => setExpanded((v) => !v)}
       >
-        {expanded ? <IconChevronDown size={12} color="var(--text-secondary)" /> : <IconChevronRight size={12} color="var(--text-secondary)" />}
+        {(expanded || shouldAutoExpand)
+          ? <IconChevronDown size={12} color="var(--text-secondary)" />
+          : <IconChevronRight size={12} color="var(--text-secondary)" />
+        }
         <IconBuilding size={12} color="var(--text-secondary)" />
         <Text fz="xs" c="var(--text-secondary)" style={{ flex: 1, minWidth: 0 }} truncate>
           {entry.companyName}
@@ -103,12 +135,12 @@ function CompanyRow({ entry }: { entry: KanbanCompanyEntry }) {
         )}
       </Group>
 
-      <Collapse in={expanded}>
+      <Collapse in={expanded || shouldAutoExpand}>
         <Stack gap={2} pl="20px" pt={4}>
-          {entry.funcionarios.length === 0 ? (
+          {displayFuncionarios.length === 0 ? (
             <Text fz="xs" c="var(--text-secondary)">Nenhum funcionário registrado</Text>
           ) : (
-            entry.funcionarios.map((f) => (
+            displayFuncionarios.map((f) => (
               <Group key={f.employeeId} gap={6} align="center" wrap="nowrap">
                 <IconUser size={11} color="var(--text-secondary)" />
                 <Text fz="xs" c="var(--text-secondary)" style={{ flex: 1 }} truncate>
@@ -135,13 +167,23 @@ function CompanyRow({ entry }: { entry: KanbanCompanyEntry }) {
 interface TrailCardProps {
   trail: Trail;
   removeDuplicates: boolean;
+  filterCompanyId: number | null;
+  filterEmployeeId: number | null;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-function TrailKanbanCard({ trail, removeDuplicates, onEdit, onDelete }: TrailCardProps) {
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: trail.id! });
+function TrailKanbanCard({
+  trail,
+  removeDuplicates,
+  filterCompanyId,
+  filterEmployeeId,
+  onEdit,
+  onDelete,
+}: TrailCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: trail.id!,
+  });
 
   const [companies, setCompanies] = useState<KanbanCompanyEntry[]>([]);
 
@@ -151,18 +193,33 @@ function TrailKanbanCard({ trail, removeDuplicates, onEdit, onDelete }: TrailCar
     }
   }, [trail.id]);
 
-  // Remove duplicatas: mantém só a ocorrência mais recente por empresa
-  const displayCompanies = removeDuplicates
-    ? Object.values(
-        companies.reduce((acc, entry) => {
-          const key = String(entry.companyId);
-          if (!acc[key] || (entry.dataInicio && (!acc[key].dataInicio || entry.dataInicio > acc[key].dataInicio))) {
-            acc[key] = entry;
-          }
-          return acc;
-        }, {} as Record<string, KanbanCompanyEntry>)
-      )
-    : companies;
+  // Aplica filtros na ordem certa
+  let displayCompanies = companies;
+
+  // 1. Remove duplicatas (mantém só a ocorrência mais recente por empresa)
+  if (removeDuplicates) {
+    displayCompanies = Object.values(
+      displayCompanies.reduce((acc, entry) => {
+        const key = String(entry.companyId);
+        if (!acc[key] || (entry.dataInicio && (!acc[key].dataInicio || entry.dataInicio > acc[key].dataInicio))) {
+          acc[key] = entry;
+        }
+        return acc;
+      }, {} as Record<string, KanbanCompanyEntry>)
+    );
+  }
+
+  // 2. Filtro por empresa
+  if (filterCompanyId != null) {
+    displayCompanies = displayCompanies.filter((e) => e.companyId === filterCompanyId);
+  }
+
+  // 3. Filtro por funcionário — mantém só empresas que têm aquele funcionário
+  if (filterEmployeeId != null) {
+    displayCompanies = displayCompanies.filter((e) =>
+      e.funcionarios.some((f) => f.employeeId === filterEmployeeId)
+    );
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -195,20 +252,27 @@ function TrailKanbanCard({ trail, removeDuplicates, onEdit, onDelete }: TrailCar
       {/* Header */}
       <Group justify="space-between" align="center" wrap="nowrap">
         <Group gap={6} align="center" wrap="nowrap">
-          <ActionIcon variant="subtle" color="gray" size="sm"
-            style={{ cursor: "grab", touchAction: "none" }} {...attributes} {...listeners}>
+          <ActionIcon
+            variant="subtle" color="gray" size="sm"
+            style={{ cursor: "grab", touchAction: "none" }}
+            {...attributes} {...listeners}
+          >
             <IconGripVertical size={16} />
           </ActionIcon>
-          <Badge variant="light" color="violet" radius="xl" size="sm">#{trail.sortOrder}</Badge>
+          <Badge variant="light" color="violet" radius="xl" size="sm">
+            #{trail.sortOrder}
+          </Badge>
         </Group>
         <Group gap={4} wrap="nowrap">
           <Tooltip label="Editar" withArrow>
-            <ActionIcon size="sm" radius="xl" color="blue" variant="light" onClick={() => onEdit(trail.id!)}>
+            <ActionIcon size="sm" radius="xl" color="blue" variant="light"
+              onClick={() => onEdit(trail.id!)}>
               <IconEdit size={14} />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Remover" withArrow>
-            <ActionIcon size="sm" radius="xl" color="red" variant="light" onClick={() => onDelete(trail.id!)}>
+            <ActionIcon size="sm" radius="xl" color="red" variant="light"
+              onClick={() => onDelete(trail.id!)}>
               <IconTrash size={14} />
             </ActionIcon>
           </Tooltip>
@@ -238,7 +302,11 @@ function TrailKanbanCard({ trail, removeDuplicates, onEdit, onDelete }: TrailCar
           </Text>
           <Stack gap={2}>
             {displayCompanies.map((entry) => (
-              <CompanyRow key={`${entry.companyId}-${entry.trainingId}`} entry={entry} />
+              <CompanyRow
+                key={`${entry.companyId}-${entry.trainingId}`}
+                entry={entry}
+                filterEmployeeId={filterEmployeeId}
+              />
             ))}
           </Stack>
         </div>
@@ -249,25 +317,34 @@ function TrailKanbanCard({ trail, removeDuplicates, onEdit, onDelete }: TrailCar
 
 /* ── Página principal ── */
 export default function AdminKanbanTrails() {
-
   const navigate = useNavigate();
 
   const [trails, setTrails] = useState<Trail[]>([]);
   const [swapping, setSwapping] = useState(false);
   const [removeDuplicates, setRemoveDuplicates] = useState(false);
 
+  // Filtros
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
+  const [filterEmployeeId, setFilterEmployeeId] = useState<number | null>(null);
+  const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
+
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   async function loadTrails() {
     const response = await getTrails({ size: 100 });
-    const sorted = [...response.content].sort((a, b) => a.sortOrder - b.sortOrder);
-    setTrails(sorted);
+    setTrails([...response.content].sort((a, b) => a.sortOrder - b.sortOrder));
   }
 
-  useEffect(() => { loadTrails(); }, []);
+  useEffect(() => {
+    loadTrails();
+    getAllCompaniesSimple().then(setCompanyOptions);
+    getEmployees({ size: 1000 }).then((r) => setEmployeeOptions(r.content));
+  }, []);
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -297,6 +374,235 @@ export default function AdminKanbanTrails() {
     loadTrails();
   }
 
+  const hasFilter = filterCompanyId != null || filterEmployeeId != null;
+
+  /* ── Coleta dados filtrados de todas as trilhas para exportação ── */
+  async function collectExportData() {
+    type Row = {
+      trilha: string;
+      empresa: string;
+      data: string;
+      empresaAprovada: string;
+      funcionario: string;
+      nota: string;
+      funcAprovado: string;
+    };
+
+    const rows: Row[] = [];
+
+    for (const trail of trails) {
+      let companies = await getKanbanData(trail.id!);
+
+      // Aplica mesmos filtros do kanban
+      if (removeDuplicates) {
+        companies = Object.values(
+          companies.reduce((acc, entry) => {
+            const key = String(entry.companyId);
+            if (!acc[key] || (entry.dataInicio && (!acc[key].dataInicio || entry.dataInicio > acc[key].dataInicio))) {
+              acc[key] = entry;
+            }
+            return acc;
+          }, {} as Record<string, typeof companies[0]>)
+        );
+      }
+      if (filterCompanyId != null) {
+        companies = companies.filter((e) => e.companyId === filterCompanyId);
+      }
+      if (filterEmployeeId != null) {
+        companies = companies.filter((e) =>
+          e.funcionarios.some((f) => f.employeeId === filterEmployeeId)
+        );
+      }
+
+      for (const entry of companies) {
+        const employees = filterEmployeeId != null
+          ? entry.funcionarios.filter((f) => f.employeeId === filterEmployeeId)
+          : entry.funcionarios;
+
+        const dataFmt = entry.dataInicio
+          ? new Date(entry.dataInicio + "T00:00:00").toLocaleDateString("pt-BR")
+          : "—";
+
+        if (employees.length === 0) {
+          rows.push({
+            trilha: trail.name,
+            empresa: entry.companyName,
+            data: dataFmt,
+            empresaAprovada: entry.aprovado ? "Sim" : "Não",
+            funcionario: "—",
+            nota: "—",
+            funcAprovado: "—",
+          });
+        } else {
+          for (const f of employees) {
+            rows.push({
+              trilha: trail.name,
+              empresa: entry.companyName,
+              data: dataFmt,
+              empresaAprovada: entry.aprovado ? "Sim" : "Não",
+              funcionario: f.employeeName,
+              nota: f.notaObtida != null ? f.notaObtida.toFixed(1) : "—",
+              funcAprovado: f.aprovado ? "Sim" : "Não",
+            });
+          }
+        }
+      }
+    }
+
+    return rows;
+  }
+
+  async function handleExportExcel() {
+    setExporting("excel");
+    try {
+      const rows = await collectExportData();
+
+      // ── Linhas de cabeçalho com informações do relatório ──────────────
+      const sheetData: (string | null)[][] = [];
+
+      sheetData.push(["UDoc — Kanban de Trilhas", null, null, null, null, null, null]);
+      sheetData.push(["Data:", new Date().toLocaleDateString("pt-BR"), null, null, null, null, null]);
+
+      if (filterCompanyId != null) {
+        sheetData.push([
+          "Empresa filtrada:",
+          companyOptions.find((c) => c.id === filterCompanyId)?.name || "",
+          null, null, null, null, null,
+        ]);
+      }
+      if (filterEmployeeId != null) {
+        sheetData.push([
+          "Funcionário filtrado:",
+          employeeOptions.find((e) => e.id === filterEmployeeId)?.name || "",
+          null, null, null, null, null,
+        ]);
+      }
+      if (removeDuplicates) {
+        sheetData.push(["Modo:", "Sem duplicatas", null, null, null, null, null]);
+      }
+
+      sheetData.push([]); // linha em branco
+
+      // ── Cabeçalho da tabela ───────────────────────────────────────────
+      const headers = [
+        "Trilha", "Empresa", "Data",
+        "Empresa Aprovada", "Funcionário", "Nota", "Func. Aprovado",
+      ];
+      sheetData.push(headers);
+
+      // ── Linhas de dados ───────────────────────────────────────────────
+      if (rows.length === 0) {
+        sheetData.push(["Nenhum dado para os filtros aplicados", null, null, null, null, null, null]);
+      } else {
+        for (const r of rows) {
+          sheetData.push([
+            r.trilha, r.empresa, r.data, r.empresaAprovada,
+            r.funcionario, r.nota, r.funcAprovado,
+          ]);
+        }
+      }
+
+      // ── Cria worksheet e workbook ─────────────────────────────────────
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+      // Largura de cada coluna baseada no conteúdo
+      const colWidths = headers.map((h, ci) => {
+        const maxLen = sheetData.reduce((max, row) => {
+          const v = row[ci] ? String(row[ci]).length : 0;
+          return Math.max(max, v);
+        }, h.length);
+        return { wch: Math.min(maxLen + 2, 55) };
+      });
+      ws["!cols"] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Kanban Trilhas");
+
+      XLSX.writeFile(wb, `kanban_trilhas_${new Date().toISOString().split("T")[0]}.xlsx`);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleExportPdf() {
+    setExporting("pdf");
+    try {
+      const rows = await collectExportData();
+
+      const filterDesc = [
+        filterCompanyId != null ? `Empresa: ${companyOptions.find((c) => c.id === filterCompanyId)?.name}` : "",
+        filterEmployeeId != null ? `Funcionário: ${employeeOptions.find((e) => e.id === filterEmployeeId)?.name}` : "",
+      ].filter(Boolean).join(" | ");
+
+      const tableRows = rows
+        .map(
+          (r, i) => `
+          <tr style="background:${i % 2 === 0 ? "#f5f3ff" : "#ffffff"}">
+            <td>${r.trilha}</td><td>${r.empresa}</td><td>${r.data}</td>
+            <td style="text-align:center">${r.empresaAprovada}</td>
+            <td>${r.funcionario}</td>
+            <td style="text-align:center">${r.nota}</td>
+            <td style="text-align:center">${r.funcAprovado}</td>
+          </tr>`
+        )
+        .join("");
+
+      const html = `
+        <div style="font-family:Arial,sans-serif;padding:20px;color:#1e1b4b">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="margin:0;color:#7c3aed">UDoc — Kanban de Trilhas</h2>
+            <span style="font-size:12px;color:#64748b">${new Date().toLocaleDateString("pt-BR")}</span>
+          </div>
+          ${filterDesc ? `<p style="font-size:12px;color:#64748b;margin:0 0 12px">Filtros: ${filterDesc}</p>` : ""}
+          ${removeDuplicates ? `<p style="font-size:12px;color:#64748b;margin:0 0 12px">Modo: Sem duplicatas</p>` : ""}
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="background:#7c3aed;color:white">
+                <th style="padding:8px;text-align:left">Trilha</th>
+                <th style="padding:8px;text-align:left">Empresa</th>
+                <th style="padding:8px;text-align:left">Data</th>
+                <th style="padding:8px;text-align:center">Emp. Aprovada</th>
+                <th style="padding:8px;text-align:left">Funcionário</th>
+                <th style="padding:8px;text-align:center">Nota</th>
+                <th style="padding:8px;text-align:center">Func. Aprovado</th>
+              </tr>
+            </thead>
+            <tbody style="border:1px solid #e2e8f0">
+              ${tableRows || "<tr><td colspan='7' style='text-align:center;padding:20px;color:#94a3b8'>Nenhum dado encontrado para os filtros aplicados</td></tr>"}
+            </tbody>
+          </table>
+          <p style="font-size:10px;color:#94a3b8;margin-top:16px;text-align:right">Gerado pelo UDoc</p>
+        </div>`;
+
+      const el = document.createElement("div");
+      el.innerHTML = html;
+      document.body.appendChild(el);
+
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `kanban_trilhas_${new Date().toISOString().split("T")[0]}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+        })
+        .from(el)
+        .save();
+
+      document.body.removeChild(el);
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  const inputS = {
+    input: {
+      background: "var(--input-bg)",
+      border: "1px solid var(--border-color)",
+      color: "var(--text-primary)",
+    },
+  };
+
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
 
@@ -314,7 +620,9 @@ export default function AdminKanbanTrails() {
         <Group justify="space-between" align="center">
           <div>
             <Title order={2} c="var(--text-primary)" fw={700}>Kanban de Trilhas</Title>
-            <Text c="var(--text-secondary)" mt={4}>Arraste os cards para reordenar as trilhas</Text>
+            <Text c="var(--text-secondary)" mt={4}>
+              Arraste os cards para reordenar · use os filtros para focar em empresa ou funcionário
+            </Text>
           </div>
           <Group gap="md">
             <Switch
@@ -333,6 +641,72 @@ export default function AdminKanbanTrails() {
         </Group>
       </Paper>
 
+      {/* Filtros */}
+      <Paper px="24px" py="16px" radius="24px"
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 4px 16px var(--shadow-color)" }}>
+        <Group gap="md" align="flex-end" wrap="wrap">
+          <Group gap={6} align="center">
+            <IconFilter size={16} color="var(--text-secondary)" />
+            <Text fz="sm" c="var(--text-secondary)">Filtros:</Text>
+          </Group>
+
+          <Select
+            placeholder="Filtrar por empresa"
+            clearable searchable
+            radius="xl" size="sm"
+            w={220}
+            data={companyOptions.map((c) => ({ value: String(c.id), label: c.name }))}
+            value={filterCompanyId != null ? String(filterCompanyId) : null}
+            onChange={(v) => setFilterCompanyId(v ? Number(v) : null)}
+            styles={inputS}
+          />
+
+          <Select
+            placeholder="Filtrar por funcionário"
+            clearable searchable
+            radius="xl" size="sm"
+            w={220}
+            data={employeeOptions.map((e) => ({ value: String(e.id), label: e.name }))}
+            value={filterEmployeeId != null ? String(filterEmployeeId) : null}
+            onChange={(v) => setFilterEmployeeId(v ? Number(v) : null)}
+            styles={inputS}
+          />
+
+          {hasFilter && (
+            <Button
+              leftSection={<IconX size={14} />}
+              variant="subtle" color="gray" radius="xl" size="sm"
+              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); }}
+            >
+              Limpar filtros
+            </Button>
+          )}
+
+          <Group gap={6} ml="auto">
+            <Tooltip label="Exportar Excel (.csv)" withArrow>
+              <ActionIcon
+                radius="xl" size="lg"
+                variant="light" color="teal"
+                loading={exporting === "excel"}
+                onClick={handleExportExcel}
+              >
+                <IconFileSpreadsheet size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="Exportar PDF" withArrow>
+              <ActionIcon
+                radius="xl" size="lg"
+                variant="light" color="red"
+                loading={exporting === "pdf"}
+                onClick={handleExportPdf}
+              >
+                <IconFileTypePdf size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+        </Group>
+      </Paper>
+
       {/* Kanban board */}
       <Paper p="24px" radius="24px"
         style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
@@ -347,7 +721,16 @@ export default function AdminKanbanTrails() {
             </Button>
           </Stack>
         ) : (
-          <ScrollArea type="scroll" offsetScrollbars scrollbarSize={8}>
+          <ScrollArea
+            type="auto"
+            scrollbarSize={8}
+            style={{ height: "calc(100vh - 320px)", minHeight: 400 }}
+            styles={{
+              root: { overflow: "hidden" },
+              viewport: { overflowX: "auto", overflowY: "auto" },
+              scrollbar: { zIndex: 10 },
+            }}
+          >
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={trails.map((t) => t.id!)} strategy={horizontalListSortingStrategy}>
                 <Group wrap="nowrap" align="flex-start" gap="md" pb="12px">
@@ -356,6 +739,8 @@ export default function AdminKanbanTrails() {
                       key={trail.id}
                       trail={trail}
                       removeDuplicates={removeDuplicates}
+                      filterCompanyId={filterCompanyId}
+                      filterEmployeeId={filterEmployeeId}
                       onEdit={(id) => navigate(`/admin/trail/${id}`)}
                       onDelete={(id) => { setSelectedId(id); open(); }}
                     />

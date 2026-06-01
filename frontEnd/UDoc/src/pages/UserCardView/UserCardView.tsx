@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Center, Loader } from "@mantine/core";
+
+import { incrementCardAccess } from "../../services/npsService";
+import NpsResponseWidget from "../../components/Nps/NpsResponseWidget";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { FaArrowLeft, FaFilePdf } from "react-icons/fa";
 
@@ -47,6 +50,8 @@ export default function UserCardView() {
         if (!id || !editor) return;
         const response = await getCardViewById(Number(id));
         editor.commands.setContent(response.content || "");
+        // Registra acesso — anônimo, falha silenciosa
+        incrementCardAccess(Number(id)).catch(() => {});
       } catch (error) {
         console.error(error);
       }
@@ -169,6 +174,9 @@ export default function UserCardView() {
       <div className="user-card-content" ref={contentRef}>
         <EditorContent editor={editor} />
       </div>
+
+      {/* Widget NPS ao final do card */}
+      {id && <NpsResponseWidget refType="card" refId={Number(id)} />}
     </div>
   );
 }

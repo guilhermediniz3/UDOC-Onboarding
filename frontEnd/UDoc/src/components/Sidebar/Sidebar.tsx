@@ -12,6 +12,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import {
   IconBriefcase,
   IconBuilding,
+  IconChartBar,
   IconChevronLeft,
   IconChevronRight,
   IconEye,
@@ -141,6 +142,12 @@ const NAV_ITEMS: NavItemType[] = [
         isActive: (p) => p === "/admin/training-calendar",
       },
     ],
+  },
+  {
+    label: "Dashboard",
+    Icon: IconChartBar,
+    path: "/dashboard",
+    isActive: (p) => p === "/dashboard",
   },
 ];
 

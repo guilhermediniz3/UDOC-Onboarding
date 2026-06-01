@@ -39,6 +39,7 @@ import { FaTrash } from "react-icons/fa";
 
 import Tabs from "../../../components/Tabs/Tabs";
 import RichTextEditor from "../../../components/RichTextEditor/RichTextEditor";
+import NpsQuestionEditor from "../../../components/Nps/NpsQuestionEditor";
 import type { Card } from "../../../types/Card";
 import type { Tab } from "../../../types/Tab";
 
@@ -188,6 +189,13 @@ export default function Admin() {
         </Text>
       ),
     },
+    ...(!isNewCard && card.id ? [{
+      id: "nps",
+      label: "Pesquisa NPS",
+      content: (
+        <NpsQuestionEditor refType="card" refId={card.id!} />
+      ),
+    }] : []),
   ];
 
   const paperStyle = {

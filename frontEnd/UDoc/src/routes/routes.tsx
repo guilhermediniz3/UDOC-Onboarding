@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 
+import Dashboard from "../pages/Dashboard/Dashboard";
 import Home from "../pages/Home/Home";
 import Admin from "../pages/Home/Admin/Admin";
 import AdminListCards from "../pages/AdminListCards/AdminListCards";
@@ -27,6 +28,9 @@ function AppRoutes() {
       {/* PUBLIC */}
       <Route path="/" element={<Home />} />
       <Route path="/view/card/:id" element={<UserCardView />} />
+
+      {/* DASHBOARD */}
+      <Route path="/dashboard" element={<Dashboard />} />
 
       {/* CARDS */}
       <Route path="/admin/cards" element={<AdminListCards />} />

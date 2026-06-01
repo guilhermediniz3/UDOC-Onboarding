@@ -18,6 +18,7 @@ import {
   IconCheck,
   IconFileText,
   IconInfoCircle,
+  IconMoodSmile,
   IconStar,
   IconX,
 } from "@tabler/icons-react";
@@ -35,6 +36,7 @@ import type { Trail } from "../../types/Trail";
 
 import TrailContentTab from "./TrailContentTab";
 import TrailCertificationTab from "./TrailCertificationTab";
+import NpsQuestionEditor from "../../components/Nps/NpsQuestionEditor";
 
 const EMPTY_TRAIL: Trail = {
   name: "",
@@ -120,6 +122,7 @@ export default function AdminTrail() {
             <Tabs.Tab value="dados" leftSection={<IconInfoCircle size={16} />}>Dados</Tabs.Tab>
             {!isNew && <Tabs.Tab value="conteudo" leftSection={<IconFileText size={16} />}>Conteúdo</Tabs.Tab>}
             {!isNew && <Tabs.Tab value="certificacao" leftSection={<IconStar size={16} />}>Certificação</Tabs.Tab>}
+            {!isNew && <Tabs.Tab value="nps" leftSection={<IconMoodSmile size={16} />}>Pesquisa NPS</Tabs.Tab>}
           </Tabs.List>
 
           {/* ── DADOS ── */}
@@ -184,6 +187,13 @@ export default function AdminTrail() {
           {!isNew && (
             <Tabs.Panel value="certificacao">
               <TrailCertificationTab trailId={Number(id)} />
+            </Tabs.Panel>
+          )}
+
+          {/* ── NPS ── */}
+          {!isNew && (
+            <Tabs.Panel value="nps">
+              <NpsQuestionEditor refType="trail" refId={Number(id)} />
             </Tabs.Panel>
           )}
 
