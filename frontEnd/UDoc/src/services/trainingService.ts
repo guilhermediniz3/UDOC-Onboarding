@@ -5,6 +5,8 @@ export interface KanbanEmployeeEntry {
   employeeName: string;
   notaObtida?: number;
   aprovado: boolean;
+  completedTrail?: boolean;  // concluiu a trilha no sistema
+  certifiedTrail?: boolean;  // passou no quiz da trilha
 }
 
 export interface KanbanCompanyEntry {
@@ -14,6 +16,8 @@ export interface KanbanCompanyEntry {
   dataInicio?: string;
   dataConclusao?: string;
   aprovado: boolean;
+  allCompleted?: boolean;  // todos os funcionários concluíram
+  anyCertified?: boolean;  // ao menos um foi certificado
   funcionarios: KanbanEmployeeEntry[];
 }
 

@@ -11,8 +11,11 @@ public class UserDTO {
     private String role;
     private Boolean active;
     private LocalDateTime createdAt;
+    private Long employeeId;
+    private String employeeName;
 
     public UserDTO() {}
+
     public UserDTO(User user) {
         this.id = user.getId();
         this.name = user.getName();
@@ -22,6 +25,7 @@ public class UserDTO {
         this.active = user.getActive();
         this.createdAt = user.getCreatedAt();
     }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
@@ -36,4 +40,8 @@ public class UserDTO {
     public void setActive(Boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+    public String getEmployeeName() { return employeeName; }
+    public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
 }

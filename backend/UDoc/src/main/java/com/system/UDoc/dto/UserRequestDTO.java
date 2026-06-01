@@ -17,6 +17,8 @@ public class UserRequestDTO {
     @NotNull(message = "Status is required")
     private Boolean active;
 
+    private Long employeeId; // vínculo opcional com Funcionário Externo
+
     public UserRequestDTO() {}
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -30,4 +32,6 @@ public class UserRequestDTO {
     public void setRole(Role role) { this.role = role; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
 }

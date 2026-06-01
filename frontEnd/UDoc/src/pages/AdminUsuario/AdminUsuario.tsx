@@ -45,6 +45,9 @@ import {
   type EmailConfigData,
 } from "../../services/emailConfigService";
 
+import { getEmployees } from "../../services/employeeService";
+import type { Employee } from "../../types/Employee";
+
 import { useAuth } from "../../contexts/AuthContext";
 
 const EMPTY_USER: UserData = { name: "", email: "", photo: "", role: "ADMIN", active: true };
@@ -70,6 +73,7 @@ export default function AdminUsuario() {
   const [userData, setUserData] = useState<UserData>(EMPTY_USER);
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
+  const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
@@ -109,6 +113,8 @@ export default function AdminUsuario() {
     getEmailConfig()
       .then((data) => { setEmailConfig({ ...data, password: "" }); setHasEmailConfig(true); })
       .catch(() => { /* sem config ainda */ });
+    getEmployees({ size: 1000, active: true })
+      .then((r) => setEmployeeOptions(r.content));
   }, [id]);
 
   /* ── foto ── */
@@ -140,6 +146,7 @@ export default function AdminUsuario() {
         role: userData.role,
         active: userData.active,
         password: isNew ? createPassword : undefined,
+        employeeId: userData.employeeId ?? null,
       };
       if (isNew) {
         await createUser(payload);
@@ -303,6 +310,21 @@ export default function AdminUsuario() {
                   { value: "FUNCIONARIO_EXTERNO", label: "Funcionário Externo" },
                 ]}
                 styles={inputStyles} />
+
+              <Select
+                label="Funcionário Externo vinculado"
+                description="Opcional — vincula este usuário a um funcionário externo cadastrado"
+                placeholder="Selecione o funcionário externo..."
+                radius="xl" size="md"
+                clearable searchable
+                data={employeeOptions.map((e) => ({
+                  value: String(e.id),
+                  label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
+                }))}
+                value={userData.employeeId ? String(userData.employeeId) : null}
+                onChange={(v) => setUserData((p) => ({ ...p, employeeId: v ? Number(v) : undefined }))}
+                styles={inputStyles}
+              />
 
               {isNew && (
                 <>

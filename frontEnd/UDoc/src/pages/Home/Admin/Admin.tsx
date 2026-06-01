@@ -40,6 +40,7 @@ import { FaTrash } from "react-icons/fa";
 import Tabs from "../../../components/Tabs/Tabs";
 import RichTextEditor from "../../../components/RichTextEditor/RichTextEditor";
 import NpsQuestionEditor from "../../../components/Nps/NpsQuestionEditor";
+import CardQuizEditor from "../../../components/Quiz/CardQuizEditor";
 import type { Card } from "../../../types/Card";
 import type { Tab } from "../../../types/Tab";
 
@@ -189,6 +190,11 @@ export default function Admin() {
         </Text>
       ),
     },
+    ...(!isNewCard && card.id ? [{
+      id: "quiz",
+      label: "Quiz",
+      content: <CardQuizEditor cardId={card.id!} />,
+    }] : []),
     ...(!isNewCard && card.id ? [{
       id: "nps",
       label: "Pesquisa NPS",

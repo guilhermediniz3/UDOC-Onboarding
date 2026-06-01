@@ -12,6 +12,8 @@ import { useMediaQuery } from "@mantine/hooks";
 import {
   IconBriefcase,
   IconBuilding,
+  IconBookmark,
+  IconCertificate,
   IconChartBar,
   IconChevronLeft,
   IconChevronRight,
@@ -59,7 +61,8 @@ const NAV_ITEMS: NavItemType[] = [
       p.startsWith("/admin/empresa") ||
       p.startsWith("/admin/funcionario") ||
       p.startsWith("/admin/ism") ||
-      p.startsWith("/admin/usuario"),
+      p.startsWith("/admin/usuario") ||
+      p === "/admin/certificate-template",
     children: [
       {
         label: "Cadastro de Documentos",
@@ -96,6 +99,12 @@ const NAV_ITEMS: NavItemType[] = [
         path: "/admin/usuarios",
         Icon: IconUserCog,
         isActive: (p) => p.startsWith("/admin/usuario"),
+      },
+      {
+        label: "Template Certificado",
+        path: "/admin/certificate-template",
+        Icon: IconCertificate,
+        isActive: (p) => p === "/admin/certificate-template",
       },
     ],
   },
@@ -142,6 +151,12 @@ const NAV_ITEMS: NavItemType[] = [
         isActive: (p) => p === "/admin/training-calendar",
       },
     ],
+  },
+  {
+    label: "Minhas Trilhas",
+    Icon: IconBookmark,
+    path: "/minhas-trilhas",
+    isActive: (p) => p.startsWith("/minhas-trilhas"),
   },
   {
     label: "Dashboard",

@@ -29,6 +29,15 @@ public class DataInitializer {
             runSilently(jdbc, "ALTER TABLE training_room ALTER COLUMN titulo DROP NOT NULL");
             runSilently(jdbc, "ALTER TABLE training_room ALTER COLUMN descricao DROP NOT NULL");
 
+            // ── Colunas de tempo e datas na tabela user_trail_progress ───────────
+            runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS tempo_total_segundos bigint default 0");
+            runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS iniciado_em timestamp");
+            runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS concluido_em timestamp");
+
+            // ── Garantir que certified exista na tabela user_trail_progress ──────
+            // Caso a tabela já existia sem a coluna (criada antes do campo ser adicionado)
+            runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS certified boolean default false");
+
             // ── Atualizar CHECK constraint de status para incluir CANCELADA ──────
             runSilently(jdbc, "ALTER TABLE training_room DROP CONSTRAINT IF EXISTS training_room_status_check");
             runSilently(jdbc, """

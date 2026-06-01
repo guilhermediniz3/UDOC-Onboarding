@@ -77,13 +77,29 @@ import type { Trail } from "../../types/Trail";
 import type { Company } from "../../types/Company";
 import type { Employee } from "../../types/Employee";
 
-/* ── Ícone de certificado SVG ── */
+/* ── Ícone de conclusão (círculo verde com check) ── */
+function DoneIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ display: "inline", verticalAlign: "middle" }}>
+      <circle cx="12" cy="12" r="11" fill="#22c55e" />
+      <path d="M6.5 12l4 4 7-8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/* ── Ícone de certificado — estilo badge/medalha ── */
 function CertIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ display: "inline", verticalAlign: "middle" }}>
-      <circle cx="12" cy="8" r="5" fill="#7c3aed" opacity="0.9" />
-      <path d="M8 13l-2 7 6-3 6 3-2-7" fill="#7c3aed" opacity="0.7" />
-      <path d="M12 5l1.5 3 3.5.5-2.5 2.5.5 3.5L12 13l-3 1.5.5-3.5L7 8.5l3.5-.5z" fill="white" />
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ display: "inline", verticalAlign: "middle" }}>
+      {/* Medalha circular */}
+      <circle cx="12" cy="10" r="8" fill="#4f46e5" />
+      <circle cx="12" cy="10" r="6.5" fill="#6366f1" />
+      {/* Check branco no centro */}
+      <path d="M8.5 10l2.5 2.5 4.5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Fita esquerda */}
+      <path d="M8 17.5 L7 22 L12 20" fill="#3730a3" />
+      {/* Fita direita */}
+      <path d="M16 17.5 L17 22 L12 20" fill="#3730a3" />
     </svg>
   );
 }
@@ -128,8 +144,17 @@ function CompanyRow({
           {entry.companyName}
         </Text>
         <Text fz="xs" c="var(--text-secondary)">{dataText}</Text>
-        {entry.aprovado && (
-          <Tooltip label="Empresa aprovada" withArrow>
+
+        {/* ✅ Todos concluíram */}
+        {entry.allCompleted && (
+          <Tooltip label="Todos os funcionários concluíram a trilha" withArrow>
+            <span style={{ lineHeight: 0 }}><DoneIcon /></span>
+          </Tooltip>
+        )}
+
+        {/* 🏆 Ao menos um certificado */}
+        {entry.anyCertified && (
+          <Tooltip label="Ao menos um funcionário foi certificado" withArrow>
             <span><CertIcon /></span>
           </Tooltip>
         )}
@@ -149,8 +174,17 @@ function CompanyRow({
                 {f.notaObtida != null && (
                   <Text fz="xs" c="var(--text-secondary)">{f.notaObtida.toFixed(1)}</Text>
                 )}
-                {f.aprovado && (
-                  <Tooltip label="Funcionário aprovado" withArrow>
+
+                {/* ✅ Funcionário concluiu */}
+                {f.completedTrail && (
+                  <Tooltip label="Concluiu a trilha" withArrow>
+                    <span style={{ lineHeight: 0 }}><DoneIcon /></span>
+                  </Tooltip>
+                )}
+
+                {/* 🏆 Funcionário certificado */}
+                {f.certifiedTrail && (
+                  <Tooltip label="Certificado na trilha" withArrow>
                     <span><CertIcon /></span>
                   </Tooltip>
                 )}

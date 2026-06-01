@@ -45,4 +45,14 @@ public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long
         ORDER BY r.createdAt DESC
     """)
     List<TrainingRoom> findByTrailIdWithCompany(@Param("trailId") Long trailId);
+
+    /** Salas em que o funcionário é convidado e que têm trilha definida */
+    @Query("""
+        SELECT r FROM TrainingRoom r
+        JOIN r.invitedEmployees e
+        WHERE e.id = :employeeId
+          AND r.trail IS NOT NULL
+          AND r.status <> com.system.UDoc.entity.TrainingRoomStatus.CANCELADA
+    """)
+    List<TrainingRoom> findByInvitedEmployeeId(@Param("employeeId") Long employeeId);
 }

@@ -9,6 +9,8 @@ export interface UserData {
   role: string;
   active: boolean;
   createdAt?: string;
+  employeeId?: number;
+  employeeName?: string;
 }
 
 interface UserRequest {
@@ -18,6 +20,7 @@ interface UserRequest {
   password?: string;
   role: string;
   active: boolean;
+  employeeId?: number | null;
 }
 
 interface ChangePasswordRequest {

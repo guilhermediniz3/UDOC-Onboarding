@@ -34,4 +34,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Page<Employee> search(@Param("search") String search,
                           @Param("active") Boolean active,
                           Pageable pageable);
+
+    java.util.Optional<Employee> findByUserId(Long userId);
 }

@@ -1,6 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard/Dashboard";
+import MinhasTrihas from "../pages/MinhasTrihas/MinhasTrihas";
+import MinhaTrihaViewer from "../pages/MinhasTrihas/MinhaTrihaViewer";
+import AdminCertificateTemplate from "../pages/AdminCertificateTemplate/AdminCertificateTemplate";
 import Home from "../pages/Home/Home";
 import Admin from "../pages/Home/Admin/Admin";
 import AdminListCards from "../pages/AdminListCards/AdminListCards";
@@ -31,6 +34,10 @@ function AppRoutes() {
 
       {/* DASHBOARD */}
       <Route path="/dashboard" element={<Dashboard />} />
+
+      {/* MINHAS TRILHAS */}
+      <Route path="/minhas-trilhas" element={<MinhasTrihas />} />
+      <Route path="/minhas-trilhas/:trailId" element={<MinhaTrihaViewer />} />
 
       {/* CARDS */}
       <Route path="/admin/cards" element={<AdminListCards />} />
@@ -71,6 +78,9 @@ function AppRoutes() {
 
       {/* EMAIL CONFIG */}
       <Route path="/admin/email-config" element={<AdminEmailConfig />} />
+
+      {/* CERTIFICATE TEMPLATE */}
+      <Route path="/admin/certificate-template" element={<AdminCertificateTemplate />} />
 
     </Routes>
   );

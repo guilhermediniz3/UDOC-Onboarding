@@ -16,11 +16,14 @@ public class TrainingService {
     private final TrainingRoomRepository trainingRoomRepository;
     private final EmployeeRepository employeeRepository;
     private final TrailCertificationConfigRepository certConfigRepository;
-    public TrainingService(TrainingRepository trainingRepository, TrainingEmployeeRepository trainingEmployeeRepository, CompanyRepository companyRepository, TrailRepository trailRepository, TrainingRoomRepository trainingRoomRepository, EmployeeRepository employeeRepository, TrailCertificationConfigRepository certConfigRepository) {
+    private final UserTrailProgressRepository progressRepository;
+
+    public TrainingService(TrainingRepository trainingRepository, TrainingEmployeeRepository trainingEmployeeRepository, CompanyRepository companyRepository, TrailRepository trailRepository, TrainingRoomRepository trainingRoomRepository, EmployeeRepository employeeRepository, TrailCertificationConfigRepository certConfigRepository, UserTrailProgressRepository progressRepository) {
         this.trainingRepository = trainingRepository; this.trainingEmployeeRepository = trainingEmployeeRepository;
         this.companyRepository = companyRepository; this.trailRepository = trailRepository;
         this.trainingRoomRepository = trainingRoomRepository; this.employeeRepository = employeeRepository;
         this.certConfigRepository = certConfigRepository;
+        this.progressRepository = progressRepository;
     }
     @Transactional
     public TrainingDTO createTraining(TrainingRequestDTO req) {
@@ -66,18 +69,18 @@ public class TrainingService {
             KanbanCompanyEntryDTO entry = new KanbanCompanyEntryDTO();
             entry.setCompanyId(room.getCompany().getId());
             entry.setCompanyName(room.getCompany().getName());
-            entry.setTrainingId(room.getId()); // usa o id da sala como referência
-
-            // Data de início: primeira sessão da sala, ou null
+            entry.setTrainingId(room.getId());
             entry.setDataInicio(null);
             entry.setDataConclusao(null);
 
-            // Funcionários convidados da sala (sem nota ainda — dados de treinamento manual virão depois)
-            List<KanbanEmployeeEntryDTO> empDTOs = room.getInvitedEmployees().stream()
-                    .map(e -> new KanbanEmployeeEntryDTO(e.getId(), e.getName(), null, false))
-                    .toList();
+            List<Employee> invitados = room.getInvitedEmployees();
+            List<KanbanEmployeeEntryDTO> empDTOs = enrichEmployeeDTOs(invitados, trailId);
             entry.setFuncionarios(empDTOs);
             entry.setAprovado(false);
+
+            // ── indicadores de conclusão e certificação por empresa ──
+            entry.setAllCompleted(!empDTOs.isEmpty() && empDTOs.stream().allMatch(e -> Boolean.TRUE.equals(e.getCompletedTrail())));
+            entry.setAnyCertified(empDTOs.stream().anyMatch(e -> Boolean.TRUE.equals(e.getCertifiedTrail())));
             result.add(entry);
         }
 
@@ -92,20 +95,71 @@ public class TrainingService {
             entry.setDataConclusao(t.getDataConclusao());
 
             List<TrainingEmployee> employees = trainingEmployeeRepository.findByTrainingIdWithEmployee(t.getId());
-            List<KanbanEmployeeEntryDTO> empDTOs = employees.stream()
-                    .map(te -> new KanbanEmployeeEntryDTO(
-                            te.getEmployee().getId(), te.getEmployee().getName(),
-                            te.getNotaObtida(), te.getAprovado()))
-                    .toList();
-            entry.setFuncionarios(empDTOs);
+            List<Employee> empList = employees.stream().map(TrainingEmployee::getEmployee).toList();
+            List<KanbanEmployeeEntryDTO> empDTOs = enrichEmployeeDTOs(empList, trailId);
 
+            // preserva nota/aprovação do training manual
+            for (int i = 0; i < employees.size() && i < empDTOs.size(); i++) {
+                empDTOs.get(i).setNotaObtida(employees.get(i).getNotaObtida());
+                empDTOs.get(i).setAprovado(employees.get(i).getAprovado());
+            }
+
+            entry.setFuncionarios(empDTOs);
             boolean aprovadoEmpresa = !employees.isEmpty()
                     && notaMinima != null
                     && employees.stream().allMatch(te -> te.getAprovado() != null && te.getAprovado());
             entry.setAprovado(aprovadoEmpresa);
+            entry.setAllCompleted(!empDTOs.isEmpty() && empDTOs.stream().allMatch(e -> Boolean.TRUE.equals(e.getCompletedTrail())));
+            entry.setAnyCertified(empDTOs.stream().anyMatch(e -> Boolean.TRUE.equals(e.getCertifiedTrail())));
             result.add(entry);
         }
 
         return result;
+    }
+
+    /**
+     * Para cada employee: verifica se ele tem um usuário vinculado e, se sim,
+     * consulta o UserTrailProgress para saber se completou/foi certificado na trilha.
+     */
+    private List<KanbanEmployeeEntryDTO> enrichEmployeeDTOs(
+            List<Employee> employees, Long trailId
+    ) {
+        try {
+            // Coleta user IDs dos funcionários que têm usuário vinculado
+            List<Long> userIds = employees.stream()
+                    .filter(e -> e.getUser() != null)
+                    .map(e -> e.getUser().getId())
+                    .toList();
+
+            // Evita query com lista vazia (IN () é SQL inválido)
+            java.util.Map<Long, com.system.UDoc.entity.UserTrailProgress> progressByUserId =
+                    userIds.isEmpty()
+                    ? java.util.Collections.emptyMap()
+                    : progressRepository.findByUserIdInAndTrailId(userIds, trailId)
+                            .stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                    p -> p.getUser().getId(), p -> p,
+                                    (a, b) -> a)); // evita duplicatas
+
+            return employees.stream().map(emp -> {
+                KanbanEmployeeEntryDTO dto = new KanbanEmployeeEntryDTO(
+                        emp.getId(), emp.getName(), null, false);
+
+                if (emp.getUser() != null) {
+                    var progress = progressByUserId.get(emp.getUser().getId());
+                    if (progress != null) {
+                        dto.setCompletedTrail("completed".equals(progress.getStatus()));
+                        dto.setCertifiedTrail(Boolean.TRUE.equals(progress.getCertified()));
+                    }
+                }
+                return dto;
+            }).toList();
+
+        } catch (Exception ex) {
+            // Fallback seguro: retorna sem dados de progresso em vez de propagar o erro
+            return employees.stream()
+                    .map(e -> new KanbanEmployeeEntryDTO(e.getId(), e.getName(), null, false))
+                    .toList();
+        }
     }
 }
