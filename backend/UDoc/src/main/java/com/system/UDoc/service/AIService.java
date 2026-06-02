@@ -19,6 +19,7 @@ public class AIService {
     private String model;
 
     private final RestTemplate restTemplate;
+    private final GlobalConfigService configService;
 
     private static final String GROQ_URL =
             "https://api.groq.com/openai/v1/chat/completions";
@@ -36,21 +37,20 @@ public class AIService {
         Cada seção deve ter pelo menos 3 parágrafos ou itens. Não resuma, detalhe ao máximo.
         """;
 
-    public AIService(RestTemplate restTemplate) {
+    public AIService(RestTemplate restTemplate, GlobalConfigService configService) {
         this.restTemplate = restTemplate;
+        this.configService = configService;
     }
 
     public AIResponseDTO generate(String userPrompt) {
 
-        // Diagnóstico: mostra os primeiros 10 chars da key para confirmar que não está usando valor_padrao
-        String maskedKey = apiKey != null && apiKey.length() > 10
-                ? apiKey.substring(0, 10) + "..."
-                : "(vazia ou muito curta)";
-        System.out.println("[AIService] Chamando Groq com key: " + maskedKey + " | modelo: " + model);
+        // Banco tem prioridade sobre application.properties
+        String dbKey = configService.getStringValue(GlobalConfigService.KEY_AI_API_KEY);
+        String effectiveKey = (dbKey != null && !dbKey.isBlank()) ? dbKey : apiKey;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(apiKey);
+        headers.setBearerAuth(effectiveKey);
 
         Map<String, Object> body = Map.of(
                 "model", model,

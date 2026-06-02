@@ -19,4 +19,6 @@ public interface UserTrailProgressRepository extends JpaRepository<UserTrailProg
     );
 
     List<UserTrailProgress> findByUserIdAndCertifiedTrue(Long userId);
+
+    boolean existsByTrailIdAndCertifiedTrue(Long trailId);
 }

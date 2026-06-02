@@ -29,6 +29,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   createTrail,
   getTrailById,
+  getTrails,
   updateTrail,
 } from "../../services/trailService";
 
@@ -73,7 +74,19 @@ export default function AdminTrail() {
   }
 
   useEffect(() => {
-    if (!isNew) getTrailById(Number(id)).then(setTrail);
+    if (!isNew) {
+      getTrailById(Number(id)).then(setTrail);
+    } else {
+      // Nova trilha: pré-preenche com a próxima ordem sequencial disponível
+      getTrails({ size: 200 })
+        .then((r) => {
+          const maxOrder = r.content.length > 0
+            ? Math.max(...r.content.map((t) => t.sortOrder ?? 0))
+            : 0;
+          setTrail((p) => ({ ...p, sortOrder: maxOrder + 1 }));
+        })
+        .catch(() => {}); // mantém sortOrder = 1 se falhar
+    }
   }, [id]);
 
   async function handleSave() {

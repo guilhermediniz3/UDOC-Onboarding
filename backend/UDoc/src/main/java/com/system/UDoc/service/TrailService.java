@@ -8,6 +8,7 @@ import com.system.UDoc.exception.DuplicateSortOrderException;
 import com.system.UDoc.exception.ResourceNotFoundException;
 import com.system.UDoc.repository.CardRepository;
 import com.system.UDoc.repository.TrailRepository;
+import com.system.UDoc.repository.UserTrailProgressRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,13 +23,16 @@ public class TrailService {
 
     private final TrailRepository trailRepository;
     private final CardRepository cardRepository;
+    private final UserTrailProgressRepository progressRepository;
 
     public TrailService(
             TrailRepository trailRepository,
-            CardRepository cardRepository
+            CardRepository cardRepository,
+            UserTrailProgressRepository progressRepository
     ) {
         this.trailRepository = trailRepository;
         this.cardRepository = cardRepository;
+        this.progressRepository = progressRepository;
     }
 
     @Transactional
@@ -103,6 +107,14 @@ public class TrailService {
 
         if (!trailRepository.existsById(id)) {
             throw new ResourceNotFoundException("Trail not found with id " + id);
+        }
+
+        if (progressRepository.existsByTrailIdAndCertifiedTrue(id)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "Esta trilha não pode ser excluída pois um ou mais funcionários já obtiveram certificação nela. " +
+                "Para excluir, primeiro desative a trilha ou remova os registros de certificação."
+            );
         }
 
         trailRepository.deleteById(id);

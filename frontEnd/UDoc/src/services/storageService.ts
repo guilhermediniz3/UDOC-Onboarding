@@ -30,6 +30,22 @@ export async function getAllRecordings(): Promise<RecordingEntry[]> {
   return r.data;
 }
 
+/* ── Configurações de integração ── */
+export interface IntegrationConfig {
+  sendgridKey: string; // mascarado: ***...xxxx ou vazio
+  aiKey: string;       // mascarado: ***...xxxx ou vazio
+  mailFrom: string;
+}
+
+export async function getIntegrationConfig(): Promise<IntegrationConfig> {
+  const r = await api.get<IntegrationConfig>("/config/integrations");
+  return r.data;
+}
+
+export async function saveIntegrationConfig(data: Partial<IntegrationConfig>): Promise<void> {
+  await api.put("/config/integrations", data);
+}
+
 // helpers
 export function formatBytes(bytes: number): string {
   if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;

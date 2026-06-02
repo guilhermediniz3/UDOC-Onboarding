@@ -1,5 +1,6 @@
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Group,
@@ -15,12 +16,14 @@ import {
 } from "@mantine/core";
 
 import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 
 import {
   IconEdit,
   IconPlus,
   IconSearch,
   IconTrash,
+  IconX,
 } from "@tabler/icons-react";
 
 import {
@@ -52,6 +55,7 @@ export default function AdminListTrails() {
 
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function loadTrails() {
     const active =
@@ -74,9 +78,21 @@ export default function AdminListTrails() {
 
   async function handleDelete() {
     if (!selectedId) return;
-    await deleteTrail(selectedId);
-    close();
-    loadTrails();
+    setDeleteError(null);
+    try {
+      await deleteTrail(selectedId);
+      close();
+      loadTrails();
+      notifications.show({
+        title: "Trilha removida",
+        message: "A trilha foi excluída com sucesso.",
+        color: "green",
+        autoClose: 3000,
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Erro ao excluir a trilha.";
+      setDeleteError(msg);
+    }
   }
 
   return (
@@ -90,16 +106,31 @@ export default function AdminListTrails() {
 
       <Modal
         opened={opened}
-        onClose={close}
+        onClose={() => { close(); setDeleteError(null); }}
         centered
         radius="xl"
         title="Remover trilha"
+        styles={{ header: { background: "var(--card-bg)" }, body: { background: "var(--card-bg)" }, content: { background: "var(--card-bg)" } }}
       >
-        <Text mb="lg">Deseja remover esta trilha?</Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={close}>Cancelar</Button>
-          <Button color="red" onClick={handleDelete}>Remover</Button>
-        </Group>
+        <Stack gap="md">
+          {deleteError ? (
+            <Alert color="red" radius="xl" variant="light" icon={<IconX size={16} />}>
+              {deleteError}
+            </Alert>
+          ) : (
+            <Text c="var(--text-secondary)">
+              Deseja remover esta trilha permanentemente? Esta ação não pode ser desfeita.
+            </Text>
+          )}
+          <Group justify="flex-end">
+            <Button variant="default" radius="xl" onClick={() => { close(); setDeleteError(null); }}>
+              {deleteError ? "Fechar" : "Cancelar"}
+            </Button>
+            {!deleteError && (
+              <Button color="red" radius="xl" onClick={handleDelete}>Remover</Button>
+            )}
+          </Group>
+        </Stack>
       </Modal>
 
       <Paper

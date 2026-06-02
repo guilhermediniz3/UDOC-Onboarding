@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import {
   ActionIcon,
+  Alert,
   Badge,
   Button,
   Collapse,
@@ -25,6 +26,7 @@ import {
   Modal,
   Paper,
   ScrollArea,
+  SegmentedControl,
   Select,
   Stack,
   Switch,
@@ -34,6 +36,7 @@ import {
 } from "@mantine/core";
 
 import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 
 import {
   IconBuilding,
@@ -360,11 +363,13 @@ export default function AdminKanbanTrails() {
   // Filtros
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
   const [filterEmployeeId, setFilterEmployeeId] = useState<number | null>(null);
+  const [filterActive, setFilterActive] = useState<"active" | "inactive" | "all">("active");
   const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
 
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -403,12 +408,33 @@ export default function AdminKanbanTrails() {
 
   async function handleDelete() {
     if (!selectedId) return;
-    await deleteTrail(selectedId);
-    close();
-    loadTrails();
+    setDeleteError(null);
+    try {
+      await deleteTrail(selectedId);
+      close();
+      loadTrails();
+      // Toast apenas para sucesso — ação concluída, não requer atenção do usuário
+      notifications.show({
+        title: "Trilha removida",
+        message: "A trilha foi excluída com sucesso.",
+        color: "green",
+        autoClose: 3000,
+      });
+    } catch (err: any) {
+      // Erro de validação → inline no modal, usuário precisa ler e decidir o que fazer
+      const msg = err?.response?.data?.message || "Erro ao excluir a trilha.";
+      setDeleteError(msg);
+    }
   }
 
-  const hasFilter = filterCompanyId != null || filterEmployeeId != null;
+  const hasFilter = filterCompanyId != null || filterEmployeeId != null || filterActive !== "all";
+
+  // Trilhas filtradas por status
+  const visibleTrails = trails.filter((t) => {
+    if (filterActive === "active")   return t.active === true;
+    if (filterActive === "inactive") return t.active === false;
+    return true;
+  });
 
   /* ── Coleta dados filtrados de todas as trilhas para exportação ── */
   async function collectExportData() {
@@ -640,12 +666,33 @@ export default function AdminKanbanTrails() {
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
 
-      <Modal opened={opened} onClose={close} centered radius="xl" title="Remover trilha">
-        <Text mb="lg">Deseja remover esta trilha?</Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={close}>Cancelar</Button>
-          <Button color="red" onClick={handleDelete}>Remover</Button>
-        </Group>
+      <Modal
+        opened={opened}
+        onClose={() => { close(); setDeleteError(null); }}
+        centered radius="xl"
+        title="Remover trilha"
+        styles={{ header: { background: "var(--card-bg)" }, body: { background: "var(--card-bg)" }, content: { background: "var(--card-bg)" } }}
+      >
+        <Stack gap="md">
+          {/* Erro inline — validação que bloqueia a ação, usuário precisa entender antes de decidir */}
+          {deleteError ? (
+            <Alert color="red" radius="xl" variant="light" icon={<IconX size={16} />}>
+              {deleteError}
+            </Alert>
+          ) : (
+            <Text c="var(--text-secondary)">
+              Deseja remover esta trilha permanentemente? Esta ação não pode ser desfeita.
+            </Text>
+          )}
+          <Group justify="flex-end">
+            <Button variant="default" radius="xl" onClick={() => { close(); setDeleteError(null); }}>
+              {deleteError ? "Fechar" : "Cancelar"}
+            </Button>
+            {!deleteError && (
+              <Button color="red" radius="xl" onClick={handleDelete}>Remover</Button>
+            )}
+          </Group>
+        </Stack>
       </Modal>
 
       {/* Header */}
@@ -684,6 +731,23 @@ export default function AdminKanbanTrails() {
             <Text fz="sm" c="var(--text-secondary)">Filtros:</Text>
           </Group>
 
+          {/* Filtro de status — padrão: Ativa */}
+          <SegmentedControl
+            size="sm"
+            radius="xl"
+            value={filterActive}
+            onChange={(v) => setFilterActive(v as "all" | "active" | "inactive")}
+            data={[
+              { label: "Ativas", value: "active" },
+              { label: "Inativas", value: "inactive" },
+              { label: "Todas", value: "all" },
+            ]}
+            styles={{
+              root: { background: "var(--app-bg)", border: "1px solid var(--border-color)" },
+              label: { color: "var(--text-primary)", fontSize: 13 },
+            }}
+          />
+
           <Select
             placeholder="Filtrar por empresa"
             clearable searchable
@@ -710,7 +774,7 @@ export default function AdminKanbanTrails() {
             <Button
               leftSection={<IconX size={14} />}
               variant="subtle" color="gray" radius="xl" size="sm"
-              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); }}
+              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); setFilterActive("active"); }}
             >
               Limpar filtros
             </Button>
@@ -766,9 +830,9 @@ export default function AdminKanbanTrails() {
             }}
           >
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={trails.map((t) => t.id!)} strategy={horizontalListSortingStrategy}>
+              <SortableContext items={visibleTrails.map((t) => t.id!)} strategy={horizontalListSortingStrategy}>
                 <Group wrap="nowrap" align="flex-start" gap="md" pb="12px">
-                  {trails.map((trail) => (
+                  {visibleTrails.map((trail) => (
                     <TrailKanbanCard
                       key={trail.id}
                       trail={trail}

@@ -52,6 +52,18 @@ public class DataInitializer {
             // Caso a tabela já existia com NOT NULL — torna nullable para gravações de cards
             runSilently(jdbc, "ALTER TABLE video_recording ALTER COLUMN training_room_id DROP NOT NULL");
 
+            // ── Tabela de auditoria de configurações ──────────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS audit_log (
+                    id bigserial PRIMARY KEY,
+                    action varchar(100) NOT NULL,
+                    target varchar(100) NOT NULL,
+                    performed_by varchar(255),
+                    timestamp timestamp NOT NULL DEFAULT now(),
+                    details TEXT
+                )
+            """);
+
             // ── Config de habilitação NPS por card/trilha ─────────────────────────
             runSilently(jdbc, """
                 CREATE TABLE IF NOT EXISTS nps_config (

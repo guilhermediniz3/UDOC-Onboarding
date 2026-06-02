@@ -17,6 +17,7 @@ public class EmailService {
 
     private final EmailConfigRepository emailConfigRepository;
     private final JavaMailSender defaultMailSender;
+    private final GlobalConfigService globalConfig;
 
     @Value("${app.mail.from-address:noreply@udoc.com}")
     private String defaultFromAddress;
@@ -26,18 +27,47 @@ public class EmailService {
 
     public EmailService(
             EmailConfigRepository emailConfigRepository,
-            JavaMailSender defaultMailSender
+            JavaMailSender defaultMailSender,
+            GlobalConfigService globalConfig
     ) {
         this.emailConfigRepository = emailConfigRepository;
         this.defaultMailSender = defaultMailSender;
+        this.globalConfig = globalConfig;
+    }
+
+    /** Resolve o sender padrão: DB SendGrid key > application.properties */
+    private JavaMailSender resolveDefaultSender() {
+        String dbKey = globalConfig.getStringValue(GlobalConfigService.KEY_SENDGRID_API_KEY);
+        if (dbKey != null && !dbKey.isBlank()) return buildSendGridSender(dbKey);
+        return defaultMailSender;
+    }
+
+    /** Resolve o endereço de origem padrão: DB mail_from > application.properties */
+    private String resolveFromAddress() {
+        String dbFrom = globalConfig.getStringValue(GlobalConfigService.KEY_MAIL_FROM);
+        return (dbFrom != null && !dbFrom.isBlank()) ? dbFrom : defaultFromAddress;
+    }
+
+    private JavaMailSender buildSendGridSender(String apiKey) {
+        JavaMailSenderImpl sender = new JavaMailSenderImpl();
+        sender.setHost("smtp.sendgrid.net");
+        sender.setPort(587);
+        sender.setUsername("apikey");
+        sender.setPassword(apiKey);
+        Properties props = sender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.ssl.enable", "false");
+        return sender;
     }
 
     public void sendPasswordReset(String toEmail, String userName, String resetLink) {
 
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
 
-        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : defaultMailSender;
-        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : defaultFromAddress;
+        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : resolveDefaultSender();
+        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : resolveFromAddress();
         String fromName    = customConfig.isPresent() ? customConfig.get().getFromName()  : defaultFromName;
 
         try {
@@ -77,8 +107,8 @@ public class EmailService {
     public void sendTrainingInvite(String toEmail, String employeeName,
                                    String roomTitle, String jitsiLink, String ismName) {
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
-        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : defaultMailSender;
-        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : defaultFromAddress;
+        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : resolveDefaultSender();
+        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : resolveFromAddress();
         String fromName    = customConfig.isPresent() ? customConfig.get().getFromName()  : defaultFromName;
         try {
             var mimeMessage = sender.createMimeMessage();
@@ -121,8 +151,8 @@ public class EmailService {
 
     public void sendWelcomeEmail(String toEmail, String userName, String setPasswordLink) {
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
-        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : defaultMailSender;
-        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : defaultFromAddress;
+        JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : resolveDefaultSender();
+        String fromAddress = customConfig.isPresent() ? customConfig.get().getUsername()  : resolveFromAddress();
         String fromName    = customConfig.isPresent() ? customConfig.get().getFromName()  : defaultFromName;
         try {
             var mimeMessage = sender.createMimeMessage();
