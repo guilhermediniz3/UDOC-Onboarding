@@ -33,6 +33,7 @@ public class CardService {
         card.setContent(cardDTO.getContent());
         card.setTrail(cardDTO.getTrail() != null ? cardDTO.getTrail() : false);
         card.setSortOrder(cardDTO.getSortOrder() != null ? cardDTO.getSortOrder() : 0);
+        card.setInterno(cardDTO.getInterno() != null ? cardDTO.getInterno() : false);
 
         Card savedCard = cardRepository.save(card);
 
@@ -45,16 +46,15 @@ public class CardService {
             Boolean active,
             Pageable pageable
     ) {
-
         String s = (search == null || search.isBlank()) ? null : search;
-        Page<Card> cards =
-                cardRepository.searchAdminCards(
-                        s,
-                        active,
-                        pageable
-                );
+        return cardRepository.searchAdminCards(s, active, pageable).map(CardDTO::new);
+    }
 
-        return cards.map(CardDTO::new);
+    /** Busca pública — hideInterno=true exclui cards internos (para usuários externos) */
+    @Transactional(readOnly = true)
+    public Page<CardDTO> getPublicCards(String search, boolean hideInterno, Pageable pageable) {
+        String s = (search == null || search.isBlank()) ? null : search;
+        return cardRepository.searchPublicCards(s, hideInterno, pageable).map(CardDTO::new);
     }
     @Transactional(readOnly = true)
     public CardDTO getCardById(Long id) {
@@ -91,6 +91,7 @@ public class CardService {
         card.setContent(cardDTO.getContent());
         card.setTrail(cardDTO.getTrail() != null ? cardDTO.getTrail() : false);
         card.setSortOrder(cardDTO.getSortOrder() != null ? cardDTO.getSortOrder() : 0);
+        card.setInterno(cardDTO.getInterno() != null ? cardDTO.getInterno() : false);
 
         Card savedCard = cardRepository.save(card);
 

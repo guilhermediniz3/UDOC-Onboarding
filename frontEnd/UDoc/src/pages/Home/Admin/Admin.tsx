@@ -16,6 +16,7 @@ import {
   Box,
   Button,
   Card as MantineCard,
+  Checkbox,
   Flex,
   Group,
   Paper,
@@ -25,9 +26,9 @@ import {
   TextInput,
   ThemeIcon,
   Title,
+  Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
-
 import {
   IconArrowLeft,
   IconCheck,
@@ -168,6 +169,23 @@ export default function Admin() {
           <TextInput label="Título" name="title" value={card.title} onChange={handleChange} placeholder="Digite o título" radius="lg" styles={inputStyles} />
           <TextInput label="Descrição" name="description" value={card.description} onChange={handleChange} placeholder="Digite a descrição" radius="lg" styles={inputStyles} />
           <TextInput label="Ícone" name="icon" value={card.icon} onChange={handleChange} placeholder="Ex.: FaUser" radius="lg" styles={inputStyles} />
+
+          {/* Card interno */}
+          <Group gap="sm" align="center">
+            <Checkbox
+              checked={card.interno ?? false}
+              onChange={(e) => { const v = e.currentTarget.checked; setCard((p) => ({ ...p, interno: v })); }}
+              label="Card interno"
+              color="violet"
+              styles={{ label: { color: "var(--text-primary)", cursor: "pointer" } }}
+            />
+            <Tooltip
+              label="Cards internos não aparecem para funcionários externos (clientes). Apenas admins, ISMs e funcionários internos visualizam."
+              withArrow multiline w={280} position="right"
+            >
+              <IconInfoCircle size={15} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.7 }} />
+            </Tooltip>
+          </Group>
         </Stack>
       ),
     },

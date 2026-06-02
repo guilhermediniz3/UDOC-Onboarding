@@ -13,6 +13,7 @@ public class UserDTO {
     private LocalDateTime createdAt;
     private Long employeeId;
     private String employeeName;
+    private String employeeTipo; // "EXTERNO" | "INTERNO" — tipo do funcionário vinculado
 
     public UserDTO() {}
 
@@ -44,4 +45,6 @@ public class UserDTO {
     public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
     public String getEmployeeName() { return employeeName; }
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+    public String getEmployeeTipo() { return employeeTipo; }
+    public void setEmployeeTipo(String v) { this.employeeTipo = v; }
 }

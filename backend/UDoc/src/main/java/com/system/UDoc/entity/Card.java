@@ -34,6 +34,10 @@ public class Card {
     @Column(nullable = false, columnDefinition = "integer not null default 0")
     private Integer sortOrder = 0;
 
+    /** Card interno: visível apenas para funcionários internos e admins, não para funcionários externos */
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
+    private Boolean interno = false;
+
 
     public Card() {
     }
@@ -125,4 +129,6 @@ public class Card {
     }
     public Long getAccessCount() { return accessCount; }
     public void setAccessCount(Long accessCount) { this.accessCount = accessCount; }
+    public Boolean getInterno() { return interno != null && interno; }
+    public void setInterno(Boolean interno) { this.interno = interno != null && interno; }
 }

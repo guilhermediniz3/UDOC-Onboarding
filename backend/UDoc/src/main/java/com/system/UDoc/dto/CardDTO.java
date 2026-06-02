@@ -12,6 +12,7 @@ public class CardDTO {
     private Boolean active;
     private Boolean trail;
     private Integer sortOrder;
+    private Boolean interno;
 
     public CardDTO() {
     }
@@ -26,6 +27,7 @@ public class CardDTO {
         this.active = card.getActive();
         this.trail = card.getTrail();
         this.sortOrder = card.getSortOrder();
+        this.interno = card.getInterno();
     }
 
     public Long getId() {
@@ -92,4 +94,7 @@ public class CardDTO {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
+
+    public Boolean getInterno() { return interno; }
+    public void setInterno(Boolean interno) { this.interno = interno; }
 }

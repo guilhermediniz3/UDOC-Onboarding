@@ -60,5 +60,6 @@ public class CompanyService {
         c.setHeadquarters(r.getHeadquarters()); c.setName(r.getName()); c.setPhone(r.getPhone());
         c.setCnpj(r.getCnpj()); c.setEmail(r.getEmail());
         c.setEmployeeCount(r.getEmployeeCount()); c.setActive(r.getActive());
+        c.setLogo(r.getLogo());
     }
 }

@@ -1,7 +1,8 @@
 import {
-  ActionIcon, Badge, Button, Group, Modal, Pagination,
+  ActionIcon, Avatar, Badge, Button, Group, Modal, Pagination,
   Paper, Select, Stack, Table, Text, TextInput, useMantineColorScheme,
 } from "@mantine/core";
+import { IconBuilding } from "@tabler/icons-react";
 import { useDisclosure } from "@mantine/hooks";
 import { IconEdit, IconPlus, IconSearch, IconTrash } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
@@ -75,6 +76,7 @@ export default function AdminListEmpresas() {
         <Table verticalSpacing="lg" highlightOnHover>
           <Table.Thead>
             <Table.Tr>
+              <Table.Th w={48} />
               <Table.Th c="var(--text-primary)">Matriz</Table.Th>
               <Table.Th c="var(--text-primary)">Nome</Table.Th>
               <Table.Th c="var(--text-primary)">CNPJ</Table.Th>
@@ -86,7 +88,13 @@ export default function AdminListEmpresas() {
           <Table.Tbody>
             {companies.map((company) => (
               <Table.Tr key={company.id}>
-                <Table.Td><Text c="var(--text-primary)">{company.headquarters}</Text></Table.Td>
+                <Table.Td>
+                  <Avatar src={(company as any).logo || null} radius="xl" size={36}
+                    style={{ border: "2px solid rgba(139,92,246,0.4)" }}>
+                    {!(company as any).logo && <IconBuilding size={18} />}
+                  </Avatar>
+                </Table.Td>
+                <Table.Td><Text c="var(--text-primary)">{company.headquarters ?? "—"}</Text></Table.Td>
                 <Table.Td><Text fw={700} c="var(--text-primary)">{company.name}</Text></Table.Td>
                 <Table.Td><Text c="var(--text-secondary)">{company.cnpj}</Text></Table.Td>
                 <Table.Td><Text c="var(--text-secondary)">{company.email || "—"}</Text></Table.Td>

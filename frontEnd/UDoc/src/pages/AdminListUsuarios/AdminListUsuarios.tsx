@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 import { deleteUser, getUsers, type UserData } from "../../services/userService";
 
-const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", ISM: "ISM", FUNCIONARIO_EXTERNO: "Func. Externo" };
+const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", ISM: "ISM", FUNCIONARIO_EXTERNO: "Funcionário" };
 const ROLE_COLOR: Record<string, string> = { ADMIN: "violet", ISM: "blue", FUNCIONARIO_EXTERNO: "teal" };
 
 export default function AdminListUsuarios() {
@@ -75,7 +75,7 @@ export default function AdminListUsuarios() {
         <Table verticalSpacing="lg" highlightOnHover>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th c="var(--text-primary)">Foto</Table.Th>
+              <Table.Th w={48} />
               <Table.Th c="var(--text-primary)">Nome</Table.Th>
               <Table.Th c="var(--text-primary)">E-mail</Table.Th>
               <Table.Th c="var(--text-primary)">Role</Table.Th>

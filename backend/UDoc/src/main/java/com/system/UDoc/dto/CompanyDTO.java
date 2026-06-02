@@ -11,12 +11,14 @@ public class CompanyDTO {
     private String email;
     private Integer employeeCount;
     private Boolean active;
+    private String logo;
 
     public CompanyDTO() {}
     public CompanyDTO(Company c) {
         this.id = c.getId(); this.headquarters = c.getHeadquarters(); this.name = c.getName();
         this.phone = c.getPhone(); this.cnpj = c.getCnpj(); this.email = c.getEmail();
         this.employeeCount = c.getEmployeeCount(); this.active = c.getActive();
+        this.logo = c.getLogo();
     }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -34,4 +36,6 @@ public class CompanyDTO {
     public void setEmployeeCount(Integer employeeCount) { this.employeeCount = employeeCount; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getLogo() { return logo; }
+    public void setLogo(String logo) { this.logo = logo; }
 }

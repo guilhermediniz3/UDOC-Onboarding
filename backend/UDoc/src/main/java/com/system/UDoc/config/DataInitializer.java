@@ -21,6 +21,27 @@ public class DataInitializer {
     ) {
         return args -> {
 
+            // ── Tipo de funcionário (EXTERNO=clientes / INTERNO=equipe própria) ─
+            runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS tipo varchar(20) DEFAULT 'EXTERNO'");
+            runSilently(jdbc, "UPDATE employee SET tipo = 'EXTERNO' WHERE tipo IS NULL");
+
+            // ── Card interno: visível apenas para funcionários internos/admins ──
+            runSilently(jdbc, "ALTER TABLE card ADD COLUMN IF NOT EXISTS interno boolean NOT NULL DEFAULT false");
+
+            // ── Limpa referências de user_id órfãs na tabela employee ──────────
+            // Ocorre quando um usuário é deletado diretamente do banco (hard delete)
+            // sem passar pelo soft delete, deixando funcionários com user_id inválido
+            runSilently(jdbc, """
+                UPDATE employee
+                SET user_id = NULL
+                WHERE user_id IS NOT NULL
+                  AND user_id NOT IN (SELECT id FROM users)
+            """);
+
+            // ── Company: headquarters opcional e logo ──────────────────────────
+            runSilently(jdbc, "ALTER TABLE company ALTER COLUMN headquarters DROP NOT NULL");
+            runSilently(jdbc, "ALTER TABLE company ADD COLUMN IF NOT EXISTS logo TEXT");
+
             // ── Migração: tornar nulas colunas antigas renomeadas ──────────────
             // Quando a entidade foi traduzida PT→EN, o ddl-auto=update criou as
             // novas colunas mas manteve as antigas com NOT NULL, causando erro.

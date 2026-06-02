@@ -29,6 +29,10 @@ public class Employee {
     @Column(nullable = false)
     private Boolean active = true;
 
+    /** "EXTERNO" = funcionário das empresas clientes | "INTERNO" = funcionário da empresa que fornece o treinamento */
+    @Column(nullable = false, length = 20)
+    private String tipo = "EXTERNO";
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     private User user;
@@ -49,6 +53,8 @@ public class Employee {
     public void setPhoto(String photo) { this.photo = photo; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 }

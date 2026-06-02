@@ -36,4 +36,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                           Pageable pageable);
 
     java.util.Optional<Employee> findByUserId(Long userId);
+
+    java.util.List<Employee> findByTipoAndActiveTrue(String tipo);
 }

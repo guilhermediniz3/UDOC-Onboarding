@@ -15,27 +15,32 @@ import { IconLayoutGrid } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
 import type { Card as CardType } from "../../types/Card";
-import { getCards } from "../../services/cardService";
+import { getPublicCards } from "../../services/cardService";
 import Card from "../../components/Card/Card";
 import Search from "../../components/Search/Search";
 import PaginationComponent from "../../components/Pagination/Pagination";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Home() {
   const { colorScheme } = useMantineColorScheme();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isDark = colorScheme === "dark";
+
+  // Funcionários externos não veem cards internos
+  const hideInterno = user?.role === "FUNCIONARIO_EXTERNO";
 
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // ✅ renomeado para evitar conflito
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
   async function loadCards() {
     try {
       setLoading(true);
-      const response = await getCards({ page: page - 1, size: pageSize, search });
+      const response = await getPublicCards({ page: page - 1, size: pageSize, search, hideInterno });
       setCards(response.content);
       setTotalPages(response.totalPages);
     } catch (error) {

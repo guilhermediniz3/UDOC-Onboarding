@@ -85,7 +85,7 @@ const NAV_ITEMS: NavItemType[] = [
         isActive: (p) => p.startsWith("/admin/empresa"),
       },
       {
-        label: "Funcionário Externo",
+        label: "Funcionário",
         path: "/admin/funcionarios",
         Icon: IconUsers,
         isActive: (p) => p.startsWith("/admin/funcionario"),

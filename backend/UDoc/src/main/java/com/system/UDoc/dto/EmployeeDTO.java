@@ -12,6 +12,7 @@ public class EmployeeDTO {
     private String companyName;
     private Long userId;
     private Boolean active;
+    private String tipo; // "EXTERNO" | "INTERNO"
 
     public EmployeeDTO() {}
     public EmployeeDTO(Employee e) {
@@ -19,7 +20,13 @@ public class EmployeeDTO {
         this.email = e.getEmail(); this.photo = e.getPhoto();
         this.companyId = e.getCompany().getId(); this.companyName = e.getCompany().getName();
         this.active = e.getActive();
-        if (e.getUser() != null) this.userId = e.getUser().getId();
+        this.tipo = e.getTipo() != null ? e.getTipo() : "EXTERNO";
+        // Guarda-chuva: user pode ter sido deletado diretamente do banco (hard delete)
+        try {
+            if (e.getUser() != null) this.userId = e.getUser().getId();
+        } catch (Exception ignored) {
+            // Referência órfã — user_id aponta para um registro que não existe mais
+        }
     }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -39,4 +46,6 @@ public class EmployeeDTO {
     public void setUserId(Long userId) { this.userId = userId; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 }

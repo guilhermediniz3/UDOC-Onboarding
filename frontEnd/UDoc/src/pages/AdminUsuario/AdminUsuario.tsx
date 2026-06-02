@@ -111,11 +111,30 @@ export default function AdminUsuario() {
   /* ── carregamento inicial ── */
   useEffect(() => {
     if (!isNew) {
-      getUserById(Number(id)).then(setUserData);
+      getUserById(Number(id))
+        .then(setUserData)
+        .catch(() => {
+          // Usuário não encontrado (pode ter sido deletado) → volta para a lista
+          navigate("/admin/usuarios");
+        });
     }
+    // Carrega apenas as configurações técnicas (host, porta, criptografia) como defaults.
+    // NUNCA pré-preenche username (email pessoal) nem fromName (nome pessoal)
+    // para não vazar dados do admin ao editar outros usuários.
     getEmailConfig()
-      .then((data) => { setEmailConfig({ ...data, password: "" }); setHasEmailConfig(true); })
-      .catch(() => { /* sem config ainda */ });
+      .then((data) => {
+        setEmailConfig({
+          host:       data.host || "",
+          port:       data.port || 587,
+          username:   "",           // sempre vazio — cada usuário digita o seu
+          password:   "",           // nunca carrega senha
+          sslEnabled: data.sslEnabled ?? false,
+          tlsEnabled: data.tlsEnabled ?? true,
+          fromName:   "",           // sempre vazio — cada usuário coloca o seu nome
+        });
+        setHasEmailConfig(false);   // não considerar como "já configurado" para forçar salvamento explícito
+      })
+      .catch(() => { setEmailConfig(EMPTY_EMAIL); });
     getEmployees({ size: 1000, active: true })
       .then((r) => setEmployeeOptions(r.content));
   }, [id]);
@@ -163,7 +182,11 @@ export default function AdminUsuario() {
         }
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
+      const error = err as { response?: { data?: { message?: string }; status?: number } };
+      if (error?.response?.status === 404) {
+        navigate("/admin/usuarios"); // usuário não existe mais
+        return;
+      }
       showMessage("error", error?.response?.data?.message || "Erro ao salvar.");
     } finally { setSaving(false); }
   }
@@ -345,21 +368,52 @@ export default function AdminUsuario() {
                 data={[
                   { value: "ADMIN", label: "Admin" },
                   { value: "ISM", label: "ISM (Instrutor)" },
-                  { value: "FUNCIONARIO_EXTERNO", label: "Funcionário Externo" },
+                  { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
                 ]}
                 styles={inputStyles} />
 
+              {/* Funcionário Externo — apenas EXTERNO (empresas clientes) */}
               <Select
                 label="Funcionário Externo vinculado"
-                description="Opcional — vincula este usuário a um funcionário externo cadastrado"
+                description="Opcional — funcionário das empresas clientes de treinamento"
                 placeholder="Selecione o funcionário externo..."
                 radius="xl" size="md"
                 clearable searchable
-                data={employeeOptions.map((e) => ({
-                  value: String(e.id),
-                  label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
-                }))}
-                value={userData.employeeId ? String(userData.employeeId) : null}
+                data={employeeOptions
+                  .filter((e) => (e.tipo || "EXTERNO") === "EXTERNO")
+                  .map((e) => ({
+                    value: String(e.id),
+                    label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
+                  }))}
+                value={
+                  userData.employeeId &&
+                  (employeeOptions.find((e) => e.id === userData.employeeId)?.tipo || "EXTERNO") === "EXTERNO"
+                    ? String(userData.employeeId)
+                    : null
+                }
+                onChange={(v) => setUserData((p) => ({ ...p, employeeId: v ? Number(v) : undefined }))}
+                styles={inputStyles}
+              />
+
+              {/* Funcionário Interno — apenas INTERNO (equipe da empresa treinadora) */}
+              <Select
+                label="Funcionário Interno vinculado"
+                description="Opcional — funcionário da equipe interna que fornece o treinamento"
+                placeholder="Selecione o funcionário interno..."
+                radius="xl" size="md"
+                clearable searchable
+                data={employeeOptions
+                  .filter((e) => e.tipo === "INTERNO")
+                  .map((e) => ({
+                    value: String(e.id),
+                    label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
+                  }))}
+                value={
+                  userData.employeeId &&
+                  employeeOptions.find((e) => e.id === userData.employeeId)?.tipo === "INTERNO"
+                    ? String(userData.employeeId)
+                    : null
+                }
                 onChange={(v) => setUserData((p) => ({ ...p, employeeId: v ? Number(v) : undefined }))}
                 styles={inputStyles}
               />

@@ -626,10 +626,12 @@ export default function AdminTrainingRoom() {
                 styles={inputStyles} />
 
               <MultiSelect
-                label="Funcionários Externos Convidados"
+                label="Funcionários Convidados"
+                description="Apenas funcionários externos (das empresas clientes)"
                 placeholder={room.companyId ? "Selecione os convidados" : "Selecione uma empresa primeiro"}
                 radius="xl" size="md" searchable clearable
                 data={allEmployees
+                  .filter((e) => (e.tipo || "EXTERNO") === "EXTERNO")
                   .filter((e) => !room.companyId || e.companyId === room.companyId)
                   .map((e) => ({ value: String(e.id), label: e.name }))}
                 value={(room.invitedEmployeeIds ?? []).map(String)}

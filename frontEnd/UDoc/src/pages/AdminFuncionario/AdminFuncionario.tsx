@@ -1,4 +1,4 @@
-import { Alert, Avatar, Button, Group, Paper, Select, Stack, Switch, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Avatar, Badge, Button, Group, Paper, SegmentedControl, Select, Stack, Switch, Text, TextInput, Title } from "@mantine/core";
 import { IconArrowLeft, IconCamera, IconCheck, IconUser, IconX } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,7 +8,7 @@ import { getAllCompaniesSimple } from "../../services/companyService";
 import type { Employee } from "../../types/Employee";
 import type { Company } from "../../types/Company";
 
-const EMPTY: Employee = { name: "", phone: "", email: "", companyId: 0, active: true };
+const EMPTY: Employee = { name: "", phone: "", email: "", companyId: 0, active: true, tipo: "EXTERNO" };
 
 export default function AdminFuncionario() {
 
@@ -45,17 +45,32 @@ export default function AdminFuncionario() {
     if (!employee.companyId) { showMessage("error", "Selecione uma empresa."); return; }
     setSaving(true);
     try {
-      const payload = { name: employee.name, phone: employee.phone, email: employee.email, photo: employee.photo, companyId: employee.companyId, active: employee.active };
-      if (isNew) { await createEmployee(payload); showMessage("success", "Funcionário externo criado!"); setTimeout(() => navigate("/admin/funcionarios"), 1200); }
-      else { await updateEmployee(Number(id), payload); showMessage("success", "Funcionário externo atualizado!"); }
+      const payload = {
+        name: employee.name, phone: employee.phone, email: employee.email,
+        photo: employee.photo, companyId: employee.companyId,
+        active: employee.active, tipo: employee.tipo || "EXTERNO",
+      };
+      const tipoLabel = payload.tipo === "INTERNO" ? "interno" : "externo";
+      if (isNew) {
+        await createEmployee(payload);
+        showMessage("success", `Funcionário ${tipoLabel} criado com sucesso!`);
+        setTimeout(() => navigate("/admin/funcionarios"), 1200);
+      } else {
+        await updateEmployee(Number(id), payload);
+        showMessage("success", "Funcionário atualizado com sucesso!");
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       showMessage("error", error?.response?.data?.message || "Erro ao salvar.");
     } finally { setSaving(false); }
   }
 
-  const inputStyles = { input: { background: "var(--input-bg)", border: "1px solid var(--border-color)", color: "var(--text-primary)" }, label: { color: "var(--text-primary)", marginBottom: 6 } };
+  const inputStyles = {
+    input: { background: "var(--input-bg)", border: "1px solid var(--border-color)", color: "var(--text-primary)" },
+    label: { color: "var(--text-primary)", marginBottom: 6 },
+  };
   const companyOptions = companies.map((c) => ({ value: String(c.id), label: c.name }));
+  const tipo = employee.tipo || "EXTERNO";
 
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
@@ -63,8 +78,18 @@ export default function AdminFuncionario() {
       <Paper p="30px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
         <Group justify="space-between" align="center">
           <div>
-            <Title order={2} c="var(--text-primary)">{isNew ? "Novo Funcionário Externo" : "Editar Funcionário Externo"}</Title>
-            <Text c="var(--text-secondary)" mt={4}>{isNew ? "Preencha os dados" : "Altere os dados do funcionário externo"}</Text>
+            <Group gap="sm" align="center">
+              <Title order={2} c="var(--text-primary)">{isNew ? "Novo Funcionário" : "Editar Funcionário"}</Title>
+              <Badge
+                color={tipo === "INTERNO" ? "blue" : "violet"}
+                variant="light" radius="xl"
+              >
+                {tipo === "INTERNO" ? "Interno" : "Externo"}
+              </Badge>
+            </Group>
+            <Text c="var(--text-secondary)" mt={4}>
+              {isNew ? "Preencha os dados do funcionário" : "Altere os dados do funcionário"}
+            </Text>
           </div>
           <Button leftSection={<IconArrowLeft size={18} />} variant="default" radius="xl" size="md" onClick={() => navigate("/admin/funcionarios")}>Voltar</Button>
         </Group>
@@ -73,6 +98,29 @@ export default function AdminFuncionario() {
       <Paper p="30px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
         <Stack gap="20px">
           {message && <Alert color={messageType === "success" ? "green" : "red"} icon={messageType === "success" ? <IconCheck size={18} /> : <IconX size={18} />} radius="xl">{message}</Alert>}
+
+          {/* Tipo de funcionário — seleção principal */}
+          <Stack gap="6px">
+            <Text fz="sm" fw={600} c="var(--text-primary)">Tipo de funcionário</Text>
+            <Text fz="xs" c="var(--text-secondary)">
+              Funcionário Externo = das empresas clientes • Funcionário Interno = da equipe que fornece o treinamento
+            </Text>
+            <SegmentedControl
+              value={tipo}
+              onChange={(v) => setEmployee((p) => ({ ...p, tipo: v as "EXTERNO" | "INTERNO" }))}
+              data={[
+                { label: "Externo", value: "EXTERNO" },
+                { label: "Interno", value: "INTERNO" },
+              ]}
+              radius="xl"
+              size="sm"
+              w="fit-content"
+              styles={{
+                root: { background: "var(--app-bg)", border: "1px solid var(--border-color)" },
+                label: { color: "var(--text-primary)", fontSize: 13, paddingLeft: 20, paddingRight: 20 },
+              }}
+            />
+          </Stack>
 
           <Group align="flex-end" gap="lg">
             <div style={{ position: "relative", width: 90, height: 90 }}>
@@ -85,7 +133,7 @@ export default function AdminFuncionario() {
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoChange} />
             </div>
             <Stack gap={2}>
-              <Text fw={600} c="var(--text-primary)" fz="sm">Foto do funcionário externo</Text>
+              <Text fw={600} c="var(--text-primary)" fz="sm">Foto do funcionário</Text>
               <Text c="var(--text-secondary)" fz="xs">Clique para selecionar</Text>
             </Stack>
           </Group>
@@ -101,7 +149,9 @@ export default function AdminFuncionario() {
 
           <Group justify="flex-end" mt="10px">
             <Button variant="default" radius="xl" size="md" onClick={() => navigate("/admin/funcionarios")}>Cancelar</Button>
-            <Button radius="xl" size="md" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>{isNew ? "Criar Funcionário Externo" : "Salvar Alterações"}</Button>
+            <Button radius="xl" size="md" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>
+              {isNew ? "Criar Funcionário" : "Salvar Alterações"}
+            </Button>
           </Group>
         </Stack>
       </Paper>

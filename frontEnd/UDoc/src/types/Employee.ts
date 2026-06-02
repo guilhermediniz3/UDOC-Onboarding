@@ -8,4 +8,5 @@ export interface Employee {
   companyName?: string;
   userId?: number;
   active: boolean;
+  tipo?: "EXTERNO" | "INTERNO"; // tipo do funcionário
 }

@@ -11,6 +11,7 @@ export interface UserData {
   createdAt?: string;
   employeeId?: number;
   employeeName?: string;
+  employeeTipo?: "EXTERNO" | "INTERNO";
 }
 
 interface UserRequest {

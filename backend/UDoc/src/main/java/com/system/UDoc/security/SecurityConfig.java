@@ -69,6 +69,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // OPTIONS liberado globalmente (preflight CORS)
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        // Cards públicos (listagem filtrada para usuários externos)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/cards/public").authenticated()
                         // NPS: respostas e contador de acesso são anônimos (sem login)
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/nps/responses").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/nps/cards/*/access").permitAll()

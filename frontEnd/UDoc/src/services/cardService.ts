@@ -6,12 +6,28 @@ import type { PaginationResponse } from "../types/Pagination";
 
 interface GetCardsParams {
   page?: number;
-
   size?: number;
-
   search?: string;
-
   active?: boolean | null;
+}
+
+interface GetPublicCardsParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  hideInterno?: boolean; // true = exclui cards internos (para usuários externos)
+}
+
+export async function getPublicCards({
+  page = 0,
+  size = 10,
+  search = "",
+  hideInterno = false,
+}: GetPublicCardsParams = {}): Promise<PaginationResponse<Card>> {
+  const response = await api.get<PaginationResponse<Card>>("/cards/public", {
+    params: { page, size, search, hideInterno },
+  });
+  return response.data;
 }
 
 interface UserCardViewResponse {

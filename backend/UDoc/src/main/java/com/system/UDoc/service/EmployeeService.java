@@ -61,6 +61,7 @@ public class EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
         e.setName(r.getName()); e.setPhone(r.getPhone()); e.setEmail(r.getEmail());
         e.setPhoto(r.getPhoto()); e.setCompany(company); e.setActive(r.getActive());
+        e.setTipo(r.getTipo() != null ? r.getTipo() : (e.getTipo() != null ? e.getTipo() : "EXTERNO"));
         e.setUser(r.getUserId() != null ? userRepository.findById(r.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + r.getUserId())) : null);
     }

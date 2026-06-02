@@ -37,6 +37,31 @@ public interface CardRepository extends JpaRepository<Card, Long> {
                                 @Param("active") Boolean active,
                                 Pageable pageable);
 
+    /** Busca pública: quando hideInterno=true, exclui cards marcados como internos */
+    @Query(
+        value = """
+            SELECT * FROM card
+            WHERE (:search IS NULL
+                   OR title       ILIKE CONCAT('%', :search, '%')
+                   OR description ILIKE CONCAT('%', :search, '%'))
+              AND active = true
+              AND (:hideInterno = false OR interno = false)
+            ORDER BY id DESC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM card
+            WHERE (:search IS NULL
+                   OR title       ILIKE CONCAT('%', :search, '%')
+                   OR description ILIKE CONCAT('%', :search, '%'))
+              AND active = true
+              AND (:hideInterno = false OR interno = false)
+        """,
+        nativeQuery = true
+    )
+    Page<Card> searchPublicCards(@Param("search") String search,
+                                 @Param("hideInterno") boolean hideInterno,
+                                 Pageable pageable);
+
     @Query("""
         SELECT new com.system.UDoc.dto.UserCardViewDTO(c.id, c.content)
         FROM Card c WHERE c.id = :id

@@ -10,6 +10,7 @@ public class EmployeeRequestDTO {
     @NotNull(message = "Company is required") private Long companyId;
     @NotNull(message = "Status is required") private Boolean active;
     private Long userId;
+    private String tipo; // "EXTERNO" | "INTERNO" (default EXTERNO)
 
     public EmployeeRequestDTO() {}
     public String getName() { return name; }
@@ -26,4 +27,6 @@ public class EmployeeRequestDTO {
     public void setActive(Boolean active) { this.active = active; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 }

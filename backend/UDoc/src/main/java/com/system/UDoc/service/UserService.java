@@ -107,24 +107,28 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id))
-            throw new ResourceNotFoundException("User not found with id " + id);
-        // Desvincula funcionário antes de deletar
-        employeeRepository.findByUserId(id).ifPresent(e -> {
-            e.setUser(null);
-            employeeRepository.save(e);
+        // Soft delete tolerante: se o registro não existe no banco, trata como já deletado
+        userRepository.findById(id).ifPresent(user -> {
+            user.setActive(false);
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            userRepository.save(user);
+            // Desvincula o funcionário para evitar referências órfãs
+            employeeRepository.findByUserId(id).ifPresent(e -> {
+                e.setUser(null);
+                employeeRepository.save(e);
+            });
         });
-        userRepository.deleteById(id);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private UserDTO buildDTO(User user) {
         UserDTO dto = new UserDTO(user);
-        // Popula o funcionário externo vinculado, se existir
         employeeRepository.findByUserId(user.getId()).ifPresent(emp -> {
             dto.setEmployeeId(emp.getId());
             dto.setEmployeeName(emp.getName());
+            dto.setEmployeeTipo(emp.getTipo() != null ? emp.getTipo() : "EXTERNO");
         });
         return dto;
     }

@@ -10,8 +10,8 @@ public class Company {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Integer headquarters;
+    @Column
+    private Integer headquarters; // opcional
 
     @Column(nullable = false)
     private String name;
@@ -31,6 +31,9 @@ public class Company {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(columnDefinition = "TEXT")
+    private String logo; // base64 da logo da empresa
+
     public Company() {}
 
     public Long getId() { return id; }
@@ -49,4 +52,6 @@ public class Company {
     public void setEmployeeCount(Integer employeeCount) { this.employeeCount = employeeCount; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public String getLogo() { return logo; }
+    public void setLogo(String logo) { this.logo = logo; }
 }

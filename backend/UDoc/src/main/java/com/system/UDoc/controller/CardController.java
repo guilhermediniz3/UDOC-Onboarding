@@ -40,24 +40,24 @@ public class CardController {
 
     @GetMapping
     public ResponseEntity<Page<CardDTO>> getAllCards(
-
-            @RequestParam(required = false)
-            String search,
-
-            @RequestParam(required = false)
-            Boolean active,
-
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
             Pageable pageable
     ) {
+        return ResponseEntity.ok(cardService.getAllCards(search, active, pageable));
+    }
 
-        Page<CardDTO> cards =
-                cardService.getAllCards(
-                        search,
-                        active,
-                        pageable
-                );
-
-        return ResponseEntity.ok(cards);
+    /**
+     * Listagem pública de cards — usada pelo Home.
+     * hideInterno=true: exclui cards internos (para funcionários externos).
+     */
+    @GetMapping("/public")
+    public ResponseEntity<Page<CardDTO>> getPublicCards(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "false") boolean hideInterno,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(cardService.getPublicCards(search, hideInterno, pageable));
     }
 
     @GetMapping("/{id}")
