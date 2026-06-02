@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -16,18 +17,23 @@ import {
   Textarea,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 
 import {
   IconArrowLeft,
+  IconBrandWhatsapp,
   IconBrandYoutube,
   IconCalendar,
   IconCheck,
   IconCopy,
   IconInfoCircle,
   IconLink,
+  IconMail,
   IconPlayerPlay,
   IconPlayerStop,
+  IconPlayerRecord,
+  IconTrash,
   IconVideo,
   IconX,
 } from "@tabler/icons-react";
@@ -42,9 +48,19 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import {
   createTrainingRoom,
+  getNextTrailOrder,
   getTrainingRoomById,
+  sendTrainingInvite,
   updateTrainingRoom,
 } from "../../services/trainingRoomService";
+
+import {
+  uploadRoomRecording,
+  getRoomRecordings,
+  deleteRoomRecording,
+  getRecordingFileUrl,
+  type VideoRecordingInfo,
+} from "../../services/recordingService";
 
 import {
   getSessionsByRoom,
@@ -54,8 +70,10 @@ import {
 } from "../../services/trainingSessionService";
 
 import { getAllCompaniesSimple } from "../../services/companyService";
+import { getStorageInfo } from "../../services/storageService";
 import { getAllIsmsSimple } from "../../services/ismService";
 import { getEmployees } from "../../services/employeeService";
+import type { Employee } from "../../types/Employee";
 import { getTrails } from "../../services/trailService";
 
 import { useAuth } from "../../contexts/AuthContext";
@@ -133,7 +151,7 @@ export default function AdminTrainingRoom() {
   /* ── lookups ── */
   const [companies, setCompanies] = useState<Company[]>([]);
   const [ismsData, setIsmsData] = useState<ISM[]>([]);
-  const [employees, setEmployees] = useState<{ value: string; label: string }[]>([]);
+  const [allEmployees, setAllEmployees] = useState<Employee[]>([]);
   const [trails, setTrails] = useState<{ value: string; label: string }[]>([]);
 
   /* ── vídeo ── */
@@ -146,6 +164,22 @@ export default function AdminTrainingRoom() {
   const [linkCopied, setLinkCopied] = useState(false);
   const jitsiApiRef = useRef<any>(null);
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
+
+  /* ── convites ── */
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteMsg, setInviteMsg]         = useState("");
+
+  /* ── cota de armazenamento ── */
+  const [storagePct, setStoragePct] = useState(0);
+
+  /* ── gravação ── */
+  const [recordings, setRecordings]       = useState<VideoRecordingInfo[]>([]);
+  const [isRecording, setIsRecording]     = useState(false);
+  const [uploadingRec, setUploadingRec]   = useState(false);
+  const [recSeconds, setRecSeconds]       = useState(0);
+  const recChunksRef  = useRef<Blob[]>([]);
+  const mediaRecRef   = useRef<MediaRecorder | null>(null);
+  const recTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* ── agendamento ── */
   const [totalDays, setTotalDays] = useState<number>(0);
@@ -169,11 +203,10 @@ export default function AdminTrainingRoom() {
 
   /* ── carregamento inicial ── */
   useEffect(() => {
+    getStorageInfo().then((s) => setStoragePct(s.pct)).catch(() => {});
     getAllCompaniesSimple().then(setCompanies);
     getAllIsmsSimple().then(setIsmsData);
-    getEmployees({ size: 1000 }).then((r) =>
-      setEmployees(r.content.map((e) => ({ value: String(e.id), label: e.name })))
-    );
+    getEmployees({ size: 1000 }).then((r) => setAllEmployees(r.content));
     getTrails({ size: 1000 }).then((r) =>
       setTrails(r.content.map((t) => ({ value: String(t.id), label: t.name })))
     );
@@ -189,6 +222,9 @@ export default function AdminTrainingRoom() {
           if (u) setEmbedUrl(u);
         }
       });
+
+      // Carrega gravações existentes (XHR com token explícito — evita 401 do axios)
+      getRoomRecordings(Number(id)).then(setRecordings);
 
       // Load existing sessions
       getSessionsByRoom(Number(id)).then((sessions) => {
@@ -393,6 +429,88 @@ export default function AdminTrainingRoom() {
     });
   }
 
+  /* ── WhatsApp ── */
+  function handleWhatsApp() {
+    const roomTitle = room.title || "Treinamento";
+    const msg = encodeURIComponent(
+      `🎓 *${roomTitle}*\nOlá! O treinamento está iniciando. Acesse pelo link:\n${jitsiLink}`
+    );
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  }
+
+  /* ── Email invite ── */
+  async function handleSendEmailInvite() {
+    if (!id) return;
+    setSendingInvite(true);
+    setInviteMsg("");
+    try {
+      const { sent, emails } = await sendTrainingInvite(Number(id), jitsiLink);
+      setInviteMsg(sent > 0
+        ? `✓ Enviado para: ${emails.join(", ")}`
+        : "Nenhum funcionário convidado tem e-mail cadastrado."
+      );
+    } catch {
+      setInviteMsg("Erro ao enviar convites. Verifique as configurações de e-mail.");
+    } finally {
+      setSendingInvite(false);
+      setTimeout(() => setInviteMsg(""), 5000);
+    }
+  }
+
+  /* ── Gravação de tela ── */
+  async function handleStartRecording() {
+    try {
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: { mediaSource: "screen" },
+        audio: true,
+      });
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+      recorder.onstop = () => stream.getTracks().forEach((t: any) => t.stop());
+      recorder.start(1000);
+      mediaRecRef.current = recorder;
+      setIsRecording(true);
+      setRecSeconds(0);
+      recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError") alert("Erro ao iniciar gravação: " + e?.message);
+    }
+  }
+
+  async function handleStopRecording() {
+    if (!mediaRecRef.current || !id) return;
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    const duration = recSeconds;
+    mediaRecRef.current.stop();
+    mediaRecRef.current = null;
+    setIsRecording(false);
+    setUploadingRec(true);
+    // Aguarda o ondataavailable finalizar
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const blob = new Blob(recChunksRef.current, { type: "video/webm" });
+      const ts   = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const rec  = await uploadRoomRecording(Number(id), blob, `gravacao_${ts}.webm`, duration);
+      setRecordings((prev) => [rec, ...prev]);
+    } catch { alert("Erro ao fazer upload da gravação."); }
+    finally { setUploadingRec(false); recChunksRef.current = []; }
+  }
+
+  async function handleDeleteRecording(recId: number) {
+    if (!confirm("Excluir esta gravação permanentemente?")) return;
+    await deleteRoomRecording(recId);
+    setRecordings((prev) => prev.filter((r) => r.id !== recId));
+  }
+
+  function formatRecDuration(s: number) {
+    const m = Math.floor(s / 60); const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  }
+
   function handleEmbedUrl() {
     const url = videoUrlInput.trim();
     const yt = getYoutubeEmbedUrl(url);
@@ -492,14 +610,28 @@ export default function AdminTrainingRoom() {
                 radius="xl" size="md" clearable searchable
                 data={companyOptions}
                 value={room.companyId ? String(room.companyId) : null}
-                onChange={(v) => setRoom((p) => ({ ...p, companyId: v ? Number(v) : undefined }))}
+                onChange={(v) => {
+                  const newCompanyId = v ? Number(v) : undefined;
+                  setRoom((p) => ({
+                    ...p,
+                    companyId: newCompanyId,
+                    // Limpa convidados que não pertencem à nova empresa
+                    invitedEmployeeIds: newCompanyId
+                      ? (p.invitedEmployeeIds ?? []).filter((eid) =>
+                          allEmployees.find((e) => e.id === eid)?.companyId === newCompanyId
+                        )
+                      : p.invitedEmployeeIds,
+                  }));
+                }}
                 styles={inputStyles} />
 
               <MultiSelect
                 label="Funcionários Externos Convidados"
-                placeholder="Selecione os convidados"
+                placeholder={room.companyId ? "Selecione os convidados" : "Selecione uma empresa primeiro"}
                 radius="xl" size="md" searchable clearable
-                data={employees}
+                data={allEmployees
+                  .filter((e) => !room.companyId || e.companyId === room.companyId)
+                  .map((e) => ({ value: String(e.id), label: e.name }))}
                 value={(room.invitedEmployeeIds ?? []).map(String)}
                 onChange={(vals) => setRoom((p) => ({ ...p, invitedEmployeeIds: vals.map(Number) }))}
                 styles={inputStyles} />
@@ -515,14 +647,28 @@ export default function AdminTrainingRoom() {
                 radius="xl" size="md" clearable searchable
                 data={trails}
                 value={room.trailId ? String(room.trailId) : null}
-                onChange={(v) => setRoom((p) => ({ ...p, trailId: v ? Number(v) : undefined }))}
+                onChange={async (v) => {
+                  const newTrailId = v ? Number(v) : undefined;
+                  setRoom((p) => ({ ...p, trailId: newTrailId }));
+                  // Para nova sala, preenche automaticamente com o próximo número sequencial
+                  if (isNew && newTrailId) {
+                    try {
+                      const nextOrder = await getNextTrailOrder(newTrailId);
+                      setRoom((p) => ({ ...p, trailId: newTrailId, sortOrder: nextOrder }));
+                    } catch { /* mantém o valor atual */ }
+                  }
+                }}
                 styles={inputStyles} />
 
-              <NumberInput label="Ordem na trilha" placeholder="Ex: 1"
+              <NumberInput
+                label="Ordem na trilha"
+                description={isNew ? "Preenchido automaticamente com a próxima posição. Altere se quiser inserir em outra posição (as demais serão deslocadas)." : "Ao salvar, salas com a mesma ordem serão deslocadas para frente."}
+                placeholder="Ex: 1"
                 radius="xl" size="md" min={0}
                 value={room.sortOrder}
                 onChange={(v) => setRoom((p) => ({ ...p, sortOrder: Number(v) || 0 }))}
-                styles={inputStyles} />
+                styles={{ ...inputStyles, description: { color: "var(--text-secondary)", marginTop: 4 } }}
+              />
 
               <Select label="Situação" placeholder="Selecione a situação"
                 radius="xl" size="md"
@@ -705,6 +851,20 @@ export default function AdminTrainingRoom() {
             <Stack gap="24px">
 
               {/* Ao vivo — Jitsi */}
+              {/* Banner de cota de armazenamento ≥ 90% */}
+              {storagePct >= 90 && (
+                <Alert
+                  color={storagePct >= 100 ? "red" : "orange"}
+                  radius="xl" variant="light"
+                  icon={<IconInfoCircle size={16} />}
+                  mb="sm"
+                >
+                  {storagePct >= 100
+                    ? "Espaço de armazenamento esgotado. Acesse as Configurações para liberar espaço ou aumentar a cota."
+                    : `Atenção: ${storagePct}% do espaço de gravações está sendo utilizado. Considere liberar espaço.`}
+                </Alert>
+              )}
+
               <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
 
                 <Group justify="space-between" align="center" mb={showJitsi ? "md" : 0}>
@@ -732,29 +892,49 @@ export default function AdminTrainingRoom() {
                   </Group>
                 </Group>
 
-                {/* Link de convite — aparece quando a sessão está ativa */}
+                {/* Link + convites — aparece quando a sessão está ativa */}
                 {showJitsi && jitsiLink && (
-                  <Group
-                    gap="sm"
-                    mb="md"
-                    p="12px"
-                    style={{ background: "rgba(34,197,94,0.08)", borderRadius: 12, border: "1px solid rgba(34,197,94,0.3)" }}
-                  >
-                    <IconLink size={16} color="var(--mantine-color-green-6)" />
-                    <Text fz="sm" c="var(--text-primary)" style={{ flex: 1, wordBreak: "break-all" }}>
-                      <b>Link para convidar:</b> {jitsiLink}
-                    </Text>
-                    <Button
-                      size="xs"
-                      radius="xl"
-                      variant="light"
-                      color={linkCopied ? "green" : "violet"}
-                      leftSection={linkCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                      onClick={handleCopyLink}
+                  <Stack gap="8px" mb="md">
+                    <Group
+                      gap="sm" p="12px"
+                      style={{ background: "rgba(34,197,94,0.08)", borderRadius: 12, border: "1px solid rgba(34,197,94,0.3)" }}
                     >
-                      {linkCopied ? "Copiado!" : "Copiar link"}
-                    </Button>
-                  </Group>
+                      <IconLink size={16} color="var(--mantine-color-green-6)" />
+                      <Text fz="sm" c="var(--text-primary)" style={{ flex: 1, wordBreak: "break-all" }}>
+                        <b>Link:</b> {jitsiLink}
+                      </Text>
+                      <Button size="xs" radius="xl" variant="light"
+                        color={linkCopied ? "green" : "violet"}
+                        leftSection={linkCopied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                        onClick={handleCopyLink}>
+                        {linkCopied ? "Copiado!" : "Copiar"}
+                      </Button>
+
+                      {/* WhatsApp */}
+                      <Tooltip label="Enviar convite pelo WhatsApp Web (usa o celular da pessoa)" withArrow>
+                        <Button size="xs" radius="xl" variant="light" color="green"
+                          leftSection={<IconBrandWhatsapp size={14} />}
+                          onClick={handleWhatsApp}>
+                          WhatsApp
+                        </Button>
+                      </Tooltip>
+
+                      {/* E-mail */}
+                      <Tooltip label="Enviar convite por e-mail para todos os funcionários convidados" withArrow>
+                        <Button size="xs" radius="xl" variant="light" color="blue"
+                          leftSection={<IconMail size={14} />}
+                          loading={sendingInvite}
+                          onClick={handleSendEmailInvite}>
+                          E-mail
+                        </Button>
+                      </Tooltip>
+                    </Group>
+                    {inviteMsg && (
+                      <Text fz="xs" c={inviteMsg.startsWith("✓") ? "green" : "orange"} pl="4px">
+                        {inviteMsg}
+                      </Text>
+                    )}
+                  </Stack>
                 )}
 
                 {showJitsi && (
@@ -796,6 +976,80 @@ export default function AdminTrainingRoom() {
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen />
                   </div>
+                )}
+              </Paper>
+
+              {/* Gravação de tela */}
+              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                <Group justify="space-between" align="center" mb="md">
+                  <div>
+                    <Text fw={700} c="var(--text-primary)" fz="md">Gravação da tela</Text>
+                    <Text fz="xs" c="var(--text-secondary)">
+                      Grava a tela do seu navegador e salva no sistema como backup do Vimeo.
+                    </Text>
+                  </div>
+                  <Group gap="sm">
+                    {!isRecording ? (
+                      <Tooltip
+                        disabled={storagePct < 100}
+                        label="Espaço de armazenamento esgotado. Acesse as configurações para liberar espaço ou aumentar a cota."
+                        withArrow multiline w={260}
+                      >
+                        <Button
+                          leftSection={<IconPlayerRecord size={16} />}
+                          radius="xl" size="sm" color="red" variant="light"
+                          loading={uploadingRec}
+                          onClick={handleStartRecording}
+                          disabled={isNew || storagePct >= 100}
+                        >
+                          {uploadingRec ? "Enviando..." : "Iniciar gravação"}
+                        </Button>
+                      </Tooltip>
+                    ) : (
+                      <Group gap="sm">
+                        <Text fz="sm" c="red" fw={700}>⏺ {formatRecDuration(recSeconds)}</Text>
+                        <Button leftSection={<IconPlayerStop size={16} />}
+                          radius="xl" size="sm" color="red" variant="filled"
+                          onClick={handleStopRecording}>
+                          Parar e salvar
+                        </Button>
+                      </Group>
+                    )}
+                  </Group>
+                </Group>
+
+                {isNew && (
+                  <Text fz="xs" c="var(--text-secondary)">Salve a sala primeiro para habilitar a gravação.</Text>
+                )}
+
+                {/* Lista de gravações */}
+                {recordings.length > 0 && (
+                  <Stack gap="12px">
+                    {recordings.map((rec) => (
+                      <Paper key={rec.id} p="12px" radius="12px"
+                        style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                        <Group justify="space-between" mb="8px">
+                          <div>
+                            <Text fz="sm" fw={600} c="var(--text-primary)">{rec.filename}</Text>
+                            <Text fz="xs" c="var(--text-secondary)">
+                              {rec.durationSeconds != null ? formatRecDuration(rec.durationSeconds) : "—"}
+                              {rec.fileSize != null ? ` · ${(rec.fileSize / 1024 / 1024).toFixed(1)} MB` : ""}
+                              {" · "}{new Date(rec.createdAt).toLocaleString("pt-BR")}
+                            </Text>
+                          </div>
+                          <ActionIcon size="sm" radius="xl" color="red" variant="light"
+                            onClick={() => handleDeleteRecording(rec.id)}>
+                            <IconTrash size={14} />
+                          </ActionIcon>
+                        </Group>
+                        <video
+                          controls
+                          style={{ width: "100%", borderRadius: 8, maxHeight: 320, background: "#000" }}
+                          src={getRecordingFileUrl(rec.id)}
+                        />
+                      </Paper>
+                    ))}
+                  </Stack>
                 )}
               </Paper>
 

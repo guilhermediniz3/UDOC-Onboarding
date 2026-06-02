@@ -48,8 +48,31 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     void incrementAccessCount(@Param("id") Long id);
 
     @Query(value = """
-        SELECT id, title, access_count FROM card
-        ORDER BY access_count DESC LIMIT :lim
+        SELECT
+          c.id,
+          c.title,
+          COALESCE(c.access_count, 0) AS access_count,
+          COUNT(CASE WHEN nr.score = 1 THEN 1 END) AS score1,
+          COUNT(CASE WHEN nr.score = 2 THEN 1 END) AS score2,
+          COUNT(CASE WHEN nr.score = 3 THEN 1 END) AS score3,
+          COUNT(CASE WHEN nr.score = 4 THEN 1 END) AS score4
+        FROM card c
+        LEFT JOIN nps_question nq
+          ON nq.reference_type = 'card'
+         AND nq.reference_id = c.id
+         AND nq.tipo = 'faces'
+        LEFT JOIN nps_response nr
+          ON nr.question_id = nq.id
+         AND (:startDate IS NULL OR CAST(nr.created_at AS DATE) >= CAST(:startDate AS DATE))
+         AND (:endDate   IS NULL OR CAST(nr.created_at AS DATE) <= CAST(:endDate   AS DATE))
+        WHERE c.active = true
+        GROUP BY c.id, c.title, c.access_count
+        ORDER BY COALESCE(c.access_count, 0) DESC
+        LIMIT :lim
     """, nativeQuery = true)
-    List<Map<String, Object>> findTopAccessedCards(@Param("lim") int lim);
+    List<Map<String, Object>> findTopAccessedCards(
+            @Param("lim") int lim,
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate
+    );
 }

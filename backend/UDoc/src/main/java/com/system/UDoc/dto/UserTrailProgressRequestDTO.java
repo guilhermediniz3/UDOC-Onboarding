@@ -7,10 +7,12 @@ public class UserTrailProgressRequestDTO {
     private String completedItemsJson;
     private String status;
     private Boolean certified;
+    private Double notaObtida;
 
     public UserTrailProgressRequestDTO() {}
     public Integer getCurrentItemIndex() { return currentItemIndex; } public void setCurrentItemIndex(Integer v) { this.currentItemIndex = v; }
     public String getCompletedItemsJson() { return completedItemsJson; } public void setCompletedItemsJson(String v) { this.completedItemsJson = v; }
     public String getStatus() { return status; } public void setStatus(String v) { this.status = v; }
     public Boolean getCertified() { return certified; } public void setCertified(Boolean v) { this.certified = v; }
+    public Double getNotaObtida() { return notaObtida; } public void setNotaObtida(Double v) { this.notaObtida = v; }
 }

@@ -57,4 +57,19 @@ public class TrainingRoomController {
         trainingRoomService.deleteTrainingRoom(id);
         return ResponseEntity.noContent().build();
     }
+
+    /** Retorna o próximo sortOrder sequencial para salas de uma trilha */
+    @GetMapping("/trail/{trailId}/next-order")
+    public ResponseEntity<Integer> getNextSortOrder(@PathVariable Long trailId) {
+        return ResponseEntity.ok(trainingRoomService.getNextSortOrder(trailId));
+    }
+
+    /** Envia convites por e-mail para todos os funcionários convidados da sala */
+    @PostMapping("/{id}/send-invite")
+    public ResponseEntity<java.util.Map<String, Object>> sendInvite(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String jitsiLink = body.getOrDefault("jitsiLink", "");
+        return ResponseEntity.ok(trainingRoomService.sendInviteEmails(id, jitsiLink));
+    }
 }

@@ -78,12 +78,16 @@ public class TrailCertificationService {
     @Transactional(readOnly = true)
     public List<TrailQuestionDTO> generateQuestionsWithGroq(Long trailId) {
         StringBuilder context = new StringBuilder();
+        int[] cardCount = {0};
 
         // ── 1. Tenta cards via nova aba Conteúdo (trail_content) ─────────────
         List<TrailContent> contents = trailContentRepository.findByTrailIdOrderByOrdemAsc(trailId);
         for (TrailContent tc : contents) {
             if ("card".equals(tc.getTipo())) {
-                cardRepository.findById(tc.getReferenciaId()).ifPresent(card -> appendCardContext(context, card));
+                cardRepository.findById(tc.getReferenciaId()).ifPresent(card -> {
+                    appendCardContext(context, card);
+                    cardCount[0]++;
+                });
             }
         }
 
@@ -93,6 +97,7 @@ public class TrailCertificationService {
                     .orElseThrow(() -> new ResourceNotFoundException("Trail not found with id " + trailId));
             for (var card : trail.getCards()) {
                 appendCardContext(context, card);
+                cardCount[0]++;
             }
         }
 
@@ -101,13 +106,31 @@ public class TrailCertificationService {
                     org.springframework.http.HttpStatus.BAD_REQUEST,
                     "A trilha nao possui cards com conteudo vinculado. Adicione cards na aba 'Conteudo' ou vincule cards diretamente a trilha.");
         }
-        String prompt = """
-            Com base no seguinte conteudo educacional, gere 5 perguntas de certificacao em portugues.
-            Retorne APENAS um JSON array valido no seguinte formato, sem texto adicional, sem markdown:
-            [{"enunciado":"string","tipo":"vf|multipla","opcoes":["opcao1","opcao2","opcao3","opcao4"],"resposta_correta":"string","pontos":1.0}]
-            Para perguntas do tipo "vf", as opcoes devem ser omitidas ou ser ["Verdadeiro","Falso"].
-            Conteudo:
-            """ + context.toString();
+
+        // Mínimo 5, 1 por card até 10, teto de 10 para não tornar o quiz excessivo
+        int total = Math.min(Math.max(cardCount[0], 5), 10);
+        boolean maisCardsQuePerguntas = cardCount[0] > total;
+
+        String distribuicaoRegra = maisCardsQuePerguntas
+            ? "- Ha " + cardCount[0] + " cards mas o quiz tem " + total + " perguntas: " +
+              "selecione os conceitos mais importantes e representativos, garantindo que os principais temas de cada card sejam contemplados\n"
+            : "- Distribua ao menos 1 pergunta por card (cubra todos os " + cardCount[0] + " cards)\n" +
+              (cardCount[0] < 5 ? "- Como ha poucos cards, complemente com perguntas adicionais sobre os temas ja abordados\n" : "");
+
+        String prompt =
+            "Com base no conteudo educacional abaixo, organizado em " + cardCount[0] + " card(s), " +
+            "gere perguntas de certificacao da TRILHA em portugues brasileiro.\n\n" +
+            "REGRAS OBRIGATORIAS:\n" +
+            "- Gere EXATAMENTE " + total + " perguntas\n" +
+            distribuicaoRegra +
+            "- As perguntas da TRILHA devem ser DIFERENTES das perguntas internas de cada card: " +
+              "teste a compreensao geral e a relacao entre os temas, nao detalhes isolados ja cobertos no quiz do card\n\n" +
+            "Retorne APENAS um JSON array valido, sem texto adicional, sem markdown:\n" +
+            "[{\"enunciado\":\"string\",\"tipo\":\"vf|multipla\"," +
+             "\"opcoes\":[\"opcao1\",\"opcao2\",\"opcao3\",\"opcao4\"],\"resposta_correta\":\"string\",\"pontos\":1.0}]\n" +
+            "Para tipo \"vf\": opcoes deve ser [\"Verdadeiro\",\"Falso\"].\n" +
+            "Para tipo \"multipla\": inclua exatamente 4 opcoes.\n\n" +
+            "Conteudo dos cards:\n" + context.toString();
         // Captura erros do Groq para nao propagar o status HTTP externo ao frontend (evita logout)
         com.system.UDoc.dto.AIResponseDTO aiResponse;
         try {

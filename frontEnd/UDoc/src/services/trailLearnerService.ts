@@ -19,9 +19,28 @@ export async function getTrailProgress(trailId: number): Promise<TrailProgress> 
 
 export async function saveTrailProgress(
   trailId: number,
-  data: { currentItemIndex: number; completedItemsJson: string; status?: string; certified?: boolean }
+  data: { currentItemIndex: number; completedItemsJson: string; status?: string; certified?: boolean; notaObtida?: number }
 ): Promise<TrailProgress> {
   const r = await api.put<TrailProgress>(`/my-trails/${trailId}/progress`, data);
+  return r.data;
+}
+
+/* ── Certificados ── */
+export interface CertificateInfo {
+  trailId: number;
+  trailName: string;
+  trailDescription?: string;
+  notaObtida?: number;
+  tempoTotalSegundos: number;
+  iniciadoEm?: string;
+  concluidoEm?: string;
+  employeeName?: string;
+  companyName?: string;
+  ismName?: string;
+}
+
+export async function getMyCertificates(): Promise<CertificateInfo[]> {
+  const r = await api.get<CertificateInfo[]>("/my-trails/certificates");
   return r.data;
 }
 
@@ -56,6 +75,11 @@ export async function replaceCardQuestions(
   questions: CardQuestion[]
 ): Promise<CardQuestion[]> {
   const r = await api.put<CardQuestion[]>(`/cards/${cardId}/questions`, questions);
+  return r.data;
+}
+
+export async function generateCardQuestions(cardId: number): Promise<CardQuestion[]> {
+  const r = await api.post<CardQuestion[]>(`/cards/${cardId}/questions/generate`);
   return r.data;
 }
 

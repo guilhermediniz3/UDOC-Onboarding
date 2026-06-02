@@ -3,9 +3,11 @@ import {
   Badge,
   Button,
   Group,
+  Pagination,
   Paper,
   Stack,
   Text,
+  TextInput,
   Title,
   Tooltip,
 } from "@mantine/core";
@@ -13,10 +15,13 @@ import {
 import {
   IconChartBar,
   IconEye,
+  IconInfoCircle,
   IconMoodNeutral,
   IconMoodSad,
   IconMoodSmile,
   IconMoodSmileBeam,
+  IconRoute,
+  IconSearch,
   IconStar,
   IconX,
 } from "@tabler/icons-react";
@@ -58,6 +63,158 @@ function MetricCard({ label, value, icon: Icon, color }: { label: string; value:
           <Text fz="2rem" fw={800} c="var(--text-primary)" style={{ lineHeight: 1 }}>{value}</Text>
         </div>
       </Group>
+    </Paper>
+  );
+}
+
+const PAGE_SIZE = 10;
+
+// ── Linha de uma carinha NPS compacta ─────────────────────────────────────────
+function FaceBadge({ Icon, color, count }: { Icon: React.ElementType; color: string; count: number }) {
+  return (
+    <Group gap={3} align="center" style={{ minWidth: 32 }}>
+      <Icon size={16} color={color} />
+      <Text fz="xs" fw={700} c={color}>{count}</Text>
+    </Group>
+  );
+}
+
+// ── Lista de documentos com busca, paginação e NPS por linha ─────────────────
+function TopCardsList({
+  cards,
+  maxAccess,
+  hasFilter,
+}: {
+  cards: { id: number; title: string; access_count: number; score1?: number; score2?: number; score3?: number; score4?: number }[];
+  maxAccess: number;
+  hasFilter: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const [page, setPage]     = useState(1);
+
+  const filtered = cards.filter((c) =>
+    !search.trim() || c.title.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const visible    = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  // offset global para numeração correta ao paginar
+  const offset     = (safePage - 1) * PAGE_SIZE;
+
+  return (
+    <Paper p="24px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
+
+      {/* Cabeçalho + busca */}
+      <Group justify="space-between" align="center" mb="lg" wrap="wrap" gap="sm">
+        <Group gap="sm" align="center">
+          <IconChartBar size={20} color="var(--mantine-color-violet-5)" />
+          <Text fw={700} c="var(--text-primary)">Documentos mais acessados</Text>
+          {cards.length > 0 && (
+            <Badge variant="light" color="violet" radius="xl" size="sm">{cards.length}</Badge>
+          )}
+          <Tooltip
+            label={`Ranking de documentos por número de acessos. As carinhas mostram as avaliações NPS de cada documento${hasFilter ? " no período filtrado" : " (todos os tempos para acessos; período filtrado para NPS)"}.`}
+            withArrow multiline w={300} position="right"
+          >
+            <IconInfoCircle size={15} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.7 }} />
+          </Tooltip>
+        </Group>
+        <TextInput
+          placeholder="Buscar documento..."
+          leftSection={<IconSearch size={14} />}
+          rightSection={search ? (
+            <ActionIcon size="xs" variant="subtle" color="gray" onClick={() => { setSearch(""); setPage(1); }}>
+              <IconX size={12} />
+            </ActionIcon>
+          ) : null}
+          value={search}
+          onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
+          radius="xl"
+          size="sm"
+          w={240}
+          styles={{
+            input: { background: "var(--input-bg)", border: "1px solid var(--border-color)", color: "var(--text-primary)" },
+          }}
+        />
+      </Group>
+
+      {/* Lista */}
+      {visible.length === 0 ? (
+        <Text ta="center" c="var(--text-secondary)" py="xl">
+          {search ? "Nenhum documento encontrado" : "Nenhum acesso registrado ainda"}
+        </Text>
+      ) : (
+        <Stack gap="6px">
+          {visible.map((card, i) => {
+            const count    = Number(card.access_count);
+            const barPct   = maxAccess > 0 ? Math.max(4, Math.round((count / maxAccess) * 100)) : 4;
+            const s1 = Number(card.score1 || 0);
+            const s2 = Number(card.score2 || 0);
+            const s3 = Number(card.score3 || 0);
+            const s4 = Number(card.score4 || 0);
+            const totalNps = s1 + s2 + s3 + s4;
+
+            return (
+              <div key={card.id} style={{
+                background: "var(--app-bg)",
+                borderRadius: 12,
+                border: "1px solid var(--border-color)",
+                padding: "10px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}>
+                {/* Número */}
+                <Text fw={700} c="var(--mantine-color-violet-5)" style={{ minWidth: 26, textAlign: "right", flexShrink: 0 }}>
+                  {offset + i + 1}.
+                </Text>
+
+                {/* Nome */}
+                <Text fz="sm" fw={500} c="var(--text-primary)" style={{ flex: 1, minWidth: 0 }} truncate>
+                  {card.title}
+                </Text>
+
+                {/* Barra proporcional */}
+                <div style={{ width: 100, height: 5, borderRadius: 3, background: "var(--border-color)", overflow: "hidden", flexShrink: 0 }}>
+                  <div style={{ height: "100%", width: `${barPct}%`, borderRadius: 3, background: "linear-gradient(to right, #7c3aed, #2563eb)", transition: "width 0.4s" }} />
+                </div>
+
+                {/* Badge de acessos */}
+                <Badge variant="light" color="violet" radius="xl" miw={76} ta="center" style={{ flexShrink: 0 }}>
+                  {count.toLocaleString("pt-BR")} acessos
+                </Badge>
+
+                {/* Separador */}
+                <div style={{ width: 1, height: 22, background: "var(--border-color)", flexShrink: 0 }} />
+
+                {/* Carinhas NPS — sempre visíveis; 0 aparece em cinza */}
+                <Group gap={8} style={{ flexShrink: 0 }}>
+                  <FaceBadge Icon={IconMoodSad}       color="#ef4444" count={s1} />
+                  <FaceBadge Icon={IconMoodNeutral}   color="#f97316" count={s2} />
+                  <FaceBadge Icon={IconMoodSmile}     color="#22c55e" count={s3} />
+                  <FaceBadge Icon={IconMoodSmileBeam} color="#7c3aed" count={s4} />
+                </Group>
+              </div>
+            );
+          })}
+        </Stack>
+      )}
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <Group justify="center" mt="lg">
+          <Pagination
+            value={safePage}
+            onChange={setPage}
+            total={totalPages}
+            radius="xl"
+            size="sm"
+            color="violet"
+          />
+        </Group>
+      )}
+
     </Paper>
   );
 }
@@ -149,59 +306,69 @@ export default function Dashboard() {
       {/* Métricas */}
       <Group gap="lg" grow>
         <MetricCard label="Total de acessos" value={data?.totalCardAccesses ?? "—"} icon={IconEye} color="#7c3aed" />
-        <MetricCard label="Média NPS" value={data?.avgNpsScore ? `${data.avgNpsScore.toFixed(1)} / 4` : "—"} icon={IconStar} color="#f97316" />
-        <MetricCard label="Respostas NPS" value={data?.totalRespostas ?? totalFaces} icon={IconMoodSmile} color="#22c55e" />
+        <MetricCard label="Média NPS — Trilhas" value={data?.avgNpsScore ? `${data.avgNpsScore.toFixed(1)} / 4` : "—"} icon={IconStar} color="#f97316" />
+        <MetricCard label="Respostas NPS — Trilhas" value={data?.totalRespostas ?? totalFaces} icon={IconMoodSmile} color="#22c55e" />
       </Group>
 
-      {/* Carinhas com contagem — destaque visual */}
-      <Paper p="28px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 4px 20px var(--shadow-color)" }}>
-        <Text fw={700} c="var(--text-primary)" mb="xl">
-          Distribuição de satisfação {hasFilter ? "(período filtrado)" : "(geral)"}
-        </Text>
-        {/* As 4 carinhas sempre com as mesmas cores do editor NPS */}
-        <Group gap="md" grow>
+      {/* NPS de Trilhas — distribuição por carinha */}
+      <Paper p="20px 24px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 4px 20px var(--shadow-color)" }}>
+        <Group gap="xs" mb="md" align="center">
+          <IconRoute size={18} color="#7c3aed" />
+          <Text fw={700} c="var(--text-primary)">
+            Satisfação nas Trilhas {hasFilter ? "(período filtrado)" : ""}
+          </Text>
+          <Tooltip
+            label="Distribuição das avaliações de satisfação feitas ao final das trilhas de treinamento. Não inclui avaliações de documentos individuais."
+            withArrow multiline w={280} position="right"
+          >
+            <IconInfoCircle size={15} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.7 }} />
+          </Tooltip>
+          {totalFaces === 0 && (
+            <Text fz="xs" c="var(--text-secondary)" ml="auto">Nenhuma avaliação de trilha registrada ainda</Text>
+          )}
+        </Group>
+        <Group gap="lg" grow>
           {FACES.map((face) => {
             const count = countByScore[face.score] || 0;
             const pct   = totalFaces > 0 ? Math.round((count / totalFaces) * 100) : 0;
             return (
               <div key={face.score} style={{
                 background: face.bg,
-                border: `2px solid ${face.color}44`,
-                borderRadius: 20,
-                padding: "24px 16px",
+                border: `2px solid ${face.color}55`,
+                borderRadius: 16,
+                boxShadow: `0 4px 20px ${face.color}18`,
+                padding: "20px 12px",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 10,
+                gap: 6,
               }}>
-                {/* Ícone com a cor exata do editor de perguntas NPS */}
-                <face.Icon size={48} color={face.color} />
-                <Text fz="2rem" fw={800} c={face.color} style={{ lineHeight: 1 }}>
+                <face.Icon size={48} color={face.color} stroke={1.5} />
+                <Text fz="2rem" fw={900} c={face.color} style={{ lineHeight: 1 }}>
                   {count}
                 </Text>
-                <Text fz="xs" fw={600} c="var(--text-secondary)" ta="center">
-                  {face.label}
+                <Text fz="xs" fw={700} c={face.color} style={{ opacity: 0.8 }}>
+                  {pct}%
                 </Text>
-                <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--border-color)" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: face.color, transition: "width 0.5s" }} />
-                </div>
-                <Text fz="xs" c="var(--text-secondary)">{pct}%</Text>
               </div>
             );
           })}
         </Group>
-        {totalFaces === 0 && (
-          <Text ta="center" fz="xs" c="var(--text-secondary)" mt="md">
-            Nenhuma resposta NPS registrada ainda
-          </Text>
-        )}
       </Paper>
 
-      {/* Linha de tendência */}
+      {/* Tendência de satisfação das Trilhas */}
       <Paper p="24px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 4px 20px var(--shadow-color)" }}>
-        <Text fw={700} c="var(--text-primary)" mb="lg">
-          Tendência de satisfação {hasFilter ? "(período filtrado)" : "(últimos 30 dias)"}
-        </Text>
+        <Group gap="xs" mb="lg" align="center">
+          <Text fw={700} c="var(--text-primary)">
+            Tendência de satisfação — Trilhas {hasFilter ? "(período filtrado)" : "(últimos 30 dias)"}
+          </Text>
+          <Tooltip
+            label="Média diária das avaliações NPS das trilhas de treinamento. Escala de 1 (Insatisfeito) a 4 (Muito satisfeito)."
+            withArrow multiline w={260} position="right"
+          >
+            <IconInfoCircle size={15} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.7 }} />
+          </Tooltip>
+        </Group>
         {timelineData.length === 0 ? (
           <Text ta="center" c="var(--text-secondary)" py="xl">Sem dados de NPS no período</Text>
         ) : (
@@ -229,41 +396,8 @@ export default function Dashboard() {
         )}
       </Paper>
 
-      {/* Top Cards */}
-      <Paper p="24px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
-        <Group gap="sm" mb="lg">
-          <IconChartBar size={20} color="var(--mantine-color-violet-5)" />
-          <Text fw={700} c="var(--text-primary)">Documentos mais acessados</Text>
-        </Group>
-        {(!data?.topCards || data.topCards.length === 0) ? (
-          <Text ta="center" c="var(--text-secondary)" py="xl">Nenhum acesso registrado ainda</Text>
-        ) : (
-          <Stack gap="8px">
-            {data.topCards.map((card, i) => {
-              const count = Number(card.access_count);
-              const barWidth = Math.max(8, Math.round((count / maxAccess) * 180));
-              return (
-                <Group key={card.id} justify="space-between" align="center"
-                  px="16px" py="12px"
-                  style={{ background: "var(--app-bg)", borderRadius: 12, border: "1px solid var(--border-color)" }}>
-                  <Group gap="sm">
-                    <Text fw={700} c="var(--mantine-color-violet-5)" w={24}>{i + 1}.</Text>
-                    <Text fz="sm" fw={500} c="var(--text-primary)">{card.title}</Text>
-                  </Group>
-                  <Group gap="sm" align="center">
-                    <div style={{ height: 6, borderRadius: 3, background: "var(--border-color)", width: 180, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: barWidth, borderRadius: 3, background: "linear-gradient(to right, #7c3aed, #2563eb)" }} />
-                    </div>
-                    <Badge variant="light" color="violet" radius="xl" miw={90} ta="center">
-                      {count.toLocaleString("pt-BR")} acessos
-                    </Badge>
-                  </Group>
-                </Group>
-              );
-            })}
-          </Stack>
-        )}
-      </Paper>
+      {/* Top Cards — com busca, paginação e NPS por linha */}
+      <TopCardsList cards={data?.topCards || []} maxAccess={maxAccess} hasFilter={hasFilter} />
 
     </Stack>
   );

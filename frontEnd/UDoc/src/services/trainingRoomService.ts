@@ -56,3 +56,25 @@ export async function updateTrainingRoom(
 export async function deleteTrainingRoom(id: number): Promise<void> {
   await api.delete(`/training-rooms/${id}`);
 }
+
+/** Retorna o próximo sortOrder sequencial para salas de uma trilha */
+export async function getNextTrailOrder(trailId: number): Promise<number> {
+  const r = await api.get<number>(`/training-rooms/trail/${trailId}/next-order`);
+  return r.data;
+}
+
+/** Envia convites por e-mail para os funcionários convidados da sala */
+export async function sendTrainingInvite(
+  roomId: number,
+  jitsiLink: string
+): Promise<{ sent: number; emails: string[] }> {
+  const r = await api.post<{ sent: number; emails: string[] }>(
+    `/training-rooms/${roomId}/send-invite`,
+    { jitsiLink }
+  );
+  return r.data;
+}
+
+/* ── Gravações de vídeo ── */
+// Funções de gravação de vídeo foram movidas para recordingService.ts
+// (usam XMLHttpRequest para garantir envio do Authorization header com multipart)

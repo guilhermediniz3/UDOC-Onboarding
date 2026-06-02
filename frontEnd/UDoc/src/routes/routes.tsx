@@ -23,6 +23,8 @@ import AdminListUsuarios from "../pages/AdminListUsuarios/AdminListUsuarios";
 import AdminUsuario from "../pages/AdminUsuario/AdminUsuario";
 import AdminEmailConfig from "../pages/AdminEmailConfig/AdminEmailConfig";
 import UserCardView from "../pages/UserCardView/UserCardView";
+import MeusCertificados from "../pages/MeusCertificados/MeusCertificados";
+import AdminSettings from "../pages/AdminSettings/AdminSettings";
 
 function AppRoutes() {
   return (
@@ -38,6 +40,9 @@ function AppRoutes() {
       {/* MINHAS TRILHAS */}
       <Route path="/minhas-trilhas" element={<MinhasTrihas />} />
       <Route path="/minhas-trilhas/:trailId" element={<MinhaTrihaViewer />} />
+
+      {/* MEUS CERTIFICADOS */}
+      <Route path="/meus-certificados" element={<MeusCertificados />} />
 
       {/* CARDS */}
       <Route path="/admin/cards" element={<AdminListCards />} />
@@ -81,6 +86,9 @@ function AppRoutes() {
 
       {/* CERTIFICATE TEMPLATE */}
       <Route path="/admin/certificate-template" element={<AdminCertificateTemplate />} />
+
+      {/* CONFIGURAÇÕES GLOBAIS */}
+      <Route path="/admin/settings" element={<AdminSettings />} />
 
     </Routes>
   );

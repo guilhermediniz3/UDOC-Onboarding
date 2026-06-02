@@ -18,6 +18,7 @@ import Callout from "../../components/RichTextEditor/extensions/Callout";
 import Badge from "../../components/RichTextEditor/extensions/Badge/Badge";
 import ResizableImage from "../../components/RichTextEditor/extensions/ResizableImage";
 import ResizableVideo from "../../components/RichTextEditor/extensions/ResizableVideo";
+import ResizableRecordingVideo from "../../components/RichTextEditor/extensions/ResizableRecordingVideo";
 
 import "../../components/RichTextEditor/index.css";
 import "../../components/RichTextEditor/extensions/video.css";
@@ -40,6 +41,7 @@ export default function UserCardView() {
       Badge,
       ResizableImage,
       ResizableVideo,
+      ResizableRecordingVideo,
     ],
     content: "",
   });

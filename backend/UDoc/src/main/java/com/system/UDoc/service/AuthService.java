@@ -105,6 +105,29 @@ public class AuthService {
         }
     }
 
+    /** Envia e-mail de boas-vindas para o usuário definir sua senha (chamado pelo admin) */
+    @Transactional
+    public void sendWelcomeEmail(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24)); // 24h para primeiro acesso
+        userRepository.save(user);
+
+        String link = frontendUrl + "/reset-password?token=" + token;
+
+        try {
+            emailService.sendWelcomeEmail(user.getEmail(), user.getName(), link);
+        } catch (Exception e) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Falha ao enviar e-mail de boas-vindas: " + e.getMessage()
+            );
+        }
+    }
+
     @Transactional
     public void resetPassword(ResetPasswordRequestDTO request) {
         User user = userRepository.findByResetToken(request.getToken())

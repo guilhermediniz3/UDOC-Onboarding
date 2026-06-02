@@ -24,6 +24,7 @@ import {
   IconLogout,
   IconRoute,
   IconSchool,
+  IconSettings,
   IconUserCog,
   IconUsers,
 } from "@tabler/icons-react";
@@ -48,6 +49,7 @@ interface NavItemType {
   collapsedPath?: string;
   isActive: (pathname: string) => boolean;
   children?: NavChild[];
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItemType[] = [
@@ -159,10 +161,23 @@ const NAV_ITEMS: NavItemType[] = [
     isActive: (p) => p.startsWith("/minhas-trilhas"),
   },
   {
+    label: "Meus Certificados",
+    Icon: IconCertificate,
+    path: "/meus-certificados",
+    isActive: (p) => p.startsWith("/meus-certificados"),
+  },
+  {
     label: "Dashboard",
     Icon: IconChartBar,
     path: "/dashboard",
     isActive: (p) => p === "/dashboard",
+  },
+  {
+    label: "Configurações",
+    Icon: IconSettings,
+    path: "/admin/settings",
+    isActive: (p) => p === "/admin/settings",
+    adminOnly: true,
   },
 ];
 
@@ -203,7 +218,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </ActionIcon>
         </Group>
 
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) =>
+          !item.adminOnly || user?.role === "ADMIN"
+        ).map((item) => {
           const itemIsActive = item.isActive(pathname);
 
           if (isCollapsed) {

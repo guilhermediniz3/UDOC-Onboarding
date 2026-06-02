@@ -37,6 +37,7 @@ import Callout from "../../components/RichTextEditor/extensions/Callout";
 import BadgeExt from "../../components/RichTextEditor/extensions/Badge/Badge";
 import ResizableImage from "../../components/RichTextEditor/extensions/ResizableImage";
 import ResizableVideo from "../../components/RichTextEditor/extensions/ResizableVideo";
+import ResizableRecordingVideo from "../../components/RichTextEditor/extensions/ResizableRecordingVideo";
 
 import "../../components/RichTextEditor/index.css";
 import "../../components/RichTextEditor/extensions/video.css";
@@ -58,7 +59,7 @@ import {
   type CardQuestion,
 } from "../../services/trailLearnerService";
 
-import { incrementCardAccess } from "../../services/npsService";
+import { getNpsConfig, incrementCardAccess } from "../../services/npsService";
 import NpsResponseWidget from "../../components/Nps/NpsResponseWidget";
 import QuizWidget from "../../components/Quiz/QuizWidget";
 import CertificatePreview from "../../components/Quiz/CertificatePreview";
@@ -84,7 +85,7 @@ function CardViewer({ item }: { item: TrailContentItem }) {
       StarterKit, Underline,
       Link.configure({ openOnClick: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Callout, BadgeExt, ResizableImage, ResizableVideo,
+      Callout, BadgeExt, ResizableImage, ResizableVideo, ResizableRecordingVideo,
     ],
     content: item.cardContent || "",
   });
@@ -161,6 +162,10 @@ export default function MinhaTrihaViewer() {
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [step, setStep] = useState<ItemStep>("content");
 
+  // Config NPS por card e por trilha
+  const [cardNpsEnabled, setCardNpsEnabled] = useState(true);
+  const [trailNpsEnabled, setTrailNpsEnabled] = useState(true);
+
   // Quiz por card
   const [cardQuestions, setCardQuestions] = useState<CardQuestion[]>([]);
   const [cardAprovado, setCardAprovado] = useState<boolean | null>(null);
@@ -209,12 +214,17 @@ export default function MinhaTrihaViewer() {
           }
         } catch { /* dados opcionais para o certificado */ }
 
-        // Carrega perguntas da trilha (reutiliza serviço de quiz card, mas para trailId)
+        // Carrega perguntas da trilha
         try {
           const { getTrailQuestions } = await import("../../services/trailCertificationService");
           const qs = await getTrailQuestions(Number(trailId));
           setTrailQuestions(qs as any);
         } catch { /* sem perguntas da trilha */ }
+
+        // Carrega config NPS da trilha
+        getNpsConfig("trail", Number(trailId))
+          .then((c) => setTrailNpsEnabled(c.enabled))
+          .catch(() => {}); // padrão true mantido
 
         // Restaura progresso e tempo acumulado
         if (progress) {
@@ -240,7 +250,7 @@ export default function MinhaTrihaViewer() {
   }, [trailId]);
 
   // ── persiste progresso com debounce ────────────────────────────────────────
-  function persistProgress(index: number, completedSet: Set<number>, status?: string, certified?: boolean) {
+  function persistProgress(index: number, completedSet: Set<number>, status?: string, certified?: boolean, notaObtida?: number) {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveTrailProgress(Number(trailId), {
@@ -248,18 +258,23 @@ export default function MinhaTrihaViewer() {
         completedItemsJson: JSON.stringify(Array.from(completedSet)),
         status: status || "in_progress",
         ...(certified !== undefined ? { certified } : {}),
+        ...(notaObtida !== undefined ? { notaObtida } : {}),
       }).catch(() => {});
     }, 1000);
   }
 
-  // ── carrega quiz do card quando muda de item ────────────────────────────────
+  // ── carrega quiz e config NPS do card quando muda de item ───────────────────
   useEffect(() => {
     const item = items[currentIndex];
     if (item?.tipo === "card" && item.cardId) {
       incrementCardAccess(item.cardId).catch(() => {});
       getCardQuestions(item.cardId).then(setCardQuestions).catch(() => setCardQuestions([]));
+      getNpsConfig("card", item.cardId)
+        .then((c) => setCardNpsEnabled(c.enabled))
+        .catch(() => setCardNpsEnabled(true));
     } else {
       setCardQuestions([]);
+      setCardNpsEnabled(true);
     }
     setStep("content");
     setCardAprovado(null);
@@ -277,11 +292,14 @@ export default function MinhaTrihaViewer() {
       persistProgress(next, newCompleted);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      // Terminou todos os itens
+      // Terminou todos os itens — decide próxima fase
       if (trailQuestions.length > 0) {
         setPhase("trail-quiz");
-      } else {
+      } else if (trailNpsEnabled) {
         setPhase("trail-nps");
+      } else {
+        setPhase("done");
+        persistProgress(currentIndex, newCompleted, "completed");
       }
       persistProgress(currentIndex, newCompleted);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -291,8 +309,10 @@ export default function MinhaTrihaViewer() {
   function handleContentNext() {
     if (cardQuestions.length > 0) {
       setStep("quiz");
-    } else {
+    } else if (cardNpsEnabled) {
       setStep("nps");
+    } else {
+      advanceItem();
     }
   }
 
@@ -313,7 +333,7 @@ export default function MinhaTrihaViewer() {
   function handleTrailAprovado(nota: number) {
     setTrailAprovado(true);
     setTrailNota(nota);
-    persistProgress(currentIndex, completed, "completed", true); // certified = true
+    persistProgress(currentIndex, completed, "completed", true, nota); // certified=true, nota persistida
     // Não muda de fase aqui — o certificado é exibido na fase trail-quiz
   }
 
@@ -515,8 +535,9 @@ export default function MinhaTrihaViewer() {
                   />
                   <Group justify="flex-end">
                     <Button rightSection={<IconArrowRight size={16} />} variant="gradient"
-                      gradient={{ from: "violet", to: "blue" }} radius="xl" onClick={() => setStep("nps")}>
-                      Continuar para NPS
+                      gradient={{ from: "violet", to: "blue" }} radius="xl"
+                      onClick={() => cardNpsEnabled ? setStep("nps") : advanceItem()}>
+                      {cardNpsEnabled ? "Continuar para NPS" : "Próximo item"}
                     </Button>
                   </Group>
                 </Stack>
@@ -595,8 +616,11 @@ export default function MinhaTrihaViewer() {
               <Group justify="flex-end">
                 <Button rightSection={<IconArrowRight size={16} />} variant="gradient"
                   gradient={{ from: "violet", to: "blue" }} radius="xl"
-                  onClick={() => { setPhase("trail-nps"); persistProgress(currentIndex, completed, "completed", true); }}>
-                  Próximo: avaliação da trilha
+                  onClick={() => {
+                    persistProgress(currentIndex, completed, "completed", true, trailNota ?? undefined);
+                    if (trailNpsEnabled) { setPhase("trail-nps"); } else { setPhase("done"); }
+                  }}>
+                  {trailNpsEnabled ? "Próximo: avaliação da trilha" : "Concluir trilha"}
                 </Button>
               </Group>
             </Stack>

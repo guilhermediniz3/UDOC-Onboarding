@@ -18,10 +18,12 @@ import {
   TextInput,
 } from "@mantine/core";
 
-import { IconCheck, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
+import { IconCheck, IconPlus, IconRobot, IconTrash, IconX } from "@tabler/icons-react";
+import { Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 
 import {
+  generateCardQuestions,
   getCardQuestions,
   replaceCardQuestions,
   type CardQuestion,
@@ -35,10 +37,12 @@ const EMPTY = (cardId: number): CardQuestion => ({
 
 export default function CardQuizEditor({ cardId }: Props) {
 
-  const [questions, setQuestions] = useState<CardQuestion[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [msgType, setMsgType] = useState<"success" | "error">("success");
+  const [questions, setQuestions]   = useState<CardQuestion[]>([]);
+  const [preview, setPreview]       = useState<CardQuestion[]>([]);
+  const [saving, setSaving]         = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [message, setMessage]       = useState("");
+  const [msgType, setMsgType]       = useState<"success" | "error">("success");
 
   function showMsg(type: "success" | "error", text: string) {
     setMsgType(type); setMessage(text); setTimeout(() => setMessage(""), 3500);
@@ -48,6 +52,24 @@ export default function CardQuizEditor({ cardId }: Props) {
 
   function updateQ(i: number, field: keyof CardQuestion, value: any) {
     setQuestions((prev) => prev.map((q, idx) => idx === i ? { ...q, [field]: value } : q));
+  }
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setPreview([]);
+    try {
+      const generated = await generateCardQuestions(cardId);
+      if (generated.length === 0) { showMsg("error", "O Groq não retornou perguntas. Verifique se o card tem conteúdo."); return; }
+      setPreview(generated);
+      showMsg("success", `${generated.length} perguntas geradas! Revise e clique em "Adicionar todas" para incluir.`);
+    } catch (e: any) {
+      showMsg("error", e?.response?.data?.message || "Erro ao gerar perguntas com IA. Verifique se o card tem conteúdo.");
+    } finally { setGenerating(false); }
+  }
+
+  function addPreviewToQuestions() {
+    setQuestions((prev) => [...prev, ...preview]);
+    setPreview([]);
   }
 
   async function handleSave() {
@@ -67,13 +89,24 @@ export default function CardQuizEditor({ cardId }: Props) {
 
   return (
     <Stack gap="20px">
-      <Group justify="space-between">
-        <Stack gap={2}>
-          <Text fw={600} c="var(--text-primary)">Perguntas de Quiz</Text>
-          <Text fz="xs" c="var(--text-secondary)">
-            Aparecem após o conteúdo. Total: <b>{totalPontos.toFixed(1)} pts</b> — mínimo 70% para aprovação.
-          </Text>
-        </Stack>
+
+      <Stack gap={2}>
+        <Text fw={600} c="var(--text-primary)">Perguntas de Quiz</Text>
+        <Text fz="xs" c="var(--text-secondary)">
+          Aparecem após o conteúdo. Total: <b>{totalPontos.toFixed(1)} pts</b> — mínimo 70% para aprovação.
+        </Text>
+      </Stack>
+
+      {/* Botões — idênticos ao padrão da aba Certificação da trilha */}
+      <Group gap="sm">
+        <Button
+          leftSection={<IconRobot size={18} />}
+          radius="xl" size="sm"
+          variant="gradient" gradient={{ from: "violet", to: "blue" }}
+          loading={generating} onClick={handleGenerate}
+        >
+          Gerar com Groq IA
+        </Button>
         <Button leftSection={<IconPlus size={16} />} radius="xl" size="sm" variant="light" color="violet"
           onClick={() => setQuestions((p) => [...p, EMPTY(cardId)])}>
           Adicionar pergunta
@@ -85,9 +118,47 @@ export default function CardQuizEditor({ cardId }: Props) {
         {message}
       </Alert>}
 
-      {questions.length === 0 ? (
+      {/* Preview das perguntas geradas pela IA */}
+      {preview.length > 0 && (
+        <Paper p="20px" radius="16px"
+          style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.3)" }}>
+          <Group justify="space-between" mb="md">
+            <Group gap="sm">
+              <IconRobot size={20} color="var(--mantine-color-violet-5)" />
+              <Title order={5} c="var(--text-primary)">Sugestões da IA ({preview.length} perguntas)</Title>
+            </Group>
+            <Group gap="sm">
+              <Button size="xs" radius="xl" variant="light" color="red" onClick={() => setPreview([])}>Descartar</Button>
+              <Button size="xs" radius="xl" variant="gradient" gradient={{ from: "violet", to: "blue" }} onClick={addPreviewToQuestions}>
+                Adicionar todas
+              </Button>
+            </Group>
+          </Group>
+          <Stack gap="8px">
+            {preview.map((q, i) => (
+              <Paper key={i} px="16px" py="12px" radius="12px"
+                style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                <Group justify="space-between">
+                  <Stack gap={2} style={{ flex: 1 }}>
+                    <Text fz="sm" fw={500} c="var(--text-primary)">{q.enunciado}</Text>
+                    <Text fz="xs" c="var(--text-secondary)">
+                      {q.tipo === "vf" ? "Verdadeiro/Falso" : "Múltipla escolha"} — Resposta: <b>{q.respostaCorreta}</b>
+                    </Text>
+                  </Stack>
+                  <ActionIcon size="sm" radius="xl" color="red" variant="light"
+                    onClick={() => setPreview((p) => p.filter((_, pi) => pi !== i))}>
+                    <IconX size={12} />
+                  </ActionIcon>
+                </Group>
+              </Paper>
+            ))}
+          </Stack>
+        </Paper>
+      )}
+
+      {questions.length === 0 && preview.length === 0 ? (
         <Text ta="center" c="var(--text-secondary)" py="xl">
-          Nenhuma pergunta. Clique em "Adicionar pergunta" para criar o quiz deste card.
+          Nenhuma pergunta. Use os botões acima para adicionar ou gerar com IA.
         </Text>
       ) : (
         <Stack gap="12px">

@@ -69,3 +69,7 @@ export async function changePassword(id: number, data: ChangePasswordRequest): P
 export async function deleteUser(id: number): Promise<void> {
   await api.delete(`/users/${id}`);
 }
+
+export async function sendWelcomeEmail(id: number): Promise<void> {
+  await api.post(`/users/${id}/send-welcome-email`);
+}

@@ -9,6 +9,7 @@ public class UserTrailProgressDTO {
     private String completedItemsJson;
     private String status;
     private Boolean certified;
+    private Double notaObtida;
     private Long tempoTotalSegundos;
     private LocalDateTime iniciadoEm;
     private LocalDateTime concluidoEm;
@@ -21,6 +22,7 @@ public class UserTrailProgressDTO {
         this.completedItemsJson = p.getCompletedItemsJson();
         this.status = p.getStatus();
         this.certified = p.getCertified();
+        this.notaObtida = p.getNotaObtida();
         this.tempoTotalSegundos = p.getTempoTotalSegundos() != null ? p.getTempoTotalSegundos() : 0L;
         this.iniciadoEm = p.getIniciadoEm();
         this.concluidoEm = p.getConcluidoEm();
@@ -31,6 +33,7 @@ public class UserTrailProgressDTO {
     public String getCompletedItemsJson() { return completedItemsJson; } public void setCompletedItemsJson(String v) { this.completedItemsJson = v; }
     public String getStatus() { return status; } public void setStatus(String v) { this.status = v; }
     public Boolean getCertified() { return certified; } public void setCertified(Boolean v) { this.certified = v; }
+    public Double getNotaObtida() { return notaObtida; } public void setNotaObtida(Double v) { this.notaObtida = v; }
     public Long getTempoTotalSegundos() { return tempoTotalSegundos; } public void setTempoTotalSegundos(Long v) { this.tempoTotalSegundos = v; }
     public LocalDateTime getIniciadoEm() { return iniciadoEm; } public void setIniciadoEm(LocalDateTime v) { this.iniciadoEm = v; }
     public LocalDateTime getConcluidoEm() { return concluidoEm; } public void setConcluidoEm(LocalDateTime v) { this.concluidoEm = v; }

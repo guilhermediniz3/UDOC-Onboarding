@@ -19,7 +19,7 @@ export interface NpsDashboard {
   totalCardAccesses: number;
   totalRespostas: number;
   avgNpsScore: number;
-  topCards: { id: number; title: string; access_count: number }[];
+  topCards: { id: number; title: string; access_count: number; score1?: number; score2?: number; score3?: number; score4?: number }[];
   npsTimeline: { dia: string; media: number }[];
   satisfactionDistribution: { score: number; total: number }[];
 }
@@ -55,4 +55,28 @@ export async function getNpsDashboard(params?: {
 }): Promise<NpsDashboard> {
   const r = await api.get<NpsDashboard>("/nps/dashboard", { params });
   return r.data;
+}
+
+export async function generateNpsQuestions(
+  refType: "card" | "trail",
+  refId: number
+): Promise<NpsQuestion[]> {
+  const r = await api.post<NpsQuestion[]>(`/nps/${refType}/${refId}/questions/generate`);
+  return r.data;
+}
+
+export async function getNpsConfig(
+  refType: "card" | "trail",
+  refId: number
+): Promise<{ enabled: boolean }> {
+  const r = await api.get<{ enabled: boolean }>(`/nps/${refType}/${refId}/config`);
+  return r.data;
+}
+
+export async function setNpsConfig(
+  refType: "card" | "trail",
+  refId: number,
+  enabled: boolean
+): Promise<void> {
+  await api.put(`/nps/${refType}/${refId}/config`, { enabled });
 }

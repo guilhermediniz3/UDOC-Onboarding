@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { EditorContent, useEditor } from "@tiptap/react";
 
@@ -27,6 +27,8 @@ import Callout from "./extensions/Callout";
 import Badge from "./extensions/Badge/Badge";
 import ResizableImage from "./extensions/ResizableImage";
 import ResizableVideo from "./extensions/ResizableVideo";
+import ResizableRecordingVideo from "./extensions/ResizableRecordingVideo";
+import { uploadGenericRecording, getRecordingFileUrl } from "../../services/recordingService";
 
 import {
   FaBold,
@@ -52,6 +54,8 @@ import {
   FaSearchMinus,
   FaSearchPlus,
   FaRobot,
+  FaDotCircle,
+  FaStop,
 } from "react-icons/fa";
 
 import PromptDialog from "../PromptDialog/PromptDialog";
@@ -65,6 +69,9 @@ declare module "@tiptap/core" {
     };
     resizableVideo: {
       setResizableVideo: (options: { src: string; width?: number; align?: string }) => ReturnType;
+    };
+    resizableRecordingVideo: {
+      setResizableRecordingVideo: (options: { src: string; width?: number; align?: string }) => ReturnType;
     };
   }
 }
@@ -92,6 +99,15 @@ export default function RichTextEditor({
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
 
+  /* ── gravação de tela ── */
+  const [isRecording, setIsRecording]   = useState(false);
+  const [recSeconds, setRecSeconds]     = useState(0);
+  const [uploadingRec, setUploadingRec] = useState(false);
+  const [recMsg, setRecMsg]             = useState<{ text: string; type: "error" | "success" } | null>(null);
+  const recChunksRef  = useRef<Blob[]>([]);
+  const mediaRecRef   = useRef<MediaRecorder | null>(null);
+  const recTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({}),
@@ -103,6 +119,7 @@ export default function RichTextEditor({
       Badge,
       ResizableImage,
       ResizableVideo,
+      ResizableRecordingVideo,
     ],
 
     content: value,
@@ -155,6 +172,72 @@ export default function RichTextEditor({
   const changeZoom = (amount: number) => {
     setZoom((prev) => Math.min(150, Math.max(50, prev + amount)));
   };
+
+  async function handleStartRecording() {
+    if (!editor) return;
+
+    // Verifica cota via fetch direto — NÃO usa axios (evita interceptor 401 → reload)
+    try {
+      const token = localStorage.getItem("udoc-token") ?? "";
+      const res = await fetch("http://localhost:8081/config/storage", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const { pct } = await res.json() as { pct: number };
+        if (pct >= 100) {
+          setRecMsg({ type: "error", text: "Espaço de armazenamento esgotado. Acesse as Configurações para liberar espaço ou aumentar a cota." });
+          setTimeout(() => setRecMsg(null), 6000);
+          return;
+        }
+      }
+    } catch { /* se não conseguir verificar, permite gravar */ }
+
+    try {
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9" : "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
+      recorder.onstop = () => stream.getTracks().forEach((t: any) => t.stop());
+      recorder.start(1000);
+      mediaRecRef.current = recorder;
+      setIsRecording(true);
+      setRecSeconds(0);
+      recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError") alert("Erro ao iniciar gravação: " + e?.message);
+    }
+  }
+
+  async function handleStopRecording() {
+    if (!mediaRecRef.current || !editor) return;
+    if (recTimerRef.current) clearInterval(recTimerRef.current);
+    const duration = recSeconds;
+    mediaRecRef.current.stop();
+    mediaRecRef.current = null;
+    setIsRecording(false);
+    setUploadingRec(true);
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      const blob = new Blob(recChunksRef.current, { type: "video/webm" });
+      const ts   = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const rec  = await uploadGenericRecording(blob, `gravacao_${ts}.webm`, duration);
+      const url  = getRecordingFileUrl(rec.id);
+      editor.chain().focus().setResizableRecordingVideo({ src: url }).run();
+    } catch (e: any) {
+      const msg = e?.message?.includes("Cota")
+        ? e.message
+        : "Erro ao fazer upload da gravação. Tente novamente.";
+      setRecMsg({ type: "error", text: msg });
+      setTimeout(() => setRecMsg(null), 5000);
+    }
+    finally { setUploadingRec(false); recChunksRef.current = []; }
+  }
+
+  function formatRecTime(s: number) {
+    const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`;
+  }
 
   const openDialog = (type: "link" | "image" | "video") => {
     setDialogType(type);
@@ -258,6 +341,25 @@ export default function RichTextEditor({
             <ToolbarButton title="Link" onClick={() => openDialog("link")}><FaLink /></ToolbarButton>
             <ToolbarButton title="Imagem" onClick={() => openDialog("image")}><FaImage /></ToolbarButton>
             <ToolbarButton title="Vídeo" onClick={() => openDialog("video")}><FaVideo /></ToolbarButton>
+            {/* Botão de gravação — alterna entre gravar e parar+upload */}
+            {/* Botão de gravação */}
+            {!isRecording ? (
+              <Tooltip label={uploadingRec ? "Enviando gravação..." : "Gravar tela e inserir no card"} withArrow>
+                <span>
+                  <ToolbarButton title="Gravar" onClick={handleStartRecording} disabled={uploadingRec}>
+                    <FaDotCircle style={{ color: uploadingRec ? "#999" : "#ef4444" }} />
+                  </ToolbarButton>
+                </span>
+              </Tooltip>
+            ) : (
+              <Tooltip label={`Parar gravação (${formatRecTime(recSeconds)}) e inserir`} withArrow>
+                <span>
+                  <ToolbarButton title={`⏺ ${formatRecTime(recSeconds)}`} onClick={handleStopRecording}>
+                    <FaStop style={{ color: "#ef4444" }} />
+                  </ToolbarButton>
+                </span>
+              </Tooltip>
+            )}
             <Divider orientation="vertical" />
             <ToolbarButton title="Info" onClick={() => insertCallout("info")}><FaInfoCircle /></ToolbarButton>
             <ToolbarButton title="Warning" onClick={() => insertCallout("warning")}><FaExclamationTriangle /></ToolbarButton>
@@ -281,6 +383,25 @@ export default function RichTextEditor({
           </Group>
         </ScrollArea>
       </Paper>
+
+      {/* Banner de aviso de gravação — entre o toolbar e o editor, sempre visível */}
+      {recMsg && (
+        <div style={{
+          padding: "12px 18px",
+          borderRadius: 12,
+          background: recMsg.type === "error" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)",
+          border: `1px solid ${recMsg.type === "error" ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)"}`,
+          color: recMsg.type === "error" ? "#ef4444" : "#16a34a",
+          fontSize: 13,
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <span style={{ fontSize: 16 }}>{recMsg.type === "error" ? "⚠️" : "✅"}</span>
+          {recMsg.text}
+        </div>
+      )}
 
       <Paper
         className="editor-wrapper"

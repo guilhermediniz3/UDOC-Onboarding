@@ -34,6 +34,35 @@ public class DataInitializer {
             runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS iniciado_em timestamp");
             runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS concluido_em timestamp");
 
+            // ── Nota obtida no quiz de certificação ───────────────────────────────
+            runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS nota_obtida double precision");
+
+            // ── Tabela de gravações de vídeo ───────────────────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS video_recording (
+                    id bigserial PRIMARY KEY,
+                    training_room_id bigint REFERENCES training_room(id) ON DELETE CASCADE,
+                    filename varchar(255) NOT NULL,
+                    file_path varchar(500) NOT NULL,
+                    file_size bigint,
+                    duration_seconds bigint,
+                    created_at timestamp NOT NULL DEFAULT now()
+                )
+            """);
+            // Caso a tabela já existia com NOT NULL — torna nullable para gravações de cards
+            runSilently(jdbc, "ALTER TABLE video_recording ALTER COLUMN training_room_id DROP NOT NULL");
+
+            // ── Config de habilitação NPS por card/trilha ─────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS nps_config (
+                    id bigserial PRIMARY KEY,
+                    reference_type varchar(20) NOT NULL,
+                    reference_id bigint NOT NULL,
+                    enabled boolean NOT NULL DEFAULT true,
+                    UNIQUE(reference_type, reference_id)
+                )
+            """);
+
             // ── Garantir que certified exista na tabela user_trail_progress ──────
             // Caso a tabela já existia sem a coluna (criada antes do campo ser adicionado)
             runSilently(jdbc, "ALTER TABLE user_trail_progress ADD COLUMN IF NOT EXISTS certified boolean default false");
@@ -55,6 +84,20 @@ public class DataInitializer {
 
             // ── Garantir que jitsi_room_id seja NOT NULL (pode estar nullable no schema) ──
             runSilently(jdbc, "ALTER TABLE training_room ALTER COLUMN jitsi_room_id DROP NOT NULL");
+
+            // ── Configurações globais do sistema ───────────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS global_config (
+                    chave varchar(100) PRIMARY KEY,
+                    valor TEXT
+                )
+            """);
+            // Limite padrão de armazenamento: 10 GB (só insere se não existir)
+            runSilently(jdbc, """
+                INSERT INTO global_config (chave, valor)
+                VALUES ('storage_gravacoes_limite_bytes', '10737418240')
+                ON CONFLICT (chave) DO NOTHING
+            """);
 
             // ── Seed do usuário admin ──────────────────────────────────────────
             if (userRepository.existsByEmail("admin@udoc.com")) return;

@@ -37,6 +37,13 @@ public class TrailLearnerController {
         progressService.addTime(user.getId(), trailId, secs);
         return ResponseEntity.ok().build();
     }
+    /** Lista todos os certificados obtidos pelo usuário logado */
+    @GetMapping("/my-trails/certificates")
+    public ResponseEntity<List<com.system.UDoc.dto.CertificateInfoDTO>> getMyCertificates(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(progressService.getMyCertificates(user.getId()));
+    }
+
     // ── Quiz por Card (admin) ──────────────────────────────────────────────────
     @GetMapping("/cards/{cardId}/questions")
     public ResponseEntity<List<CardQuestionDTO>> getCardQuestions(@PathVariable Long cardId) {
@@ -45,6 +52,11 @@ public class TrailLearnerController {
     @PutMapping("/cards/{cardId}/questions")
     public ResponseEntity<List<CardQuestionDTO>> replaceCardQuestions(@PathVariable Long cardId, @RequestBody List<CardQuestionRequestDTO> questions) {
         return ResponseEntity.ok(cardQuizService.replaceQuestions(cardId, questions));
+    }
+
+    @PostMapping("/cards/{cardId}/questions/generate")
+    public ResponseEntity<List<CardQuestionDTO>> generateCardQuestionsWithGroq(@PathVariable Long cardId) {
+        return ResponseEntity.ok(cardQuizService.generateQuestionsWithGroq(cardId));
     }
     // ── Template de Certificado ────────────────────────────────────────────────
     @GetMapping("/certificate-template")

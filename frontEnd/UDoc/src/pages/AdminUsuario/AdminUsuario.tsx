@@ -14,6 +14,7 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from "@mantine/core";
 
 import {
@@ -35,6 +36,7 @@ import {
   changePassword,
   createUser,
   getUserById,
+  sendWelcomeEmail,
   updateUser,
   type UserData,
 } from "../../services/userService";
@@ -74,9 +76,10 @@ export default function AdminUsuario() {
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [saving, setSaving]               = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [message, setMessage]             = useState("");
+  const [messageType, setMessageType]     = useState<"success" | "error">("success");
 
   /* ── estado: segurança ── */
   const [newPassword, setNewPassword] = useState("");
@@ -149,9 +152,9 @@ export default function AdminUsuario() {
         employeeId: userData.employeeId ?? null,
       };
       if (isNew) {
-        await createUser(payload);
-        showMessage("success", "Usuário criado com sucesso!");
-        setTimeout(() => navigate("/admin/usuarios"), 1200);
+        const created = await createUser(payload);
+        showMessage("success", "Usuário criado! Redirecionando para enviar o convite por e-mail...");
+        setTimeout(() => navigate(`/admin/usuario/${created.id}`), 1000);
       } else {
         const updated = await updateUser(Number(id), payload);
         showMessage("success", "Usuário atualizado com sucesso!");
@@ -178,6 +181,19 @@ export default function AdminUsuario() {
       const error = err as { response?: { data?: { message?: string } } };
       showPwdMessage("error", error?.response?.data?.message || "Erro ao alterar senha.");
     } finally { setSavingPwd(false); }
+  }
+
+  /* ── enviar convite por e-mail ── */
+  async function handleSendWelcomeEmail() {
+    if (!userData.email) { showMessage("error", "O usuário não tem e-mail cadastrado."); return; }
+    setSendingInvite(true);
+    try {
+      await sendWelcomeEmail(Number(id));
+      showMessage("success", `Convite enviado para ${userData.email}! O link para definir a senha expira em 24 horas.`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      showMessage("error", error?.response?.data?.message || "Erro ao enviar e-mail. Verifique as configurações de SMTP.");
+    } finally { setSendingInvite(false); }
   }
 
   /* ── salvar config de e-mail ── */
@@ -296,10 +312,32 @@ export default function AdminUsuario() {
                 onChange={(e) => { const v = e.currentTarget.value; setUserData((p) => ({ ...p, name: v })); }}
                 styles={inputStyles} />
 
-              <TextInput label="E-mail" placeholder="email@exemplo.com" required radius="xl" size="md"
-                value={userData.email}
-                onChange={(e) => { const v = e.currentTarget.value; setUserData((p) => ({ ...p, email: v })); }}
-                styles={inputStyles} />
+              <Group gap="8px" align="flex-end">
+                <TextInput
+                  label="E-mail" placeholder="email@exemplo.com" required radius="xl" size="md"
+                  style={{ flex: 1 }}
+                  value={userData.email}
+                  onChange={(e) => { const v = e.currentTarget.value; setUserData((p) => ({ ...p, email: v })); }}
+                  styles={inputStyles}
+                />
+                {!isNew && (
+                  <Tooltip
+                    label={`Enviar convite por e-mail — o usuário receberá um link para definir a senha (válido por 24h)`}
+                    withArrow multiline w={260} position="top"
+                  >
+                    <Button
+                      radius="xl" size="md"
+                      variant="light" color="violet"
+                      leftSection={<IconSend size={16} />}
+                      loading={sendingInvite}
+                      onClick={handleSendWelcomeEmail}
+                      disabled={!userData.email}
+                    >
+                      Enviar convite
+                    </Button>
+                  </Tooltip>
+                )}
+              </Group>
 
               <Select label="Role" required radius="xl" size="md"
                 value={userData.role}

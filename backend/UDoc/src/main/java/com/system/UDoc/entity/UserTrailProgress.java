@@ -18,6 +18,10 @@ public class UserTrailProgress {
     @Column(columnDefinition = "boolean default false")
     private Boolean certified = false;
 
+    /** Nota obtida no quiz de certificação (0-100) */
+    @Column
+    private Double notaObtida;
+
     /** Tempo total acumulado em segundos de todas as sessões */
     @Column(columnDefinition = "bigint default 0")
     private Long tempoTotalSegundos = 0L;
@@ -41,6 +45,7 @@ public class UserTrailProgress {
     public String getCompletedItemsJson() { return completedItemsJson; } public void setCompletedItemsJson(String v) { this.completedItemsJson = v; }
     public String getStatus() { return status; } public void setStatus(String status) { this.status = status; }
     public Boolean getCertified() { return certified; } public void setCertified(Boolean certified) { this.certified = certified; }
+    public Double getNotaObtida() { return notaObtida; } public void setNotaObtida(Double v) { this.notaObtida = v; }
     public Long getTempoTotalSegundos() { return tempoTotalSegundos; } public void setTempoTotalSegundos(Long v) { this.tempoTotalSegundos = v; }
     public LocalDateTime getIniciadoEm() { return iniciadoEm; } public void setIniciadoEm(LocalDateTime v) { this.iniciadoEm = v; }
     public LocalDateTime getConcluidoEm() { return concluidoEm; } public void setConcluidoEm(LocalDateTime v) { this.concluidoEm = v; }
