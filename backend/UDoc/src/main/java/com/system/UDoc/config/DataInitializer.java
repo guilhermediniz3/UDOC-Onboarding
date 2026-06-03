@@ -197,6 +197,26 @@ public class DataInitializer {
             // ── Módulo no audit_log para categorização por área do sistema ────
             runSilently(jdbc, "ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS module varchar(100)");
 
+            // ── Colunas de auditoria JPA (AuditableEntity) em todas as tabelas ─
+            // Adicionadas explicitamente aqui porque ddl-auto=update não adiciona
+            // colunas NOT NULL em tabelas com dados existentes sem um DEFAULT.
+            // Todas são nullable para compatibilidade com dados históricos.
+            String[] auditTables = {
+                "users", "trail", "card", "company", "employee", "ism",
+                "training", "training_room", "training_session", "training_employee_result",
+                "trail_content", "trail_certification_config", "trail_question",
+                "nps_question", "nps_config", "certificate_template",
+                "card_question", "video_recording"
+            };
+            for (String table : auditTables) {
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS created_at TIMESTAMP");
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP");
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)");
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS last_modified_by VARCHAR(255)");
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP");
+                runSilently(jdbc, "ALTER TABLE " + table + " ADD COLUMN IF NOT EXISTS deleted_by VARCHAR(255)");
+            }
+
             // ── Coluna de troca de senha obrigatória ───────────────────────────
             runSilently(jdbc, "ALTER TABLE users ADD COLUMN IF NOT EXISTS force_password_change boolean NOT NULL DEFAULT false");
 
