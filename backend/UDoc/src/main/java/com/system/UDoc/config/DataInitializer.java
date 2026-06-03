@@ -1,7 +1,12 @@
 package com.system.UDoc.config;
 
+import com.system.UDoc.entity.Permission;
+import com.system.UDoc.entity.PermissionGroup;
+import com.system.UDoc.entity.PermissionGroup.GroupType;
 import com.system.UDoc.entity.Role;
 import com.system.UDoc.entity.User;
+import com.system.UDoc.repository.PermissionGroupRepository;
+import com.system.UDoc.repository.PermissionRepository;
 import com.system.UDoc.repository.UserRepository;
 
 import org.springframework.boot.CommandLineRunner;
@@ -18,6 +23,8 @@ public class DataInitializer {
     @Order(1)
     public CommandLineRunner seedAdmin(
             UserRepository userRepository,
+            PermissionGroupRepository permGroupRepo,
+            PermissionRepository permRepo,
             PasswordEncoder passwordEncoder,
             JdbcTemplate jdbc
     ) {
@@ -274,8 +281,67 @@ public class DataInitializer {
                   AND emp.ism_id IS NOT NULL
             """);
 
+            // ── Tabelas do sistema de permissões configuráveis ────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS permission_groups (
+                    id bigserial PRIMARY KEY,
+                    group_type varchar(30) NOT NULL UNIQUE,
+                    description varchar(255) NOT NULL,
+                    created_at timestamp, updated_at timestamp,
+                    created_by varchar(255), last_modified_by varchar(255),
+                    deleted_at timestamp, deleted_by varchar(255)
+                )
+            """);
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS permissions (
+                    id bigserial PRIMARY KEY,
+                    group_id bigint NOT NULL REFERENCES permission_groups(id),
+                    module varchar(50) NOT NULL,
+                    action varchar(20) NOT NULL,
+                    granted boolean NOT NULL DEFAULT true,
+                    sensitive boolean NOT NULL DEFAULT false,
+                    created_at timestamp, updated_at timestamp,
+                    created_by varchar(255), last_modified_by varchar(255),
+                    deleted_at timestamp, deleted_by varchar(255),
+                    CONSTRAINT uq_perm UNIQUE (group_id, module, action)
+                )
+            """);
+
+            // ── Seed: grupos e permissões padrão (tudo granted=true) ─────────
+            seedPermissions(permGroupRepo, permRepo);
+
             // Seed do usuário padrão movido para DataSeeder (ApplicationRunner @Order(2))
         };
+    }
+
+    /** Cria grupos e permissões padrão se ainda não existirem. Idempotente. */
+    private void seedPermissions(PermissionGroupRepository groupRepo,
+                                 PermissionRepository permRepo) {
+        // Módulos configuráveis do sistema
+        String[] modules = {"CARD", "TRILHA", "SALA", "FUNCIONARIO", "USUARIO", "EMPRESA", "ISM", "TRAINING"};
+        String[] actions = {"VIEW", "CREATE", "EDIT", "DELETE"};
+
+        // Permissões sensíveis: ISM agindo sobre recurso de outro ISM
+        java.util.Set<String> sensitiveISM = java.util.Set.of(
+            "SALA:CREATE", "SALA:EDIT", "SALA:DELETE",       // salas de outro ISM
+            "FUNCIONARIO:EDIT"                                 // alterar ISM responsável
+        );
+
+        for (GroupType gt : GroupType.values()) {
+            // Cria grupo se não existe
+            PermissionGroup group = groupRepo.findByGroupType(gt)
+                .orElseGet(() -> groupRepo.save(new PermissionGroup(gt, gt.name())));
+
+            for (String module : modules) {
+                for (String action : actions) {
+                    if (!permRepo.existsByGroupAndModuleAndAction(group, module, action)) {
+                        boolean sensitive = gt == GroupType.ISM
+                                            && sensitiveISM.contains(module + ":" + action);
+                        permRepo.save(new Permission(group, module, action, true, sensitive));
+                    }
+                }
+            }
+        }
     }
 
     private void runSilently(JdbcTemplate jdbc, String sql) {

@@ -29,6 +29,7 @@ import ForceChangePassword from "../pages/ForceChangePassword/ForceChangePasswor
 import Auditoria from "../pages/Auditoria/Auditoria";
 import Forbidden from "../pages/Forbidden/Forbidden";
 import Ranking from "../pages/Ranking/Ranking";
+import AdminPermissions from "../pages/AdminPermissions/AdminPermissions";
 
 function AppRoutes() {
   return (
@@ -99,6 +100,9 @@ function AppRoutes() {
 
       {/* RANKING — funcionários internos e admins */}
       <Route path="/ranking" element={<Ranking />} />
+
+      {/* PERMISSÕES — admin only */}
+      <Route path="/admin/permissions" element={<AdminPermissions />} />
 
       {/* AUDITORIA — admin only (guard client-side + @PreAuthorize backend) */}
       <Route path="/admin/auditoria" element={<Auditoria />} />

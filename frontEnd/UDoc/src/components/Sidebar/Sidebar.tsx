@@ -24,6 +24,7 @@ import {
   IconLogout,
   IconRoute,
   IconSchool,
+  IconKey,
   IconSettings,
   IconShieldCheck,
   IconTrophy,
@@ -34,6 +35,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../contexts/AuthContext";
+import { usePermission } from "../../contexts/PermissionContext";
 import SidebarXpWidget from "../SidebarXpWidget/SidebarXpWidget";
 
 import "./index.css";
@@ -190,6 +192,13 @@ const NAV_ITEMS: NavItemType[] = [
     adminOnly: true,
   },
   {
+    label: "Permissões",
+    Icon: IconKey,
+    path: "/admin/permissions",
+    isActive: (p) => p === "/admin/permissions",
+    adminOnly: true,
+  },
+  {
     label: "Auditoria",
     Icon: IconShieldCheck,
     path: "/admin/auditoria",
@@ -208,8 +217,22 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
+  const { can } = usePermission();
   const isMobile = useMediaQuery("(max-width: 48em)");
   const isCollapsed = collapsed && !isMobile;
+
+  // Mapeamento item de menu → módulo de permissão (VIEW)
+  // Itens sem módulo mapeado = sempre visíveis
+  const MODULE_FOR_ITEM: Record<string, string> = {
+    "Cadastro de Documentos": "CARD",
+    "Empresa":                "EMPRESA",
+    "Funcionário":            "FUNCIONARIO",
+    "ISM":                    "ISM",
+    "Usuários":               "USUARIO",
+    "Trilha":                 "TRILHA",
+    "Salas":                  "SALA",
+    "Ranking":                "RANKING",
+  };
 
   return (
 
@@ -235,9 +258,13 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </ActionIcon>
         </Group>
 
-        {NAV_ITEMS.filter((item) =>
-          !item.adminOnly || user?.role === "ADMIN"
-        ).map((item) => {
+        {NAV_ITEMS.filter((item) => {
+          if (item.adminOnly && user?.role !== "ADMIN") return false;
+          // Oculta item se permissão VIEW foi revogada para este grupo
+          const mod = MODULE_FOR_ITEM[item.label];
+          if (mod && !can(mod, "VIEW")) return false;
+          return true;
+        }).map((item) => {
           const itemIsActive = item.isActive(pathname);
 
           if (isCollapsed) {
@@ -258,6 +285,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           }
 
           if (item.children) {
+            const visibleChildren = item.children.filter(child => {
+              const mod = MODULE_FOR_ITEM[child.label];
+              return !mod || can(mod, "VIEW");
+            });
+            if (visibleChildren.length === 0) return null;
             return (
               <NavLink
                 key={item.label}
@@ -267,7 +299,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 defaultOpened={itemIsActive}
                 className="sidebar-navlink"
               >
-                {item.children.map((child) => (
+                {visibleChildren.map((child) => (
                   <NavLink
                     key={child.label}
                     label={child.label}

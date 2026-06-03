@@ -22,6 +22,7 @@ import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
 import ForceChangePassword from "./pages/ForceChangePassword/ForceChangePassword";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PermissionProvider } from "./contexts/PermissionContext";
 
 const PUBLIC_PATHS = ["/forgot-password", "/reset-password"];
 
@@ -135,10 +136,12 @@ function App() {
         }}
       >
         <AuthProvider>
-          <AppContent
-            colorScheme={colorScheme}
-            toggleTheme={toggleTheme}
-          />
+          <PermissionProvider>
+            <AppContent
+              colorScheme={colorScheme}
+              toggleTheme={toggleTheme}
+            />
+          </PermissionProvider>
         </AuthProvider>
       </MantineProvider>
     </>

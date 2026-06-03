@@ -81,6 +81,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/training-rooms/recordings/*/file").permitAll()
                         // Módulo de Auditoria — restrito a ADMIN
                         .requestMatchers("/auditoria/**").hasAuthority("ADMIN")
+                        // Leitura das minhas permissões — qualquer autenticado; PUT só admin via @PreAuthorize
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/permissions/my").authenticated()
                         // Todo o resto exige autenticação
                         .anyRequest().authenticated()
                 )
