@@ -79,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/nps/*/*/questions").permitAll()
                         // Streaming de gravações de vídeo — o <video> tag não envia Authorization header
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/training-rooms/recordings/*/file").permitAll()
+                        // Módulo de Auditoria — restrito a ADMIN
+                        .requestMatchers("/auditoria/**").hasAuthority("ADMIN")
                         // Todo o resto exige autenticação
                         .anyRequest().authenticated()
                 )
