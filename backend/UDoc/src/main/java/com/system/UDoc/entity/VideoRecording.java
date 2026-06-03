@@ -27,8 +27,6 @@ public class VideoRecording extends AuditableEntity {
     @Column
     private Long durationSeconds;
 
-    @Column(nullable = false, updatable = false)
-
     public VideoRecording() {}
 
     public Long getId() { return id; }

@@ -2,14 +2,13 @@ package com.system.UDoc.entity;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "training_room")
-public class TrainingRoom {
+public class TrainingRoom extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,8 +51,6 @@ public class TrainingRoom {
     @Column(nullable = false)
     private Boolean active = true;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToMany
     @JoinTable(
@@ -96,8 +93,6 @@ public class TrainingRoom {
     public void setJitsiRoomId(String jitsiRoomId) { this.jitsiRoomId = jitsiRoomId; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<Employee> getInvitedEmployees() { return invitedEmployees; }
     public void setInvitedEmployees(List<Employee> invitedEmployees) { this.invitedEmployees = invitedEmployees; }
 }

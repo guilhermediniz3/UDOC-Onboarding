@@ -31,9 +31,6 @@ public class TrainingSession extends AuditableEntity {
     @Column(nullable = false)
     private LocalTime endTime;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
-
     public TrainingSession() {}
 
     public Long getId() { return id; }
@@ -48,6 +45,4 @@ public class TrainingSession extends AuditableEntity {
     public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
     public LocalTime getEndTime() { return endTime; }
     public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
