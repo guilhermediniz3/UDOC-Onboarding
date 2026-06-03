@@ -180,7 +180,7 @@ const NAV_ITEMS: NavItemType[] = [
     Icon: IconTrophy,
     path: "/ranking",
     isActive: (p) => p === "/ranking",
-    // Visível para ADMIN e funcionários INTERNOS (filtrado no render)
+    adminOnly: true,
   },
   {
     label: "Configurações",
@@ -235,14 +235,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </ActionIcon>
         </Group>
 
-        {NAV_ITEMS.filter((item) => {
-          if (item.adminOnly && user?.role !== "ADMIN") return false;
-          // Ranking: visível para ADMIN e funcionários INTERNOS (employeeTipo)
-          if (item.label === "Ranking") {
-            return user?.role === "ADMIN" || user?.employeeTipo === "INTERNO";
-          }
-          return true;
-        }).map((item) => {
+        {NAV_ITEMS.filter((item) =>
+          !item.adminOnly || user?.role === "ADMIN"
+        ).map((item) => {
           const itemIsActive = item.isActive(pathname);
 
           if (isCollapsed) {
