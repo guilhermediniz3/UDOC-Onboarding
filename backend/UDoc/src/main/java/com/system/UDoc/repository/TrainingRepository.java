@@ -8,4 +8,6 @@ public interface TrainingRepository extends JpaRepository<Training, Long> {
     List<Training> findByTrailIdOrderByDataInicioDesc(Long trailId);
     @Query("SELECT t FROM Training t JOIN FETCH t.company WHERE t.trail.id = :trailId ORDER BY t.dataInicio DESC")
     List<Training> findByTrailIdWithCompany(@Param("trailId") Long trailId);
+    @Query("SELECT COUNT(t) FROM Training t WHERE t.trail.id = :trailId")
+    long countByTrailId(@Param("trailId") Long trailId);
 }

@@ -11,6 +11,9 @@ import java.util.List;
 
 public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long> {
 
+    @Query("SELECT COUNT(r) FROM TrainingRoom r WHERE r.trail.id = :trailId")
+    long countByTrailId(@Param("trailId") Long trailId);
+
     @Query(
         value = """
             SELECT r.* FROM training_room r

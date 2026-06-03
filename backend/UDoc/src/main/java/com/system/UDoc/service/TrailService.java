@@ -8,6 +8,8 @@ import com.system.UDoc.exception.DuplicateSortOrderException;
 import com.system.UDoc.exception.ResourceNotFoundException;
 import com.system.UDoc.repository.CardRepository;
 import com.system.UDoc.repository.TrailRepository;
+import com.system.UDoc.repository.TrainingRepository;
+import com.system.UDoc.repository.TrainingRoomRepository;
 import com.system.UDoc.repository.UserTrailProgressRepository;
 
 import org.springframework.data.domain.Page;
@@ -24,15 +26,21 @@ public class TrailService {
     private final TrailRepository trailRepository;
     private final CardRepository cardRepository;
     private final UserTrailProgressRepository progressRepository;
+    private final TrainingRoomRepository trainingRoomRepository;
+    private final TrainingRepository trainingRepository;
 
     public TrailService(
             TrailRepository trailRepository,
             CardRepository cardRepository,
-            UserTrailProgressRepository progressRepository
+            UserTrailProgressRepository progressRepository,
+            TrainingRoomRepository trainingRoomRepository,
+            TrainingRepository trainingRepository
     ) {
-        this.trailRepository = trailRepository;
-        this.cardRepository = cardRepository;
-        this.progressRepository = progressRepository;
+        this.trailRepository      = trailRepository;
+        this.cardRepository       = cardRepository;
+        this.progressRepository   = progressRepository;
+        this.trainingRoomRepository = trainingRoomRepository;
+        this.trainingRepository   = trainingRepository;
     }
 
     @Transactional
@@ -114,6 +122,28 @@ public class TrailService {
                 org.springframework.http.HttpStatus.CONFLICT,
                 "Esta trilha não pode ser excluída pois um ou mais funcionários já obtiveram certificação nela. " +
                 "Para excluir, primeiro desative a trilha ou remova os registros de certificação."
+            );
+        }
+
+        // Verifica se há salas de treinamento vinculadas
+        long salas = trainingRoomRepository.countByTrailId(id);
+        if (salas > 0) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "Esta trilha não pode ser excluída pois possui " + salas +
+                " sala(s) de treinamento vinculada(s). " +
+                "Acesse Sala de Treinamento, remova ou desvincule as salas desta trilha e tente novamente."
+            );
+        }
+
+        // Verifica se há treinamentos vinculados
+        long treinamentos = trainingRepository.countByTrailId(id);
+        if (treinamentos > 0) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.CONFLICT,
+                "Esta trilha não pode ser excluída pois possui " + treinamentos +
+                " treinamento(s) vinculado(s). " +
+                "Remova os treinamentos associados a esta trilha e tente novamente."
             );
         }
 
