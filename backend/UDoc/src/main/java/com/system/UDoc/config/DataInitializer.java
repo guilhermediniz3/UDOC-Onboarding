@@ -321,24 +321,32 @@ public class DataInitializer {
         String[] modules = {"CARD", "TRILHA", "SALA", "FUNCIONARIO", "USUARIO", "EMPRESA", "ISM", "TRAINING"};
         String[] actions = {"VIEW", "CREATE", "EDIT", "DELETE"};
 
-        // Permissões sensíveis: ISM agindo sobre recurso de outro ISM
-        java.util.Set<String> sensitiveISM = java.util.Set.of(
-            "SALA:CREATE", "SALA:EDIT", "SALA:DELETE",       // salas de outro ISM
-            "FUNCIONARIO:EDIT"                                 // alterar ISM responsável
-        );
-
         for (GroupType gt : GroupType.values()) {
-            // Cria grupo se não existe
             PermissionGroup group = groupRepo.findByGroupType(gt)
                 .orElseGet(() -> groupRepo.save(new PermissionGroup(gt, gt.name())));
 
+            // CRUD padrão — sem sensitive (bloqueio geral, inclusive recursos próprios)
             for (String module : modules) {
                 for (String action : actions) {
                     if (!permRepo.existsByGroupAndModuleAndAction(group, module, action)) {
-                        boolean sensitive = gt == GroupType.ISM
-                                            && sensitiveISM.contains(module + ":" + action);
-                        permRepo.save(new Permission(group, module, action, true, sensitive));
+                        permRepo.save(new Permission(group, module, action, true, false));
                     }
+                }
+            }
+
+            // Permissões especiais do ISM — só afetam recursos de OUTRO ISM (não os próprios)
+            if (gt == GroupType.ISM) {
+                // Alterar o ISM responsável de um funcionário externo
+                if (!permRepo.existsByGroupAndModuleAndAction(group, "FUNCIONARIO", "ISM_RESPONSAVEL")) {
+                    permRepo.save(new Permission(group, "FUNCIONARIO", "ISM_RESPONSAVEL", true, true,
+                        "Permite ao ISM alterar o ISM responsável vinculado a um funcionário externo. "
+                        + "Não bloqueia edições nos próprios funcionários vinculados a este ISM."));
+                }
+                // Criar, editar ou deletar salas de treinamento de outro ISM
+                if (!permRepo.existsByGroupAndModuleAndAction(group, "SALA", "OUTRO_ISM_MANAGE")) {
+                    permRepo.save(new Permission(group, "SALA", "OUTRO_ISM_MANAGE", true, true,
+                        "Permite ao ISM criar, editar ou deletar salas de treinamento que pertencem "
+                        + "a outro ISM. Não bloqueia o gerenciamento das próprias salas."));
                 }
             }
         }

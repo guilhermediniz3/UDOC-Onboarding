@@ -7,9 +7,10 @@ export interface PermissionDTO {
   id: number;
   groupType: GroupType;
   module: string;
-  action: ActionType;
+  action: ActionType | string;
   granted: boolean;
   sensitive: boolean;
+  description?: string;
 }
 
 export interface PermissionUpdateDTO {

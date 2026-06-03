@@ -125,7 +125,8 @@ public class PermissionService {
         String  module,
         String  action,
         boolean granted,
-        boolean sensitive
+        boolean sensitive,
+        String  description
     ) {
         static PermissionDTO from(Permission p) {
             return new PermissionDTO(
@@ -134,7 +135,8 @@ public class PermissionService {
                 p.getModule(),
                 p.getAction(),
                 Boolean.TRUE.equals(p.getGranted()),
-                Boolean.TRUE.equals(p.getSensitive())
+                Boolean.TRUE.equals(p.getSensitive()),
+                p.getDescription()
             );
         }
     }

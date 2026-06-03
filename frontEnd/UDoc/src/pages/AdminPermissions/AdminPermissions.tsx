@@ -1,6 +1,6 @@
 import {
-  Accordion, Alert, Badge, Checkbox, Group,
-  Loader, Paper, Stack, Text, Title, Tooltip, Button,
+  Accordion, Alert, Badge, Checkbox, Divider, Group,
+  Loader, Paper, Stack, Text, Title, Tooltip, Button, SimpleGrid,
 } from "@mantine/core";
 import {
   IconAlertTriangle, IconCheck, IconLock, IconSettings2, IconX,
@@ -14,13 +14,27 @@ import { getAllPermissions, updatePermissions } from "../../services/permissionS
 const GROUP_LABELS: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "Func. Interno",
   FUNCIONARIO_EXTERNO: "Func. Externo",
-  ISM: "ISM",
+  ISM:                 "ISM",
 };
 
-const GROUP_COLORS: Record<GroupType, string> = {
+// Mantine color tokens
+const GROUP_COLOR: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "blue",
   FUNCIONARIO_EXTERNO: "teal",
-  ISM: "violet",
+  ISM:                 "violet",
+};
+
+// Cor de borda/fundo do card de grupo
+const GROUP_BORDER: Record<GroupType, string> = {
+  FUNCIONARIO_INTERNO: "rgba(37,99,235,0.25)",
+  FUNCIONARIO_EXTERNO: "rgba(5,150,105,0.25)",
+  ISM:                 "rgba(124,58,237,0.25)",
+};
+
+const GROUP_BG: Record<GroupType, string> = {
+  FUNCIONARIO_INTERNO: "rgba(37,99,235,0.06)",
+  FUNCIONARIO_EXTERNO: "rgba(5,150,105,0.06)",
+  ISM:                 "rgba(124,58,237,0.06)",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -28,9 +42,14 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const MODULE_LABELS: Record<string, string> = {
-  CARD: "Documentos (Cards)", TRILHA: "Trilhas", SALA: "Salas de Treinamento",
-  FUNCIONARIO: "Funcionários", USUARIO: "Usuários", EMPRESA: "Empresas",
-  ISM: "ISM", TRAINING: "Treinamentos",
+  CARD:       "Documentos (Cards)",
+  TRILHA:     "Trilhas",
+  SALA:       "Salas de Treinamento",
+  FUNCIONARIO:"Funcionários",
+  USUARIO:    "Usuários",
+  EMPRESA:    "Empresas",
+  ISM:        "ISM",
+  TRAINING:   "Treinamentos",
 };
 
 const ACTIONS_ORDER = ["VIEW", "CREATE", "EDIT", "DELETE"];
@@ -41,22 +60,129 @@ type ModuleMap = Record<string, Record<GroupType, Record<string, PermissionDTO>>
 function buildModuleMap(perms: PermissionDTO[]): ModuleMap {
   const map: ModuleMap = {};
   for (const p of perms) {
-    if (!map[p.module]) map[p.module] = {} as any;
+    if (!map[p.module]) map[p.module] = {} as ModuleMap[string];
     if (!map[p.module][p.groupType]) map[p.module][p.groupType] = {};
     map[p.module][p.groupType][p.action] = p;
   }
   return map;
 }
 
-export default function AdminPermissions() {
-  const { user }   = useAuth();
-  const navigate   = useNavigate();
+// Ações especiais do ISM (não são CRUD padrão — afetam só recursos de outro ISM)
+const SPECIAL_ACTIONS = ["ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE"];
 
-  const [allPerms, setAllPerms]   = useState<PermissionDTO[]>([]);
-  const [dirty, setDirty]         = useState<Record<number, boolean>>({});
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState<string | null>(null);
-  const [msg, setMsg]             = useState<{ type: "success" | "error"; text: string } | null>(null);
+const SPECIAL_ACTION_LABELS: Record<string, string> = {
+  ISM_RESPONSAVEL:   "Alterar ISM responsável de funcionário externo",
+  OUTRO_ISM_MANAGE:  "Gerenciar salas de outro ISM",
+};
+
+// ── Cartão de um grupo (ex: Func. Interno) ────────────────────────────────────
+function GroupCard({
+  groupType, actions, onToggle,
+}: {
+  groupType: GroupType;
+  actions: Record<string, PermissionDTO>;
+  onToggle: (perm: PermissionDTO) => void;
+}) {
+  const color  = GROUP_COLOR[groupType];
+  const border = GROUP_BORDER[groupType];
+  const bg     = GROUP_BG[groupType];
+
+  // Separa permissões padrão de especiais
+  const standardPerms = ACTIONS_ORDER.map(a => actions[a]).filter(Boolean);
+  const specialPerms  = SPECIAL_ACTIONS.map(a => actions[a]).filter(Boolean);
+
+  return (
+    <div style={{
+      border: `1.5px solid ${border}`,
+      background: bg,
+      borderRadius: 14,
+      padding: "14px 16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+      minWidth: 160,
+    }}>
+      {/* Nome do grupo */}
+      <Badge color={color} variant="light" radius="xl" size="md"
+        style={{ alignSelf: "flex-start", fontWeight: 700, marginBottom: 4 }}>
+        {GROUP_LABELS[groupType]}
+      </Badge>
+
+      {/* CRUD padrão — bloqueio geral (inclui recursos próprios) */}
+      {ACTIONS_ORDER.map(action => {
+        const perm = actions[action];
+        if (!perm) return (
+          <Text key={action} fz="xs" c="var(--text-secondary)" style={{ height: 24 }}>—</Text>
+        );
+        return (
+          <Group key={action} gap="xs" align="center" wrap="nowrap">
+            <Checkbox
+              checked={perm.granted}
+              onChange={() => onToggle(perm)}
+              color={color} size="sm"
+              styles={{ input: { cursor: "pointer" } }}
+            />
+            <Text fz="sm" c="var(--text-primary)" style={{ lineHeight: "20px" }}>
+              {ACTION_LABELS[action] ?? action}
+            </Text>
+          </Group>
+        );
+      })}
+
+      {/* Permissões especiais ISM — só afetam recursos de OUTRO ISM */}
+      {specialPerms.length > 0 && (
+        <>
+          <Divider
+            label={
+              <Group gap={4}>
+                <IconAlertTriangle size={11} color="#f97316" />
+                <Text fz="10px" c="var(--text-secondary)">Somente para outro ISM</Text>
+              </Group>
+            }
+            labelPosition="left"
+            my={2}
+          />
+          {specialPerms.map(perm => (
+            <Stack key={perm.action} gap={4}>
+              <Group gap="xs" align="flex-start" wrap="nowrap">
+                <Checkbox
+                  checked={perm.granted}
+                  onChange={() => onToggle(perm)}
+                  color={color} size="sm"
+                  styles={{ input: { cursor: "pointer" }, root: { marginTop: 2 } }}
+                />
+                <Stack gap={2}>
+                  <Group gap={4} wrap="nowrap">
+                    <Text fz="sm" c="var(--text-primary)" style={{ lineHeight: "20px" }}>
+                      {SPECIAL_ACTION_LABELS[perm.action] ?? perm.action}
+                    </Text>
+                    <IconAlertTriangle size={13} color="#f97316" style={{ flexShrink: 0, marginTop: 3 }} />
+                  </Group>
+                  {perm.description && (
+                    <Text fz="10px" c="var(--text-secondary)" style={{ lineHeight: 1.4, maxWidth: 200 }}>
+                      {perm.description}
+                    </Text>
+                  )}
+                </Stack>
+              </Group>
+            </Stack>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
+export default function AdminPermissions() {
+  const { user }  = useAuth();
+  const navigate  = useNavigate();
+
+  const [allPerms, setAllPerms] = useState<PermissionDTO[]>([]);
+  const [dirty, setDirty]       = useState<Record<number, boolean>>({});
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState<string | null>(null);
+  const [msg, setMsg]           = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (user?.role !== "ADMIN") { navigate("/403", { replace: true }); return; }
@@ -87,7 +213,7 @@ export default function AdminPermissions() {
         toSave.forEach(u => delete next[u.id]);
         return next;
       });
-      setMsg({ type: "success", text: `Permissões de "${MODULE_LABELS[module] ?? module}" salvas.` });
+      setMsg({ type: "success", text: `"${MODULE_LABELS[module] ?? module}" salvo com sucesso.` });
       setTimeout(() => setMsg(null), 3000);
     } catch {
       setMsg({ type: "error", text: "Erro ao salvar. Tente novamente." });
@@ -129,8 +255,8 @@ export default function AdminPermissions() {
 
       <Alert color="blue" radius="xl" variant="light" icon={<IconSettings2 size={16} />}>
         <Text fz="sm">
-          Todas as permissões iniciam <b>concedidas</b>. Desmarque o que não quer permitir e salve por módulo.
-          Regras de segurança fixas (Auditoria, Permissões, chat ISM) não aparecem aqui.
+          Todas as permissões iniciam <b>concedidas</b>. Desmarque o que não quer permitir e salve.
+          Regras fixas de segurança (Auditoria, Permissões, chat ISM) não aparecem aqui.
         </Text>
       </Alert>
 
@@ -138,15 +264,16 @@ export default function AdminPermissions() {
         style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
         <Accordion multiple chevronPosition="left" variant="separated">
           {modules.map(module => {
-            const groups = moduleMap[module];
+            const groups     = moduleMap[module];
             const hasUnsaved = allPerms.some(p => p.module === module && dirty[p.id] !== undefined);
 
             return (
               <Accordion.Item key={module} value={module}
                 style={{ border: "1px solid var(--border-color)", borderRadius: 12 }}>
+
                 <Accordion.Control>
                   <Group justify="space-between" pr="md">
-                    <Text fw={600} c="var(--text-primary)">
+                    <Text fw={600} fz="md" c="var(--text-primary)">
                       {MODULE_LABELS[module] ?? module}
                     </Text>
                     {hasUnsaved && (
@@ -157,65 +284,19 @@ export default function AdminPermissions() {
 
                 <Accordion.Panel>
                   <Stack gap="16px">
-                    {/* Tabela de grupos x ações */}
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-secondary)", fontSize: 12 }}>
-                              Ação
-                            </th>
-                            {GROUPS_ORDER.map(gt => (
-                              <th key={gt} style={{ padding: "8px 16px", minWidth: 150 }}>
-                                <Badge color={GROUP_COLORS[gt]} variant="light" radius="xl">
-                                  {GROUP_LABELS[gt]}
-                                </Badge>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {ACTIONS_ORDER.map(action => (
-                            <tr key={action}
-                              style={{ borderTop: "1px solid var(--border-color)" }}>
-                              <td style={{ padding: "10px 12px", color: "var(--text-primary)", fontSize: 13 }}>
-                                {ACTION_LABELS[action] ?? action}
-                              </td>
-                              {GROUPS_ORDER.map(gt => {
-                                const perm = groups[gt]?.[action];
-                                if (!perm) {
-                                  return <td key={gt} style={{ padding: "10px 16px" }}>
-                                    <Text fz="xs" c="var(--text-secondary)">—</Text>
-                                  </td>;
-                                }
-                                return (
-                                  <td key={gt} style={{ padding: "10px 16px" }}>
-                                    <Group gap="xs">
-                                      <Checkbox
-                                        checked={perm.granted}
-                                        onChange={() => toggle(perm)}
-                                        color="violet"
-                                        styles={{ input: { cursor: "pointer" } }}
-                                      />
-                                      {perm.sensitive && (
-                                        <Tooltip
-                                          label="Permissão sensível: envolve recursos de outro ISM"
-                                          withArrow multiline w={240}
-                                        >
-                                          <IconAlertTriangle size={14} color="#f97316" style={{ cursor: "help" }} />
-                                        </Tooltip>
-                                      )}
-                                    </Group>
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    {/* 3 cards lado a lado, um por grupo */}
+                    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                      {GROUPS_ORDER.map(gt => (
+                        <GroupCard
+                          key={gt}
+                          groupType={gt}
+                          actions={groups[gt] ?? {}}
+                          onToggle={toggle}
+                        />
+                      ))}
+                    </SimpleGrid>
 
-                    <Group justify="flex-end">
+                    <Group justify="flex-end" mt={4}>
                       <Button
                         radius="xl" size="sm"
                         variant="gradient" gradient={{ from: "violet", to: "blue" }}

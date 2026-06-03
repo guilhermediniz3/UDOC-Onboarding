@@ -30,10 +30,14 @@ public class Permission extends AuditableEntity {
     /**
      * Marca permissões que envolvem recursos de outro ISM
      * (ex: editar sala de outro ISM, alterar ISM responsável de funcionário externo).
-     * Exibidas com ícone ⚠️ na tela de configuração.
+     * Exibidas com ícone ⚠️ e descrição na tela de configuração.
      */
     @Column(nullable = false)
     private Boolean sensitive = false;
+
+    /** Descrição exibida na UI para permissões sensíveis que precisam de contexto. */
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     public Permission() {}
 
@@ -46,6 +50,12 @@ public class Permission extends AuditableEntity {
         this.sensitive = sensitive;
     }
 
+    public Permission(PermissionGroup group, String module, String action,
+                      boolean granted, boolean sensitive, String description) {
+        this(group, module, action, granted, sensitive);
+        this.description = description;
+    }
+
     public Long            getId()          { return id; }
     public PermissionGroup getGroup()       { return group; }
     public GroupType       getGroupType()   { return group.getGroupType(); }
@@ -53,5 +63,6 @@ public class Permission extends AuditableEntity {
     public String          getAction()      { return action; }
     public Boolean         getGranted()     { return granted; }
     public void            setGranted(Boolean v) { this.granted = v; }
-    public Boolean         getSensitive()   { return sensitive; }
+    public Boolean         getSensitive()    { return sensitive; }
+    public String          getDescription() { return description; }
 }
