@@ -12,6 +12,7 @@ export interface AuthUser {
   photo?: string;
   role: string;
   forcePasswordChange?: boolean;
+  employeeTipo?: "EXTERNO" | "INTERNO";
 }
 
 interface AuthContextType {

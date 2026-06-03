@@ -3,6 +3,7 @@ import "./index.css";
 import { ActionIcon, Avatar, Burger, Group, Text } from "@mantine/core";
 import { IconMoon, IconSun, IconUser } from "@tabler/icons-react";
 import { useAuth } from "../../contexts/AuthContext";
+import NotificationBell from "../NotificationBell/NotificationBell";
 
 interface HeaderProps {
   colorScheme: "light" | "dark";
@@ -42,6 +43,8 @@ function Header({ colorScheme, toggleTheme, opened, toggle }: HeaderProps) {
             </Text>
           </Group>
         )}
+
+        {user && <NotificationBell />}
 
         <ActionIcon variant="light" radius="xl" size="lg" onClick={toggleTheme}>
           {dark ? <IconSun size={20} /> : <IconMoon size={20} />}

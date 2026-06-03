@@ -26,6 +26,7 @@ import {
   IconSchool,
   IconSettings,
   IconShieldCheck,
+  IconTrophy,
   IconUserCog,
   IconUsers,
 } from "@tabler/icons-react";
@@ -33,6 +34,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../contexts/AuthContext";
+import SidebarXpWidget from "../SidebarXpWidget/SidebarXpWidget";
 
 import "./index.css";
 
@@ -174,6 +176,13 @@ const NAV_ITEMS: NavItemType[] = [
     isActive: (p) => p === "/dashboard",
   },
   {
+    label: "Ranking",
+    Icon: IconTrophy,
+    path: "/ranking",
+    isActive: (p) => p === "/ranking",
+    // Visível para ADMIN e funcionários INTERNOS (filtrado no render)
+  },
+  {
     label: "Configurações",
     Icon: IconSettings,
     path: "/admin/settings",
@@ -226,9 +235,14 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </ActionIcon>
         </Group>
 
-        {NAV_ITEMS.filter((item) =>
-          !item.adminOnly || user?.role === "ADMIN"
-        ).map((item) => {
+        {NAV_ITEMS.filter((item) => {
+          if (item.adminOnly && user?.role !== "ADMIN") return false;
+          // Ranking: visível para ADMIN e funcionários INTERNOS (employeeTipo)
+          if (item.label === "Ranking") {
+            return user?.role === "ADMIN" || user?.employeeTipo === "INTERNO";
+          }
+          return true;
+        }).map((item) => {
           const itemIsActive = item.isActive(pathname);
 
           if (isCollapsed) {
@@ -286,15 +300,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       </Stack>
 
-      {/* Rodapé: usuário + logout */}
+      {/* Rodapé: XP + usuário + logout */}
       {!isCollapsed ? (
         <Stack px="md" pb="md" gap={4}>
-          <Text fz="xs" c="dimmed" truncate>
-            {user?.name}
-          </Text>
-          <Text fz="xs" c="dimmed" truncate>
-            {user?.role}
-          </Text>
+          <SidebarXpWidget collapsed={false} />
+          <Text fz="xs" c="dimmed" truncate>{user?.name}</Text>
+          <Text fz="xs" c="dimmed" truncate>{user?.role}</Text>
           <NavLink
             label="Sair"
             leftSection={<IconLogout size={16} />}
@@ -304,14 +315,17 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           />
         </Stack>
       ) : (
-        <Tooltip label="Sair" position="right" withArrow>
-          <ActionIcon
-            size={40} radius="md" variant="subtle" color="red"
-            onClick={logout} mx="auto" mb="md"
-          >
-            <IconLogout size={20} />
-          </ActionIcon>
-        </Tooltip>
+        <Stack align="center" pb="md" gap={4}>
+          <SidebarXpWidget collapsed={true} />
+          <Tooltip label="Sair" position="right" withArrow>
+            <ActionIcon
+              size={40} radius="md" variant="subtle" color="red"
+              onClick={logout}
+            >
+              <IconLogout size={20} />
+            </ActionIcon>
+          </Tooltip>
+        </Stack>
       )}
 
     </Stack>

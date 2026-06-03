@@ -5,6 +5,7 @@ import {
   Paper,
   SimpleGrid,
   Stack,
+  Tabs,
   Text,
   Title,
 } from "@mantine/core";
@@ -12,20 +13,26 @@ import {
 import {
   IconArrowRight,
   IconRoute,
+  IconTrophy,
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useAuth } from "../../contexts/AuthContext";
 import { getMyTrails } from "../../services/myTrailsService";
 import type { Trail } from "../../types/Trail";
+import MeuRanking from "../Ranking/MeuRanking";
 
 export default function MinhasTrihas() {
 
-  const navigate = useNavigate();
-  const [trails, setTrails] = useState<Trail[]>([]);
+  const navigate  = useNavigate();
+  const { user }  = useAuth();
+  const isExterno = user?.role === "FUNCIONARIO_EXTERNO";
+
+  const [trails,  setTrails]  = useState<Trail[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error,   setError]   = useState(false);
 
   useEffect(() => {
     getMyTrails()
@@ -34,22 +41,9 @@ export default function MinhasTrihas() {
       .finally(() => setLoading(false));
   }, []);
 
-  return (
-    <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
-
-      <Paper p="30px" radius="24px"
-        style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
-        <Group gap="sm" align="center">
-          <IconRoute size={28} color="var(--mantine-color-violet-5)" />
-          <div>
-            <Title order={2} c="var(--text-primary)" fw={700}>Minhas Trilhas</Title>
-            <Text c="var(--text-secondary)" mt={4}>
-              Trilhas de treinamento em que você está matriculado
-            </Text>
-          </div>
-        </Group>
-      </Paper>
-
+  // ── Conteúdo de trilhas (reutilizado dentro e fora das abas) ──────────────
+  const trailsContent = (
+    <>
       {loading && (
         <Text ta="center" c="var(--text-secondary)" py="xl">Carregando trilhas...</Text>
       )}
@@ -104,10 +98,7 @@ export default function MinhasTrihas() {
                   }}>
                     <IconRoute size={26} color="#7c3aed" />
                   </div>
-                  <Badge
-                    color={trail.active ? "green" : "gray"}
-                    variant="light" radius="xl" size="sm"
-                  >
+                  <Badge color={trail.active ? "green" : "gray"} variant="light" radius="xl" size="sm">
                     {trail.active ? "Ativa" : "Inativa"}
                   </Badge>
                 </Group>
@@ -125,8 +116,7 @@ export default function MinhasTrihas() {
 
                 <Button
                   rightSection={<IconArrowRight size={16} />}
-                  radius="xl" size="sm" variant="light" color="violet"
-                  fullWidth
+                  radius="xl" size="sm" variant="light" color="violet" fullWidth
                   onClick={(e) => { e.stopPropagation(); navigate(`/minhas-trilhas/${trail.id}`); }}
                 >
                   Acessar trilha
@@ -135,6 +125,38 @@ export default function MinhasTrihas() {
             </Paper>
           ))}
         </SimpleGrid>
+      )}
+    </>
+  );
+
+  return (
+    <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
+
+      <Paper p="30px" radius="24px"
+        style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
+        <Group gap="sm" align="center">
+          <IconRoute size={28} color="var(--mantine-color-violet-5)" />
+          <div>
+            <Title order={2} c="var(--text-primary)" fw={700}>Minhas Trilhas</Title>
+            <Text c="var(--text-secondary)" mt={4}>
+              Trilhas de treinamento em que você está matriculado
+            </Text>
+          </div>
+        </Group>
+      </Paper>
+
+      {/* Funcionário externo: abas "Trilhas" + "Meu Ranking" */}
+      {isExterno ? (
+        <Tabs defaultValue="trilhas" color="violet">
+          <Tabs.List mb="lg">
+            <Tabs.Tab value="trilhas"  leftSection={<IconRoute  size={16} />}>Minhas Trilhas</Tabs.Tab>
+            <Tabs.Tab value="ranking" leftSection={<IconTrophy size={16} />}>Meu Ranking</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="trilhas">{trailsContent}</Tabs.Panel>
+          <Tabs.Panel value="ranking"><MeuRanking /></Tabs.Panel>
+        </Tabs>
+      ) : (
+        trailsContent
       )}
 
     </Stack>

@@ -194,6 +194,36 @@ public class DataInitializer {
                 ON CONFLICT (chave) DO NOTHING
             """);
 
+            // ── Gamificação: eventos de XP ────────────────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS user_xp_events (
+                    id           bigserial PRIMARY KEY,
+                    user_id      bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    event_type   varchar(30) NOT NULL,
+                    xp           integer NOT NULL,
+                    reference_id bigint,
+                    created_at   timestamp NOT NULL DEFAULT now(),
+                    created_by   varchar(255)
+                )
+            """);
+            runSilently(jdbc, "CREATE INDEX IF NOT EXISTS idx_xp_user ON user_xp_events(user_id)");
+
+            // ── Notificações ───────────────────────────────────────────────────
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id             bigserial PRIMARY KEY,
+                    user_id        bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    type           varchar(20) NOT NULL,
+                    title          varchar(500) NOT NULL,
+                    reference_id   bigint,
+                    reference_type varchar(10),
+                    read           boolean NOT NULL DEFAULT false,
+                    created_at     timestamp NOT NULL DEFAULT now(),
+                    created_by     varchar(255)
+                )
+            """);
+            runSilently(jdbc, "CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id, read)");
+
             // ── Módulo no audit_log para categorização por área do sistema ────
             runSilently(jdbc, "ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS module varchar(100)");
 
