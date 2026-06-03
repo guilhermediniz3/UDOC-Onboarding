@@ -31,12 +31,11 @@ const ImageNodeView = ({
 
     const markerArea = new MarkerArea(imageRef.current);
 
-    // Preserva todas as configurações internas do MarkerJS
-    // e altera apenas o z-index.
-    markerArea.uiStyleSettings = {
-      ...markerArea.uiStyleSettings,
-      zIndex: "9999",
-    };
+    // Renderiza o overlay no body para evitar ser cortado pelo
+    // overflow:hidden ou z-index dos containers do editor Tiptap
+    markerArea.targetRoot = document.body;
+
+    markerArea.uiStyleSettings.zIndex = "99999";
 
     markerArea.addEventListener("render", (event) => {
       updateAttributes({
