@@ -1,10 +1,11 @@
 package com.system.UDoc.entity;
 
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 
 @Entity
 @Table(name = "company")
-public class Company {
+public class Company extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

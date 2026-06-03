@@ -14,11 +14,14 @@ public class AuditLog {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String action; // ex: "INTEGRATION_KEY_UPDATED", "STORAGE_LIMIT_CHANGED"
+    @Column(length = 100)
+    private String module; // ex: "CARD", "USER", "COMPANY", "TRAIL", "INTEGRATIONS"
 
     @Column(nullable = false)
-    private String target; // ex: "sendgrid_api_key", "storage_gravacoes_limite_bytes"
+    private String action; // ex: "CREATED", "UPDATED", "DELETED", "INTEGRATION_KEY_UPDATED"
+
+    @Column(nullable = false)
+    private String target; // ex: "card#42", "sendgrid_api_key"
 
     @Column
     private String performedBy; // email do usuário que realizou a ação
@@ -38,7 +41,16 @@ public class AuditLog {
         this.details = details;
     }
 
+    public AuditLog(String module, String action, String target, String performedBy, String details) {
+        this.module = module;
+        this.action = action;
+        this.target = target;
+        this.performedBy = performedBy;
+        this.details = details;
+    }
+
     public Long getId() { return id; }
+    public String getModule() { return module; }
     public String getAction() { return action; }
     public String getTarget() { return target; }
     public String getPerformedBy() { return performedBy; }

@@ -194,6 +194,9 @@ public class DataInitializer {
                 ON CONFLICT (chave) DO NOTHING
             """);
 
+            // ── Módulo no audit_log para categorização por área do sistema ────
+            runSilently(jdbc, "ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS module varchar(100)");
+
             // ── Coluna de troca de senha obrigatória ───────────────────────────
             runSilently(jdbc, "ALTER TABLE users ADD COLUMN IF NOT EXISTS force_password_change boolean NOT NULL DEFAULT false");
 

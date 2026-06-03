@@ -1,11 +1,12 @@
 package com.system.UDoc.entity;
 
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 
 @Entity
 @Table(name = "nps_config",
     uniqueConstraints = @UniqueConstraint(columnNames = {"reference_type", "reference_id"}))
-public class NpsConfig {
+public class NpsConfig extends AuditableEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

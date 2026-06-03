@@ -1,11 +1,12 @@
 package com.system.UDoc.entity;
 
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "video_recording")
-public class VideoRecording {
+public class VideoRecording extends AuditableEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,7 +28,6 @@ public class VideoRecording {
     private Long durationSeconds;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
 
     public VideoRecording() {}
 
@@ -37,5 +37,4 @@ public class VideoRecording {
     public String getFilePath() { return filePath; } public void setFilePath(String v) { this.filePath = v; }
     public Long getFileSize() { return fileSize; } public void setFileSize(Long v) { this.fileSize = v; }
     public Long getDurationSeconds() { return durationSeconds; } public void setDurationSeconds(Long v) { this.durationSeconds = v; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
 }

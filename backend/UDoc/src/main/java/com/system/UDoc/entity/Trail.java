@@ -1,13 +1,14 @@
 package com.system.UDoc.entity;
 
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "trail")
-public class Trail {
+public class Trail extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

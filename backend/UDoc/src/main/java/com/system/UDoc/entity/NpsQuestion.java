@@ -1,8 +1,9 @@
 package com.system.UDoc.entity;
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 @Entity
 @Table(name = "nps_question")
-public class NpsQuestion {
+public class NpsQuestion extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(nullable = false) private String referenceType; // "card" | "trail"
     @Column(nullable = false) private Long referenceId;

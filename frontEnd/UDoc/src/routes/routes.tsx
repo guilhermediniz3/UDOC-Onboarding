@@ -26,6 +26,8 @@ import UserCardView from "../pages/UserCardView/UserCardView";
 import MeusCertificados from "../pages/MeusCertificados/MeusCertificados";
 import AdminSettings from "../pages/AdminSettings/AdminSettings";
 import ForceChangePassword from "../pages/ForceChangePassword/ForceChangePassword";
+import Auditoria from "../pages/Auditoria/Auditoria";
+import Forbidden from "../pages/Forbidden/Forbidden";
 
 function AppRoutes() {
   return (
@@ -93,6 +95,12 @@ function AppRoutes() {
 
       {/* FORCED PASSWORD CHANGE (first access) */}
       <Route path="/force-change-password" element={<ForceChangePassword />} />
+
+      {/* AUDITORIA — admin only (guard client-side + @PreAuthorize backend) */}
+      <Route path="/admin/auditoria" element={<Auditoria />} />
+
+      {/* 403 — Acesso negado */}
+      <Route path="/403" element={<Forbidden />} />
 
     </Routes>
   );

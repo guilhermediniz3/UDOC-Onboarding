@@ -1,8 +1,9 @@
 package com.system.UDoc.entity;
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 @Entity
 @Table(name = "card_question")
-public class CardQuestion {
+public class CardQuestion extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "card_id", nullable = false) private Card card;
     @Column(nullable = false, columnDefinition = "TEXT") private String enunciado;

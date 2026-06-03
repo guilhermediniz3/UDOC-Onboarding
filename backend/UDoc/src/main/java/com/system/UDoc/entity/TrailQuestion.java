@@ -1,8 +1,9 @@
 package com.system.UDoc.entity;
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 @Entity
 @Table(name = "trail_question")
-public class TrailQuestion {
+public class TrailQuestion extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "trail_id", nullable = false) private Trail trail;
     @Column(nullable = false, columnDefinition = "TEXT") private String enunciado;

@@ -1,8 +1,9 @@
 package com.system.UDoc.entity;
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 @Entity
 @Table(name = "certificate_template")
-public class CertificateTemplate {
+public class CertificateTemplate extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(columnDefinition = "TEXT") private String logoBase64;
     @Column private String signatureName;

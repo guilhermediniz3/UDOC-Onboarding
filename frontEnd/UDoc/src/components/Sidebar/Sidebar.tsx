@@ -25,6 +25,7 @@ import {
   IconRoute,
   IconSchool,
   IconSettings,
+  IconShieldCheck,
   IconUserCog,
   IconUsers,
 } from "@tabler/icons-react";
@@ -177,6 +178,13 @@ const NAV_ITEMS: NavItemType[] = [
     Icon: IconSettings,
     path: "/admin/settings",
     isActive: (p) => p === "/admin/settings",
+    adminOnly: true,
+  },
+  {
+    label: "Auditoria",
+    Icon: IconShieldCheck,
+    path: "/admin/auditoria",
+    isActive: (p) => p.startsWith("/admin/auditoria"),
     adminOnly: true,
   },
 ];

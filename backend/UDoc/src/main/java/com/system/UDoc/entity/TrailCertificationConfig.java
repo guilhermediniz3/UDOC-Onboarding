@@ -1,8 +1,9 @@
 package com.system.UDoc.entity;
 import jakarta.persistence.*;
+import com.system.UDoc.entity.AuditableEntity;
 @Entity
 @Table(name = "trail_certification_config")
-public class TrailCertificationConfig {
+public class TrailCertificationConfig extends AuditableEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @OneToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "trail_id", nullable = false, unique = true) private Trail trail;
     @Column(nullable = false) private Double notaMinima = 7.0;
