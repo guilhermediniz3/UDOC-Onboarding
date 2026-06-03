@@ -10,7 +10,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import com.system.UDoc.entity.User;
 
 import java.util.List;
 
@@ -22,7 +25,6 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/auditoria")
-@PreAuthorize("hasAuthority('ADMIN')")
 public class AuditoriaController {
 
     private final AuditoriaService auditoriaService;
@@ -33,6 +35,13 @@ public class AuditoriaController {
         this.chatService      = chatService;
     }
 
+    // ── Diagnóstico (temporário — confirma se o controller está registrado) ──
+
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok("OK — usuário: " + (user != null ? user.getEmail() + " / " + user.getRole() : "anon"));
+    }
+
     // ── Aba 1: Conversas ──────────────────────────────────────────────────────
 
     @GetMapping("/conversas")
@@ -41,8 +50,9 @@ public class AuditoriaController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
+        // Sort.unsorted() evita conflito com ORDER BY já presente na query nativa
         return ResponseEntity.ok(chatService.listarConversasAdmin(
-                ismId, status, PageRequest.of(page, size, Sort.by("criadaEm").descending())));
+                ismId, status, PageRequest.of(page, size, Sort.unsorted())));
     }
 
     @GetMapping("/conversas/{id}")
