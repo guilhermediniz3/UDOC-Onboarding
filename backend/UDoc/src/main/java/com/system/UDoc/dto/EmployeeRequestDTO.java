@@ -11,6 +11,8 @@ public class EmployeeRequestDTO {
     @NotNull(message = "Status is required") private Boolean active;
     private Long userId;
     private String tipo; // "EXTERNO" | "INTERNO" (default EXTERNO)
+    private Long ismId;
+    private Boolean chatIsmHabilitado;
 
     public EmployeeRequestDTO() {}
     public String getName() { return name; }
@@ -29,4 +31,8 @@ public class EmployeeRequestDTO {
     public void setUserId(Long userId) { this.userId = userId; }
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
+    public Long getIsmId() { return ismId; }
+    public void setIsmId(Long v) { this.ismId = v; }
+    public Boolean getChatIsmHabilitado() { return chatIsmHabilitado; }
+    public void setChatIsmHabilitado(Boolean v) { this.chatIsmHabilitado = v; }
 }

@@ -92,6 +92,17 @@ public class GlobalConfigController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Toggle global do chat */
+    @PutMapping("/chat-toggle")
+    public ResponseEntity<Void> setChatToggle(
+            @RequestBody java.util.Map<String, Boolean> body,
+            @AuthenticationPrincipal User user) {
+        boolean habilitado = Boolean.TRUE.equals(body.get("habilitado"));
+        configService.setStringValue("chat_habilitado", String.valueOf(habilitado),
+                user != null ? user.getEmail() : "admin");
+        return ResponseEntity.noContent().build();
+    }
+
     /** Histórico de auditoria das configurações */
     @GetMapping("/audit")
     public ResponseEntity<List<AuditLog>> getAuditLog() {

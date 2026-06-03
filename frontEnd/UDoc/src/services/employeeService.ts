@@ -17,6 +17,9 @@ interface EmployeeRequest {
   companyId: number;
   active: boolean;
   userId?: number | null;
+  tipo?: string;             // "EXTERNO" | "INTERNO"
+  ismId?: number | null;     // ISM responsável (só para EXTERNO)
+  chatIsmHabilitado?: boolean;
 }
 
 export async function getEmployees({

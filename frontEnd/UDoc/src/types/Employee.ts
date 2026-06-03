@@ -9,4 +9,7 @@ export interface Employee {
   userId?: number;
   active: boolean;
   tipo?: "EXTERNO" | "INTERNO"; // tipo do funcionário
+  ismId?: number;
+  ismNome?: string;
+  chatIsmHabilitado?: boolean;
 }

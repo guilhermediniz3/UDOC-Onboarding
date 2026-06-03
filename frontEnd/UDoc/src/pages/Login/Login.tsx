@@ -43,8 +43,10 @@ export default function Login() {
         email: data.email,
         photo: data.photo,
         role: data.role,
+        forcePasswordChange: data.forcePasswordChange,
       });
-      navigate("/");
+      // Redireciona para troca obrigatória antes de acessar o sistema
+      navigate(data.forcePasswordChange ? "/force-change-password" : "/");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, string> } } };
       const errors = e?.response?.data?.errors;

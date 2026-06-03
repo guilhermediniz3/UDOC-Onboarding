@@ -7,6 +7,7 @@ export interface AuthResponse {
   email: string;
   photo?: string;
   role: string;
+  forcePasswordChange: boolean;
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {

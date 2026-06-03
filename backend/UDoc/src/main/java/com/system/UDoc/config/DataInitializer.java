@@ -7,6 +7,7 @@ import com.system.UDoc.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     @Bean
+    @Order(1)
     public CommandLineRunner seedAdmin(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -24,6 +26,66 @@ public class DataInitializer {
             // ── Tipo de funcionário (EXTERNO=clientes / INTERNO=equipe própria) ─
             runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS tipo varchar(20) DEFAULT 'EXTERNO'");
             runSilently(jdbc, "UPDATE employee SET tipo = 'EXTERNO' WHERE tipo IS NULL");
+
+            // ════════════════════════════════════════════════════════════════════
+            // ── CHAT ─────────────────────────────────────────────────────────────
+            // ════════════════════════════════════════════════════════════════════
+
+            // pg_trgm para busca semântica de cards
+            runSilently(jdbc, "CREATE EXTENSION IF NOT EXISTS pg_trgm");
+
+            // Índice GIN para busca de cards por title e description
+            runSilently(jdbc, """
+                CREATE INDEX IF NOT EXISTS idx_card_trgm
+                ON card USING GIN ((title || ' ' || COALESCE(description, '')) gin_trgm_ops)
+            """);
+
+            // Campos de chat no employee (funcionário externo)
+            runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS ism_id bigint REFERENCES ism(id)");
+            runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS chat_ism_habilitado boolean NOT NULL DEFAULT true");
+
+            // Config global: chat habilitado por padrão
+            runSilently(jdbc, """
+                INSERT INTO global_config (chave, valor)
+                VALUES ('chat_habilitado', 'true')
+                ON CONFLICT (chave) DO NOTHING
+            """);
+
+            // Tabela de conversas
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS chat_conversa (
+                    id bigserial PRIMARY KEY,
+                    cliente_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    ism_id bigint REFERENCES ism(id),
+                    status varchar(20) NOT NULL DEFAULT 'ABERTA',
+                    criada_em timestamp NOT NULL DEFAULT now(),
+                    encerrada_em timestamp
+                )
+            """);
+
+            // Tabela de mensagens
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS chat_mensagem (
+                    id bigserial PRIMARY KEY,
+                    conversa_id bigint NOT NULL REFERENCES chat_conversa(id) ON DELETE CASCADE,
+                    conteudo TEXT NOT NULL,
+                    tipo varchar(20) NOT NULL,
+                    lida boolean NOT NULL DEFAULT false,
+                    data_hora timestamp NOT NULL DEFAULT now()
+                )
+            """);
+            runSilently(jdbc, "CREATE INDEX IF NOT EXISTS idx_chat_msg_conversa ON chat_mensagem(conversa_id)");
+
+            // Tabela de avaliações (nota 1-4 igual ao NPS)
+            runSilently(jdbc, """
+                CREATE TABLE IF NOT EXISTS chat_avaliacao (
+                    id bigserial PRIMARY KEY,
+                    conversa_id bigint NOT NULL REFERENCES chat_conversa(id) ON DELETE CASCADE,
+                    nota integer NOT NULL CHECK (nota BETWEEN 1 AND 4),
+                    tipo varchar(10) NOT NULL CHECK (tipo IN ('IA','ISM')),
+                    criada_em timestamp NOT NULL DEFAULT now()
+                )
+            """);
 
             // ── Card interno: visível apenas para funcionários internos/admins ──
             runSilently(jdbc, "ALTER TABLE card ADD COLUMN IF NOT EXISTS interno boolean NOT NULL DEFAULT false");
@@ -132,18 +194,34 @@ public class DataInitializer {
                 ON CONFLICT (chave) DO NOTHING
             """);
 
-            // ── Seed do usuário admin ──────────────────────────────────────────
-            if (userRepository.existsByEmail("admin@udoc.com")) return;
+            // ── Coluna de troca de senha obrigatória ───────────────────────────
+            runSilently(jdbc, "ALTER TABLE users ADD COLUMN IF NOT EXISTS force_password_change boolean NOT NULL DEFAULT false");
 
-            User admin = new User();
-            admin.setName("Administrator");
-            admin.setEmail("admin@udoc.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole(Role.ADMIN);
-            admin.setActive(true);
-            userRepository.save(admin);
+            // ── Auto-vincula ISM.user_id ao User correspondente pelo email ────
+            runSilently(jdbc, """
+                UPDATE ism i
+                SET user_id = u.id
+                FROM users u
+                WHERE i.user_id IS NULL
+                  AND i.email IS NOT NULL
+                  AND LOWER(i.email) = LOWER(u.email)
+                  AND u.role = 'ISM'
+            """);
 
-            System.out.println(">>> Admin user created: admin@udoc.com / admin123");
+            // ── Vincula chat_conversa.ism_id a partir do employee do cliente ──
+            // Cobre conversas criadas antes do ISM ser atribuído ao funcionário,
+            // ou criadas antes desta lógica existir no código.
+            runSilently(jdbc, """
+                UPDATE chat_conversa cc
+                SET ism_id = emp.ism_id
+                FROM employee emp
+                WHERE cc.cliente_id = emp.user_id
+                  AND cc.ism_id IS NULL
+                  AND cc.status = 'ABERTA'
+                  AND emp.ism_id IS NOT NULL
+            """);
+
+            // Seed do usuário padrão movido para DataSeeder (ApplicationRunner @Order(2))
         };
     }
 

@@ -11,6 +11,7 @@ export interface AuthUser {
   email: string;
   photo?: string;
   role: string;
+  forcePasswordChange?: boolean;
 }
 
 interface AuthContextType {

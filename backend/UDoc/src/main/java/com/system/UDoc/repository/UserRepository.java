@@ -16,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailAndIdNot(String email, Long id);
     Optional<User> findByResetToken(String resetToken);
 
+    java.util.List<User> findByRoleAndActiveTrue(com.system.UDoc.entity.Role role);
+
     @Query(
         value = """
             SELECT * FROM users

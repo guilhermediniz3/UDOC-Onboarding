@@ -17,8 +17,10 @@ import Header from "./components/Header/Header";
 import Sidebar from "./components/Sidebar/Sidebar";
 import AppRoutes from "./routes/routes";
 import Login from "./pages/Login/Login";
+import ChatBubble from "./components/Chat/ChatBubble";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword/ResetPassword";
+import ForceChangePassword from "./pages/ForceChangePassword/ForceChangePassword";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const PUBLIC_PATHS = ["/forgot-password", "/reset-password"];
@@ -30,7 +32,7 @@ interface AppContentProps {
 
 function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { pathname } = useLocation();
 
   // Páginas públicas que não precisam de login nem AppShell
@@ -51,6 +53,11 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
 
   if (!isAuthenticated) {
     return <Login />;
+  }
+
+  // Guard: troca de senha obrigatória no primeiro acesso
+  if (user?.forcePasswordChange) {
+    return <ForceChangePassword />;
   }
 
   return (
@@ -96,6 +103,9 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
       <AppShell.Main>
         <AppRoutes />
       </AppShell.Main>
+
+      {/* Balão de chat global — aparece para todos os usuários logados */}
+      <ChatBubble />
 
     </AppShell>
   );

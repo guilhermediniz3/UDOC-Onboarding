@@ -59,6 +59,8 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // WebSocket handshake (SockJS + STOMP)
+                        .requestMatchers("/ws/**").permitAll()
                         // Rotas públicas
                         .requestMatchers("/auth/**").permitAll()
                         // Swagger (acesso em dev)

@@ -37,6 +37,15 @@ public class Employee {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
+    /** ISM responsável pelo atendimento deste funcionário externo no chat */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ism_id")
+    private Ism ism;
+
+    /** Habilita a aba de chat com ISM para este funcionário externo (padrão ON) */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private Boolean chatIsmHabilitado = true;
+
     public Employee() {}
 
     public Long getId() { return id; }
@@ -57,4 +66,8 @@ public class Employee {
     public void setTipo(String tipo) { this.tipo = tipo; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public Ism getIsm() { return ism; }
+    public void setIsm(Ism ism) { this.ism = ism; }
+    public Boolean getChatIsmHabilitado() { return chatIsmHabilitado != null && chatIsmHabilitado; }
+    public void setChatIsmHabilitado(Boolean v) { this.chatIsmHabilitado = v != null && v; }
 }

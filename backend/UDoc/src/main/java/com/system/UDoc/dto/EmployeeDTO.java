@@ -13,6 +13,9 @@ public class EmployeeDTO {
     private Long userId;
     private Boolean active;
     private String tipo; // "EXTERNO" | "INTERNO"
+    private Long ismId;
+    private String ismNome;
+    private Boolean chatIsmHabilitado;
 
     public EmployeeDTO() {}
     public EmployeeDTO(Employee e) {
@@ -21,12 +24,15 @@ public class EmployeeDTO {
         this.companyId = e.getCompany().getId(); this.companyName = e.getCompany().getName();
         this.active = e.getActive();
         this.tipo = e.getTipo() != null ? e.getTipo() : "EXTERNO";
+        this.chatIsmHabilitado = e.getChatIsmHabilitado();
+        if (e.getIsm() != null) {
+            try { this.ismId = e.getIsm().getId(); this.ismNome = e.getIsm().getName(); }
+            catch (Exception ignored) {}
+        }
         // Guarda-chuva: user pode ter sido deletado diretamente do banco (hard delete)
         try {
             if (e.getUser() != null) this.userId = e.getUser().getId();
-        } catch (Exception ignored) {
-            // Referência órfã — user_id aponta para um registro que não existe mais
-        }
+        } catch (Exception ignored) {}
     }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -48,4 +54,10 @@ public class EmployeeDTO {
     public void setActive(Boolean active) { this.active = active; }
     public String getTipo() { return tipo; }
     public void setTipo(String tipo) { this.tipo = tipo; }
+    public Long getIsmId() { return ismId; }
+    public void setIsmId(Long v) { this.ismId = v; }
+    public String getIsmNome() { return ismNome; }
+    public void setIsmNome(String v) { this.ismNome = v; }
+    public Boolean getChatIsmHabilitado() { return chatIsmHabilitado; }
+    public void setChatIsmHabilitado(Boolean v) { this.chatIsmHabilitado = v; }
 }

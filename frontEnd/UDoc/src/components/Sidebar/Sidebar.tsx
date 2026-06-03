@@ -60,10 +60,10 @@ const NAV_ITEMS: NavItemType[] = [
     isActive: (p) =>
       p.startsWith("/admin/card") ||
       p === "/" ||
-      p.startsWith("/admin/empresa") ||
-      p.startsWith("/admin/funcionario") ||
+      p.startsWith("/admin/company") ||
+      p.startsWith("/admin/employee") ||
       p.startsWith("/admin/ism") ||
-      p.startsWith("/admin/usuario") ||
+      p.startsWith("/admin/user") ||
       p === "/admin/certificate-template",
     children: [
       {
@@ -80,15 +80,15 @@ const NAV_ITEMS: NavItemType[] = [
       },
       {
         label: "Empresa",
-        path: "/admin/empresas",
+        path: "/admin/companies",
         Icon: IconBuilding,
-        isActive: (p) => p.startsWith("/admin/empresa"),
+        isActive: (p) => p.startsWith("/admin/company"),
       },
       {
         label: "Funcionário",
-        path: "/admin/funcionarios",
+        path: "/admin/employees",
         Icon: IconUsers,
-        isActive: (p) => p.startsWith("/admin/funcionario"),
+        isActive: (p) => p.startsWith("/admin/employee"),
       },
       {
         label: "ISM",
@@ -98,9 +98,9 @@ const NAV_ITEMS: NavItemType[] = [
       },
       {
         label: "Usuários",
-        path: "/admin/usuarios",
+        path: "/admin/users",
         Icon: IconUserCog,
-        isActive: (p) => p.startsWith("/admin/usuario"),
+        isActive: (p) => p.startsWith("/admin/user"),
       },
       {
         label: "Template Certificado",

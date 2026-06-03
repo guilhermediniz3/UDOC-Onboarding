@@ -74,3 +74,8 @@ export async function deleteUser(id: number): Promise<void> {
 export async function sendWelcomeEmail(id: number): Promise<void> {
   await api.post(`/users/${id}/send-welcome-email`);
 }
+
+export async function generateInviteLink(id: number): Promise<string> {
+  const r = await api.post<{ link: string }>(`/users/${id}/invite-link`);
+  return r.data.link;
+}

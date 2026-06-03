@@ -54,7 +54,9 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return new AuthResponseDTO(
                 jwtUtil.generateToken(user),
-                user.getId(), user.getName(), user.getEmail(), user.getPhoto(), user.getRole().name()
+                user.getId(), user.getName(), user.getEmail(),
+                user.getPhoto(), user.getRole().name(),
+                user.isForcePasswordChange()
         );
     }
 
@@ -71,7 +73,9 @@ public class AuthService {
         User saved = userRepository.save(user);
         return new AuthResponseDTO(
                 jwtUtil.generateToken(saved),
-                saved.getId(), saved.getName(), saved.getEmail(), saved.getPhoto(), saved.getRole().name()
+                saved.getId(), saved.getName(), saved.getEmail(),
+                saved.getPhoto(), saved.getRole().name(),
+                saved.isForcePasswordChange()
         );
     }
 
@@ -105,19 +109,28 @@ public class AuthService {
         }
     }
 
+    /** Gera token de convite e retorna o link — sem enviar e-mail (usado pelo WhatsApp ou outros canais) */
+    @Transactional
+    public String generateInviteLink(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+        return frontendUrl + "/reset-password?token=" + token;
+    }
+
     /** Envia e-mail de boas-vindas para o usuário definir sua senha (chamado pelo admin) */
     @Transactional
     public void sendWelcomeEmail(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
-
         String token = UUID.randomUUID().toString();
         user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24)); // 24h para primeiro acesso
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
         userRepository.save(user);
-
         String link = frontendUrl + "/reset-password?token=" + token;
-
         try {
             emailService.sendWelcomeEmail(user.getEmail(), user.getName(), link);
         } catch (Exception e) {

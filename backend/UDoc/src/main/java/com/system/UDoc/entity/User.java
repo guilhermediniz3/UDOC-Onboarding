@@ -42,6 +42,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean forcePasswordChange = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -68,6 +71,8 @@ public class User implements UserDetails {
     public void setRole(Role role) { this.role = role; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public boolean isForcePasswordChange() { return forcePasswordChange; }
+    public void setForcePasswordChange(boolean forcePasswordChange) { this.forcePasswordChange = forcePasswordChange; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public String getResetToken() { return resetToken; }

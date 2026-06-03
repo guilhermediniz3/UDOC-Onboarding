@@ -13,18 +13,19 @@ import AdminListTrainingRooms from "../pages/AdminListTrainingRooms/AdminListTra
 import AdminTrail from "../pages/AdminTrail/AdminTrail";
 import AdminTrainingRoom from "../pages/AdminTrainingRoom/AdminTrainingRoom";
 import TrainingCalendar from "../pages/TrainingCalendar/TrainingCalendar";
-import AdminListEmpresas from "../pages/AdminListEmpresas/AdminListEmpresas";
-import AdminEmpresa from "../pages/AdminEmpresa/AdminEmpresa";
-import AdminListFuncionarios from "../pages/AdminListFuncionarios/AdminListFuncionarios";
-import AdminFuncionario from "../pages/AdminFuncionario/AdminFuncionario";
+import AdminListCompanies from "../pages/AdminListCompanies/AdminListCompanies";
+import AdminCompany from "../pages/AdminCompany/AdminCompany";
+import AdminListEmployees from "../pages/AdminListEmployees/AdminListEmployees";
+import AdminEmployee from "../pages/AdminEmployee/AdminEmployee";
 import AdminListISM from "../pages/AdminListISM/AdminListISM";
 import AdminISM from "../pages/AdminISM/AdminISM";
-import AdminListUsuarios from "../pages/AdminListUsuarios/AdminListUsuarios";
-import AdminUsuario from "../pages/AdminUsuario/AdminUsuario";
+import AdminListUsers from "../pages/AdminListUsers/AdminListUsers";
+import AdminUser from "../pages/AdminUser/AdminUser";
 import AdminEmailConfig from "../pages/AdminEmailConfig/AdminEmailConfig";
 import UserCardView from "../pages/UserCardView/UserCardView";
 import MeusCertificados from "../pages/MeusCertificados/MeusCertificados";
 import AdminSettings from "../pages/AdminSettings/AdminSettings";
+import ForceChangePassword from "../pages/ForceChangePassword/ForceChangePassword";
 
 function AppRoutes() {
   return (
@@ -37,11 +38,11 @@ function AppRoutes() {
       {/* DASHBOARD */}
       <Route path="/dashboard" element={<Dashboard />} />
 
-      {/* MINHAS TRILHAS */}
+      {/* MY TRAILS */}
       <Route path="/minhas-trilhas" element={<MinhasTrihas />} />
       <Route path="/minhas-trilhas/:trailId" element={<MinhaTrihaViewer />} />
 
-      {/* MEUS CERTIFICADOS */}
+      {/* MY CERTIFICATES */}
       <Route path="/meus-certificados" element={<MeusCertificados />} />
 
       {/* CARDS */}
@@ -61,25 +62,25 @@ function AppRoutes() {
       <Route path="/admin/training-room/:id" element={<AdminTrainingRoom />} />
       <Route path="/admin/training-calendar" element={<TrainingCalendar />} />
 
-      {/* EMPRESAS */}
-      <Route path="/admin/empresas" element={<AdminListEmpresas />} />
-      <Route path="/admin/empresa" element={<AdminEmpresa />} />
-      <Route path="/admin/empresa/:id" element={<AdminEmpresa />} />
+      {/* COMPANIES */}
+      <Route path="/admin/companies" element={<AdminListCompanies />} />
+      <Route path="/admin/company" element={<AdminCompany />} />
+      <Route path="/admin/company/:id" element={<AdminCompany />} />
 
-      {/* FUNCIONÁRIOS EXTERNOS */}
-      <Route path="/admin/funcionarios" element={<AdminListFuncionarios />} />
-      <Route path="/admin/funcionario" element={<AdminFuncionario />} />
-      <Route path="/admin/funcionario/:id" element={<AdminFuncionario />} />
+      {/* EMPLOYEES */}
+      <Route path="/admin/employees" element={<AdminListEmployees />} />
+      <Route path="/admin/employee" element={<AdminEmployee />} />
+      <Route path="/admin/employee/:id" element={<AdminEmployee />} />
 
       {/* ISM */}
       <Route path="/admin/ismsAdmin" element={<AdminListISM />} />
       <Route path="/admin/ism" element={<AdminISM />} />
       <Route path="/admin/ism/:id" element={<AdminISM />} />
 
-      {/* USUÁRIOS */}
-      <Route path="/admin/usuarios" element={<AdminListUsuarios />} />
-      <Route path="/admin/usuario" element={<AdminUsuario />} />
-      <Route path="/admin/usuario/:id" element={<AdminUsuario />} />
+      {/* USERS */}
+      <Route path="/admin/users" element={<AdminListUsers />} />
+      <Route path="/admin/user" element={<AdminUser />} />
+      <Route path="/admin/user/:id" element={<AdminUser />} />
 
       {/* EMAIL CONFIG */}
       <Route path="/admin/email-config" element={<AdminEmailConfig />} />
@@ -87,8 +88,11 @@ function AppRoutes() {
       {/* CERTIFICATE TEMPLATE */}
       <Route path="/admin/certificate-template" element={<AdminCertificateTemplate />} />
 
-      {/* CONFIGURAÇÕES GLOBAIS */}
+      {/* GLOBAL SETTINGS */}
       <Route path="/admin/settings" element={<AdminSettings />} />
+
+      {/* FORCED PASSWORD CHANGE (first access) */}
+      <Route path="/force-change-password" element={<ForceChangePassword />} />
 
     </Routes>
   );

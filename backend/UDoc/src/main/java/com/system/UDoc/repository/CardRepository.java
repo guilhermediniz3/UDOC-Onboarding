@@ -100,4 +100,24 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             @Param("startDate") String startDate,
             @Param("endDate") String endDate
     );
+
+    /** Busca semântica com pg_trgm para o chat IA — retorna content para que a IA leia o documento completo */
+    @Query(value = """
+        SELECT c.id, c.title, c.description, c.content
+        FROM card c
+        WHERE c.active = true
+          AND c.interno = false
+          AND (
+              similarity(c.title || ' ' || COALESCE(c.description,''), :query) > 0.15
+              OR c.title       ILIKE CONCAT('%', :query, '%')
+              OR c.description ILIKE CONCAT('%', :query, '%')
+              OR c.content     ILIKE CONCAT('%', :query, '%')
+          )
+        ORDER BY similarity(c.title || ' ' || COALESCE(c.description,''), :query) DESC
+        LIMIT :lim
+    """, nativeQuery = true)
+    java.util.List<java.util.Map<String, Object>> searchByTrgm(
+            @Param("query") String query,
+            @Param("lim") int lim
+    );
 }

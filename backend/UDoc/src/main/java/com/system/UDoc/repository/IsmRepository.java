@@ -30,4 +30,9 @@ public interface IsmRepository extends JpaRepository<Ism, Long> {
     Page<Ism> search(@Param("search") String search,
                      @Param("active") Boolean active,
                      Pageable pageable);
+
+    java.util.Optional<Ism> findByUserId(Long userId);
+
+    @Query("SELECT i FROM Ism i WHERE LOWER(i.email) = LOWER(:email)")
+    java.util.Optional<Ism> findByEmailIgnoreCase(@org.springframework.data.repository.query.Param("email") String email);
 }

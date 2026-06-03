@@ -11,6 +11,7 @@ import {
   Progress,
   Select,
   Stack,
+  Switch,
   Table,
   Tabs,
   Text,
@@ -26,6 +27,8 @@ import {
   IconInfoCircle,
   IconKey,
   IconMail,
+  IconMessageChatbot,
+  IconMessages,
   IconPlayerPlay,
   IconRobot,
   IconSearch,
@@ -36,6 +39,8 @@ import {
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
+import api from "../../services/api";
+import ChatAdminMonitor from "../../components/Chat/ChatAdminMonitor";
 
 import {
   deleteRoomRecording,
@@ -54,6 +59,70 @@ import {
   type RecordingEntry,
   type StorageInfo,
 } from "../../services/storageService";
+
+// ── Aba de configuração do Chat ───────────────────────────────────────────────
+function ChatConfigTab() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    api.get("/chat/config").then((r) => setEnabled(r.data.chatGlobalHabilitado)).catch(() => setEnabled(true));
+  }, []);
+
+  async function toggle(val: boolean) {
+    setSaving(true);
+    try {
+      // Reutiliza GlobalConfigController PUT /config/integrations
+      // que aceita chaves genéricas e salva no global_config
+      await api.put("/config/chat-toggle", { habilitado: val });
+      setEnabled(val);
+      setMsg(val ? "Chat habilitado para todos os usuários." : "Chat desabilitado globalmente.");
+      setTimeout(() => setMsg(""), 3000);
+    } catch {
+      setMsg("Erro ao salvar configuração.");
+    } finally { setSaving(false); }
+  }
+
+  if (enabled === null) return null;
+
+  return (
+    <Stack gap="20px">
+      <Alert color="blue" radius="xl" variant="light" icon={<IconInfoCircle size={16} />}>
+        <Text fz="sm">
+          Quando o chat estiver <b>desabilitado globalmente</b>, o balão de chat some para
+          todos os usuários sem exceção. Cada funcionário externo ainda pode ter
+          a aba do ISM habilitada/desabilitada individualmente no cadastro de funcionário.
+        </Text>
+      </Alert>
+
+      <Paper p="20px" radius="16px"
+        style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+        <Group justify="space-between" align="center">
+          <Stack gap={2}>
+            <Text fw={600} c="var(--text-primary)">Chat habilitado globalmente</Text>
+            <Text fz="xs" c="var(--text-secondary)">
+              Controla se o balão de chat aparece para todos os usuários da plataforma
+            </Text>
+          </Stack>
+          <Switch
+            checked={enabled}
+            onChange={(e) => toggle(e.currentTarget.checked)}
+            disabled={saving}
+            size="md" color="violet"
+            styles={{ label: { color: "var(--text-primary)" } }}
+          />
+        </Group>
+      </Paper>
+
+      {msg && (
+        <Alert color="green" radius="xl" variant="light" icon={<IconCheck size={16} />}>
+          {msg}
+        </Alert>
+      )}
+    </Stack>
+  );
+}
 
 // ── Barra de progresso de armazenamento ──────────────────────────────────────
 function StorageBar({ info }: { info: StorageInfo }) {
@@ -241,6 +310,12 @@ export default function AdminSettings() {
             </Tabs.Tab>
             <Tabs.Tab value="integrations" leftSection={<IconKey size={16} />}>
               Integrações
+            </Tabs.Tab>
+            <Tabs.Tab value="chat" leftSection={<IconMessageChatbot size={16} />}>
+              Chat
+            </Tabs.Tab>
+            <Tabs.Tab value="chat-monitor" leftSection={<IconMessages size={16} />}>
+              Monitor de Chat
             </Tabs.Tab>
           </Tabs.List>
 
@@ -469,6 +544,16 @@ export default function AdminSettings() {
               </Group>
 
             </Stack>
+          </Tabs.Panel>
+
+          {/* ── ABA CHAT ── */}
+          <Tabs.Panel value="chat">
+            <ChatConfigTab />
+          </Tabs.Panel>
+
+          {/* ── ABA MONITOR DE CHAT ── */}
+          <Tabs.Panel value="chat-monitor">
+            <ChatAdminMonitor />
           </Tabs.Panel>
 
         </Tabs>

@@ -7,11 +7,14 @@ public class AuthResponseDTO {
     private String email;
     private String photo;
     private String role;
+    private boolean forcePasswordChange;
 
     public AuthResponseDTO() {}
-    public AuthResponseDTO(String token, Long id, String name, String email, String photo, String role) {
+    public AuthResponseDTO(String token, Long id, String name, String email,
+                           String photo, String role, boolean forcePasswordChange) {
         this.token = token; this.id = id; this.name = name;
         this.email = email; this.photo = photo; this.role = role;
+        this.forcePasswordChange = forcePasswordChange;
     }
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
@@ -25,4 +28,6 @@ public class AuthResponseDTO {
     public void setPhoto(String photo) { this.photo = photo; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public boolean isForcePasswordChange() { return forcePasswordChange; }
+    public void setForcePasswordChange(boolean forcePasswordChange) { this.forcePasswordChange = forcePasswordChange; }
 }
