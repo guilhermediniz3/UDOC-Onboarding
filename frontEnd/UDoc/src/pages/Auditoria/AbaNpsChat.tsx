@@ -1,4 +1,4 @@
-import { Avatar, Badge, Group, Loader, Paper, Stack, Text, TextInput } from "@mantine/core";
+import { Avatar, Badge, Group, Loader, Paper, Select, Stack, Text, TextInput } from "@mantine/core";
 import {
   IconMoodConfuzed, IconMoodNeutral, IconMoodSad,
   IconMoodSmile, IconMoodSmileBeam,
