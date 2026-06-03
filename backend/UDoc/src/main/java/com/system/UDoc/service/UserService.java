@@ -53,6 +53,16 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(pwd));
 
         User saved = userRepository.save(user);
+
+        // Vincula o funcionário escolhido (mesmo comportamento do updateUser)
+        if (request.getEmployeeId() != null) {
+            Employee employee = employeeRepository.findById(request.getEmployeeId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Employee not found with id " + request.getEmployeeId()));
+            employee.setUser(saved);
+            employeeRepository.save(employee);
+        }
+
         syncIsmRecord(saved, request.getEmployeeId());
         return buildDTO(saved);
     }

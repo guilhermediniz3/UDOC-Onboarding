@@ -62,7 +62,10 @@ export default function AdminEmployee() {
         showMessage("success", `Funcionário ${tipoLabel} criado com sucesso!`);
         setTimeout(() => navigate("/admin/employees"), 1200);
       } else {
-        await updateEmployee(Number(id), payload);
+        // Atualiza o estado local com a resposta do servidor para garantir
+        // que os selects reflitam exatamente o que foi persistido no banco
+        const updated = await updateEmployee(Number(id), payload);
+        setEmployee(updated);
         showMessage("success", "Funcionário atualizado com sucesso!");
       }
     } catch (err: unknown) {

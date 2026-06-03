@@ -203,7 +203,10 @@ export default function AdminUser() {
         showMessage("success", "Usuário criado! Redirecionando para enviar o convite por e-mail...");
         setTimeout(() => navigate(`/admin/user/${created.id}`), 1000);
       } else {
+        // Atualiza o estado local com a resposta do servidor para garantir
+        // que os selects reflitam exatamente o que foi persistido no banco
         const updated = await updateUser(Number(id), payload);
+        setUserData(updated);
         showMessage("success", "Usuário atualizado com sucesso!");
         if (currentUser?.id === Number(id)) {
           updateAuthUser({ ...currentUser, name: updated.name, photo: updated.photo });
