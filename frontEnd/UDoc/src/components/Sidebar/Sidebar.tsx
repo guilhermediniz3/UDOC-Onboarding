@@ -45,6 +45,7 @@ interface NavChild {
   path: string;
   Icon: React.ComponentType<{ size?: number }>;
   isActive: (pathname: string) => boolean;
+  adminOnly?: boolean; // oculta este filho para roles não-ADMIN
 }
 
 interface NavItemType {
@@ -112,6 +113,7 @@ const NAV_ITEMS: NavItemType[] = [
         path: "/admin/certificate-template",
         Icon: IconCertificate,
         isActive: (p) => p === "/admin/certificate-template",
+        adminOnly: true,
       },
     ],
   },
@@ -222,15 +224,30 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const isCollapsed = collapsed && !isMobile;
 
   // Mapeamento item de menu → módulo de permissão (VIEW)
-  // Itens sem módulo mapeado = sempre visíveis
+  // Itens sem módulo mapeado = sempre visíveis (ex: Dashboard, Configurações, Auditoria)
   const MODULE_FOR_ITEM: Record<string, string> = {
+    // Cadastro (filhos)
     "Cadastro de Documentos": "CARD",
+    "Documentos":             "CARD",      // visualização pública dos cards
     "Empresa":                "EMPRESA",
     "Funcionário":            "FUNCIONARIO",
     "ISM":                    "ISM",
     "Usuários":               "USUARIO",
+    // Template Certificado: adminOnly no NavChild, não precisa de módulo
+
+    // Trilha (filhos e item autônomo)
     "Trilha":                 "TRILHA",
+    "Gestão de Trilhas":      "TRILHA",
+
+    // Sala de Treinamento (filhos)
     "Salas":                  "SALA",
+    "Calendário":             "SALA",
+
+    // Itens autônomos
+    "Minhas Trilhas":         "TRILHA",
+    "Meus Certificados":      "TRILHA",
+
+    // Admin-only (controlado por adminOnly: true, não por módulo)
     "Ranking":                "RANKING",
   };
 
@@ -286,6 +303,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           if (item.children) {
             const visibleChildren = item.children.filter(child => {
+              // Filho com adminOnly: oculto para não-ADMIN
+              if (child.adminOnly && user?.role !== "ADMIN") return false;
+              // Filho com módulo mapeado: verifica permissão VIEW
               const mod = MODULE_FOR_ITEM[child.label];
               return !mod || can(mod, "VIEW");
             });
