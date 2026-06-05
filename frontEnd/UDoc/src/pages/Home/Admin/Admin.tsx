@@ -38,7 +38,7 @@ import {
 
 import { FaTrash } from "react-icons/fa";
 
-import Tabs from "../../../components/Tabs/Tabs";
+import { Tabs as MantineTabs } from "@mantine/core";
 import RichTextEditor from "../../../components/RichTextEditor/RichTextEditor";
 import NpsQuestionEditor from "../../../components/Nps/NpsQuestionEditor";
 import CardQuizEditor from "../../../components/Quiz/CardQuizEditor";
@@ -193,10 +193,16 @@ export default function Admin() {
       id: "midias",
       label: "Mídias",
       content: (
-        <RichTextEditor
-          value={card.content || ""}
-          onChange={(value) => updateField("content", value)}
-        />
+        <div style={{
+          height: "calc(100vh - 430px)",
+          minHeight: 500,
+          overflowY: "auto",
+        }}>
+          <RichTextEditor
+            value={card.content || ""}
+            onChange={(value) => updateField("content", value)}
+          />
+        </div>
       ),
     },
     {
@@ -228,54 +234,109 @@ export default function Admin() {
     boxShadow: dark ? "0 10px 30px rgba(0,0,0,0.35)" : "0 10px 30px rgba(0,0,0,0.08)",
   };
 
+  const bg = dark ? "#111111" : "#f4f4f5";
+
+  const tabListStyles = {
+    list: {
+      display: "flex" as const,
+      flexWrap: "wrap" as const,
+      alignItems: "center" as const,
+      background: dark ? "linear-gradient(180deg, #111827 0%, #0f172a 100%)" : "#ffffff",
+      border: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #d1d5db",
+      borderRadius: "18px",
+      padding: "8px",
+      gap: "8px",
+      boxShadow: dark ? "0 10px 40px rgba(0,0,0,0.25)" : "0 10px 30px rgba(0,0,0,0.08)",
+    },
+    tab: {
+      flex: "0 0 auto" as const,
+      color: dark ? "#94a3b8" : "#374151",
+      fontWeight: 600,
+      borderRadius: "12px",
+      transition: "all 0.2s ease",
+      paddingInline: "18px",
+      height: "42px",
+      whiteSpace: "nowrap" as const,
+      background: "transparent",
+    },
+    tabLabel: { fontSize: "14px" },
+    panel: { paddingTop: "12px", width: "100%" },
+  };
+
   return (
-    <Box p="lg" bg={dark ? "#111111" : "#f4f4f5"} mih="100vh">
-      <Paper p="xl" radius="24px" mb="xl" style={paperStyle}>
-        <Flex justify="space-between" align="center">
-          <Group>
-            <ThemeIcon size={56} radius="xl" variant="gradient" gradient={{ from: "violet", to: "blue" }}>
-              <IconInfoCircle size={28} />
-            </ThemeIcon>
-            <div>
-              <Title order={2} c={dark ? "white" : "#111827"}>
-                {isNewCard ? "Novo Card" : "Editar Card"}
-              </Title>
-              <Text c={dark ? "dimmed" : "#6b7280"}>Gerencie os dados do card.</Text>
-            </div>
-          </Group>
+    <Box bg={bg} mih="100vh">
+      <MantineTabs defaultValue={tabs[0]?.id} variant="outline" radius="lg" keepMounted={false} styles={tabListStyles}>
 
-          <Group>
-            <Button variant="light" color="gray" radius="xl" leftSection={<IconArrowLeft size={18} />} onClick={() => navigate("/admin/cards")}>
-              Voltar
-            </Button>
-            <Badge color={card.active ? "green" : "red"} radius="xl" size="lg">
-              {card.active ? "ATIVO" : "INATIVO"}
-            </Badge>
-            <Switch
-              checked={card.active ?? false}
-              onChange={(event) => handleToggleActive(event.currentTarget.checked)}
-              size="lg"
-              color="violet"
-            />
-            <Button color="red" radius="xl" leftSection={<FaTrash />} onClick={handleDelete}>
-              Remover
-            </Button>
-            <Button radius="xl" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>
-              Salvar
-            </Button>
-          </Group>
-        </Flex>
-      </Paper>
+        {/* ── Cabeçalho + barra de abas fixos ao rolar ── */}
+        <div style={{ position: "sticky", top: 0, zIndex: 200, background: bg, padding: "16px 16px 0" }}>
 
-      {message && (
-        <Alert mb="lg" radius="xl" color={messageType === "success" ? "green" : "red"} icon={messageType === "success" ? <IconCheck /> : <IconX />}>
-          {message}
-        </Alert>
-      )}
+          <Paper p="xl" radius="24px" mb="md" style={paperStyle}>
+            <Flex justify="space-between" align="center">
+              <Group>
+                <ThemeIcon size={56} radius="xl" variant="gradient" gradient={{ from: "violet", to: "blue" }}>
+                  <IconInfoCircle size={28} />
+                </ThemeIcon>
+                <div>
+                  <Title order={2} c={dark ? "white" : "#111827"}>
+                    {isNewCard ? "Novo Card" : "Editar Card"}
+                  </Title>
+                  <Text c={dark ? "dimmed" : "#6b7280"}>Gerencie os dados do card.</Text>
+                </div>
+              </Group>
 
-      <MantineCard radius="24px" p="xl" style={paperStyle}>
-        <Tabs tabs={tabs} />
-      </MantineCard>
+              <Group>
+                <Button variant="light" color="gray" radius="xl" leftSection={<IconArrowLeft size={18} />} onClick={() => navigate("/admin/cards")}>
+                  Voltar
+                </Button>
+                <Badge color={card.active ? "green" : "red"} radius="xl" size="lg">
+                  {card.active ? "ATIVO" : "INATIVO"}
+                </Badge>
+                <Switch
+                  checked={card.active ?? false}
+                  onChange={(event) => handleToggleActive(event.currentTarget.checked)}
+                  size="lg"
+                  color="violet"
+                />
+                <Button color="red" radius="xl" leftSection={<FaTrash />} onClick={handleDelete}>
+                  Remover
+                </Button>
+                <Button radius="xl" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>
+                  Salvar
+                </Button>
+              </Group>
+            </Flex>
+          </Paper>
+
+          {message && (
+            <Alert mb="md" radius="xl" color={messageType === "success" ? "green" : "red"} icon={messageType === "success" ? <IconCheck /> : <IconX />}>
+              {message}
+            </Alert>
+          )}
+
+          <MantineCard radius="24px" style={{ ...paperStyle, paddingTop: 16, paddingBottom: 0 }}>
+            <MantineTabs.List mb={0}>
+              {tabs.map((tab) => (
+                <MantineTabs.Tab key={tab.id} value={tab.id}>
+                  {tab.label}
+                </MantineTabs.Tab>
+              ))}
+            </MantineTabs.List>
+          </MantineCard>
+
+        </div>
+
+        {/* ── Conteúdo das abas — rola livremente ── */}
+        <div style={{ padding: "16px 16px 24px" }}>
+          <MantineCard radius="24px" p="xl" style={paperStyle}>
+            {tabs.map((tab) => (
+              <MantineTabs.Panel key={tab.id} value={tab.id}>
+                {tab.content}
+              </MantineTabs.Panel>
+            ))}
+          </MantineCard>
+        </div>
+
+      </MantineTabs>
     </Box>
   );
 }

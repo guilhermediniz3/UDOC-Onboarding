@@ -377,7 +377,7 @@ export default function RichTextEditor({
   };
 
   return (
-    <Stack gap="md" style={{ height: "100%" }}>
+    <Stack gap="md">
       <Paper
         className="editor-toolbar"
         p="sm"
@@ -512,8 +512,7 @@ export default function RichTextEditor({
         p={0}
         shadow="xl"
         style={{
-          flex: 1,
-          overflow: "hidden",
+          minHeight: 500,
           background: dark ? "#0f172a" : "#ffffff",
           border: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #d1d5db",
         }}
