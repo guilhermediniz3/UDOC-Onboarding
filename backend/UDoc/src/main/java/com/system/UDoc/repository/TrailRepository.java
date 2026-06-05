@@ -36,16 +36,16 @@ public interface TrailRepository extends JpaRepository<Trail, Long> {
 
     /**
      * Catálogo: trilhas ativas, filtradas por visibilidade e nome.
-     * visibilidades deve conter os valores de enum como strings (ex: ["AMBAS","INTERNA"]).
+     * JPQL com List<Enum> — sem native query para evitar problemas com array binding.
      */
-    @Query(value = """
-        SELECT * FROM trail
-        WHERE active = true
-          AND visibilidade = ANY(CAST(:visibilidades AS varchar[]))
-          AND (:search IS NULL OR name ILIKE CONCAT('%', :search, '%'))
-        ORDER BY sort_order ASC, id ASC
-    """, nativeQuery = true)
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT t FROM Trail t
+        WHERE t.active = true
+          AND t.visibilidade IN :visibilidades
+          AND (:search IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        ORDER BY t.sortOrder ASC, t.id ASC
+    """)
     java.util.List<Trail> findCatalog(
-            @Param("visibilidades") String[] visibilidades,
+            @Param("visibilidades") java.util.List<Trail.Visibilidade> visibilidades,
             @Param("search") String search);
 }

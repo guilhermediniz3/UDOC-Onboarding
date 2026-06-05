@@ -39,8 +39,8 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public List<CatalogTrailDTO> getCatalog(User user, String search) {
 
-        String[] visibilidades = resolveVisibilidades(user);
-        String   searchParam   = (search == null || search.isBlank()) ? null : search;
+        java.util.List<Trail.Visibilidade> visibilidades = resolveVisibilidades(user);
+        String searchParam = (search == null || search.isBlank()) ? null : search;
 
         List<Trail> trails = trailRepo.findCatalog(visibilidades, searchParam);
 
@@ -60,7 +60,7 @@ public class CatalogService {
                 enrollStatus = "COMPLETED";
             } else if (prog != null) {
                 enrollStatus = "IN_PROGRESS";
-            } else if (emp != null && roomRepo.existsByTrailIdAndEmployee(trail.getId(), emp.getId())) {
+            } else if (emp != null && roomRepo.countByTrailIdAndEmployee(trail.getId(), emp.getId()) > 0) {
                 enrollStatus = "ENROLLED";
             } else {
                 enrollStatus = "AVAILABLE";
@@ -94,7 +94,7 @@ public class CatalogService {
                         HttpStatus.BAD_REQUEST, "Usuário sem funcionário vinculado."));
 
         // Verifica se já está matriculado
-        if (roomRepo.existsByTrailIdAndEmployee(trailId, employee.getId())) {
+        if (roomRepo.countByTrailIdAndEmployee(trailId, employee.getId()) > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Funcionário já está matriculado nesta trilha.");
         }
@@ -130,17 +130,16 @@ public class CatalogService {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private String[] resolveVisibilidades(User user) {
+    private List<Visibilidade> resolveVisibilidades(User user) {
         Role role = user.getRole();
         if (role == Role.ADMIN || role == Role.ISM) {
-            return new String[]{"INTERNA", "EXTERNA", "AMBAS"};
+            return List.of(Visibilidade.INTERNA, Visibilidade.EXTERNA, Visibilidade.AMBAS);
         }
-        // Funcionário: distingue por employee.tipo
         Employee emp = employeeRepo.findByUserId(user.getId()).orElse(null);
         if (emp != null && "INTERNO".equals(emp.getTipo())) {
-            return new String[]{"INTERNA", "AMBAS"};
+            return List.of(Visibilidade.INTERNA, Visibilidade.AMBAS);
         }
-        return new String[]{"EXTERNA", "AMBAS"};
+        return List.of(Visibilidade.EXTERNA, Visibilidade.AMBAS);
     }
 
     // ── DTO ───────────────────────────────────────────────────────────────────

@@ -15,8 +15,8 @@ public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long
     long countByTrailId(@Param("trailId") Long trailId);
 
     /** Verifica se o funcionário já está matriculado em alguma sala desta trilha */
-    @Query("SELECT COUNT(r) > 0 FROM TrainingRoom r JOIN r.invitedEmployees e WHERE r.trail.id = :trailId AND e.id = :employeeId")
-    boolean existsByTrailIdAndEmployee(@Param("trailId") Long trailId, @Param("employeeId") Long employeeId);
+    @Query("SELECT COUNT(r) FROM TrainingRoom r JOIN r.invitedEmployees e WHERE r.trail.id = :trailId AND e.id = :employeeId")
+    long countByTrailIdAndEmployee(@Param("trailId") Long trailId, @Param("employeeId") Long employeeId);
 
     /** Busca sala de auto-matrícula já existente para evitar duplicar */
     @Query("SELECT r FROM TrainingRoom r WHERE r.trail.id = :trailId AND r.company.id = :companyId AND r.ism.id = :ismId")
