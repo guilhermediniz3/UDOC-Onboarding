@@ -22,6 +22,9 @@ public class TrailRequestDTO {
 
     private List<Long> cardIds;
 
+    /** INTERNA | EXTERNA | AMBAS — default AMBAS */
+    private String visibilidade;
+
     public TrailRequestDTO() {
     }
 
@@ -64,4 +67,7 @@ public class TrailRequestDTO {
     public void setCardIds(List<Long> cardIds) {
         this.cardIds = cardIds;
     }
+
+    public String getVisibilidade() { return visibilidade; }
+    public void setVisibilidade(String visibilidade) { this.visibilidade = visibilidade; }
 }

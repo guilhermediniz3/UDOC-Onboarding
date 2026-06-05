@@ -4,4 +4,5 @@ export interface Trail {
   description: string;
   active: boolean;
   sortOrder: number;
+  visibilidade?: "INTERNA" | "EXTERNA" | "AMBAS";
 }

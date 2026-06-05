@@ -25,6 +25,7 @@ public class DataInitializer {
             UserRepository userRepository,
             PermissionGroupRepository permGroupRepo,
             PermissionRepository permRepo,
+            com.system.UDoc.repository.IsmRepository ismRepository,
             PasswordEncoder passwordEncoder,
             JdbcTemplate jdbc
     ) {
@@ -201,6 +202,12 @@ public class DataInitializer {
                 ON CONFLICT (chave) DO NOTHING
             """);
 
+            // ── Visibilidade das trilhas no catálogo ──────────────────────────
+            runSilently(jdbc, "ALTER TABLE trail ADD COLUMN IF NOT EXISTS visibilidade VARCHAR(10) NOT NULL DEFAULT 'AMBAS'");
+
+            // ── ISM de sistema (Auto Matrícula) ────────────────────────────────
+            runSilently(jdbc, "ALTER TABLE ism ADD COLUMN IF NOT EXISTS sistema_ism boolean NOT NULL DEFAULT false");
+
             // ── Gamificação: eventos de XP ────────────────────────────────────
             runSilently(jdbc, """
                 CREATE TABLE IF NOT EXISTS user_xp_events (
@@ -310,6 +317,12 @@ public class DataInitializer {
             // ── Seed: grupos e permissões padrão (tudo granted=true) ─────────
             seedPermissions(permGroupRepo, permRepo);
 
+            // ── Seed: ISM de sistema "Auto Matrícula" ─────────────────────────
+            seedAutoMatriculaIsm(ismRepository);
+
+            // ── Seed: permissões do módulo MATRICULA (VIEW + CREATE) ──────────
+            seedMatriculaPermissions(permGroupRepo, permRepo);
+
             // Seed do usuário padrão movido para DataSeeder (ApplicationRunner @Order(2))
         };
     }
@@ -347,6 +360,32 @@ public class DataInitializer {
                     permRepo.save(new Permission(group, "SALA", "OUTRO_ISM_MANAGE", true, true,
                         "Permite ao ISM criar, editar ou deletar salas de treinamento que pertencem "
                         + "a outro ISM. Não bloqueia o gerenciamento das próprias salas."));
+                }
+            }
+        }
+    }
+
+    /** Cria o ISM de sistema "Auto Matrícula" se ainda não existir. Idempotente. */
+    private void seedAutoMatriculaIsm(com.system.UDoc.repository.IsmRepository ismRepo) {
+        if (!ismRepo.existsBySistemaIsmTrue()) {
+            com.system.UDoc.entity.Ism autoIsm = new com.system.UDoc.entity.Ism();
+            autoIsm.setName("Auto Matrícula");
+            autoIsm.setEmail("auto-matricula@sistema.udoc");
+            autoIsm.setActive(true);
+            autoIsm.setSistemaIsm(true);
+            ismRepo.save(autoIsm);
+        }
+    }
+
+    /** Insere permissões VIEW e CREATE do módulo MATRICULA para os 3 grupos. Idempotente. */
+    private void seedMatriculaPermissions(PermissionGroupRepository groupRepo,
+                                          PermissionRepository permRepo) {
+        for (PermissionGroup.GroupType gt : PermissionGroup.GroupType.values()) {
+            PermissionGroup group = groupRepo.findByGroupType(gt).orElse(null);
+            if (group == null) continue;
+            for (String action : new String[]{"VIEW", "CREATE"}) {
+                if (!permRepo.existsByGroupAndModuleAndAction(group, "MATRICULA", action)) {
+                    permRepo.save(new Permission(group, "MATRICULA", action, true, false));
                 }
             }
         }

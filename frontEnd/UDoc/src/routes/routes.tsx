@@ -30,6 +30,7 @@ import Auditoria from "../pages/Auditoria/Auditoria";
 import Forbidden from "../pages/Forbidden/Forbidden";
 import Ranking from "../pages/Ranking/Ranking";
 import AdminPermissions from "../pages/AdminPermissions/AdminPermissions";
+import Catalogo from "../pages/Catalogo/Catalogo";
 
 function AppRoutes() {
   return (
@@ -97,6 +98,9 @@ function AppRoutes() {
 
       {/* FORCED PASSWORD CHANGE (first access) */}
       <Route path="/force-change-password" element={<ForceChangePassword />} />
+
+      {/* CATÁLOGO DE MATRÍCULAS — todos os perfis */}
+      <Route path="/catalogo" element={<Catalogo />} />
 
       {/* RANKING — funcionários internos e admins */}
       <Route path="/ranking" element={<Ranking />} />

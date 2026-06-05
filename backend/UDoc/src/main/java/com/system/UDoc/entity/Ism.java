@@ -26,6 +26,10 @@ public class Ism extends AuditableEntity {
     @Column(nullable = false)
     private Boolean active = true;
 
+    /** ISM criado pelo sistema (ex: "Auto Matrícula") — não aparece em selects de formulários. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean sistemaIsm = false;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     private User user;
@@ -46,4 +50,6 @@ public class Ism extends AuditableEntity {
     public void setActive(Boolean active) { this.active = active; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public boolean isSistemaIsm() { return sistemaIsm; }
+    public void setSistemaIsm(boolean sistemaIsm) { this.sistemaIsm = sistemaIsm; }
 }

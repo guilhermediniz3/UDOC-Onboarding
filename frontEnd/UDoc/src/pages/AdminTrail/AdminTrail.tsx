@@ -4,6 +4,7 @@ import {
   Group,
   NumberInput,
   Paper,
+  Select,
   Stack,
   Switch,
   Tabs,
@@ -94,7 +95,7 @@ export default function AdminTrail() {
     if (!trail.sortOrder || trail.sortOrder < 1) { showMessage("error", "A ordem deve ser um número maior que zero."); return; }
     setSaving(true);
     try {
-      const payload = { name: trail.name, description: trail.description, active: trail.active, sortOrder: trail.sortOrder };
+      const payload = { name: trail.name, description: trail.description, active: trail.active, sortOrder: trail.sortOrder, visibilidade: trail.visibilidade ?? "AMBAS" };
       if (isNew) {
         await createTrail(payload);
         showMessage("success", "Trilha criada! Agora você pode adicionar conteúdo e configurar a certificação.");
@@ -170,6 +171,20 @@ export default function AdminTrail() {
                 value={trail.sortOrder}
                 onChange={(v) => setTrail((p) => ({ ...p, sortOrder: Number(v) || 1 }))}
                 styles={inputStyles} />
+
+              <Select
+                label="Visibilidade no catálogo"
+                description="Define quem pode ver esta trilha no catálogo de matrículas"
+                radius="xl" size="md"
+                value={trail.visibilidade ?? "AMBAS"}
+                onChange={(v) => setTrail((p) => ({ ...p, visibilidade: (v ?? "AMBAS") as "INTERNA" | "EXTERNA" | "AMBAS" }))}
+                data={[
+                  { value: "AMBAS",    label: "Todos os perfis (padrão)" },
+                  { value: "INTERNA",  label: "Apenas funcionários internos" },
+                  { value: "EXTERNA",  label: "Apenas funcionários externos" },
+                ]}
+                styles={inputStyles}
+              />
 
               <Group>
                 <Switch label={trail.active ? "Ativa" : "Inativa"} checked={trail.active}

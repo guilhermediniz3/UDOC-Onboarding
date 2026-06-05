@@ -10,6 +10,8 @@ import java.util.List;
 @Table(name = "trail")
 public class Trail extends AuditableEntity {
 
+    public enum Visibilidade { INTERNA, EXTERNA, AMBAS }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,6 +27,16 @@ public class Trail extends AuditableEntity {
 
     @Column(nullable = false, columnDefinition = "integer not null default 0")
     private Integer sortOrder = 0;
+
+    /**
+     * INTERNA → apenas funcionários internos
+     * EXTERNA → apenas funcionários externos
+     * AMBAS   → todos os perfis (default)
+     * Trilhas inativas nunca aparecem no catálogo independente deste campo.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "varchar(10) default 'AMBAS'")
+    private Visibilidade visibilidade = Visibilidade.AMBAS;
 
     @ManyToMany
     @JoinTable(
@@ -84,4 +96,7 @@ public class Trail extends AuditableEntity {
     public void setCards(List<Card> cards) {
         this.cards = cards;
     }
+
+    public Visibilidade getVisibilidade() { return visibilidade; }
+    public void setVisibilidade(Visibilidade visibilidade) { this.visibilidade = visibilidade; }
 }

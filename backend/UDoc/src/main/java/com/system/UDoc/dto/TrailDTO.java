@@ -12,6 +12,7 @@ public class TrailDTO {
     private String description;
     private Boolean active;
     private Integer sortOrder;
+    private String visibilidade;
     private List<CardDTO> cards;
 
     public TrailDTO() {
@@ -24,6 +25,7 @@ public class TrailDTO {
         this.description = trail.getDescription();
         this.active = trail.getActive();
         this.sortOrder = trail.getSortOrder();
+        this.visibilidade = trail.getVisibilidade() != null ? trail.getVisibilidade().name() : "AMBAS";
         this.cards = trail.getCards()
                 .stream()
                 .map(CardDTO::new)
@@ -69,6 +71,9 @@ public class TrailDTO {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
+
+    public String getVisibilidade() { return visibilidade; }
+    public void setVisibilidade(String visibilidade) { this.visibilidade = visibilidade; }
 
     public List<CardDTO> getCards() {
         return cards;

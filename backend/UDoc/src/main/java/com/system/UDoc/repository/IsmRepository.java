@@ -16,6 +16,7 @@ public interface IsmRepository extends JpaRepository<Ism, Long> {
                    OR name  ILIKE CONCAT('%', :search, '%')
                    OR email ILIKE CONCAT('%', :search, '%'))
               AND (:active IS NULL OR active = :active)
+              AND COALESCE(sistema_ism, false) = false
             ORDER BY name ASC
         """,
         countQuery = """
@@ -24,6 +25,7 @@ public interface IsmRepository extends JpaRepository<Ism, Long> {
                    OR name  ILIKE CONCAT('%', :search, '%')
                    OR email ILIKE CONCAT('%', :search, '%'))
               AND (:active IS NULL OR active = :active)
+              AND COALESCE(sistema_ism, false) = false
         """,
         nativeQuery = true
     )
@@ -35,4 +37,8 @@ public interface IsmRepository extends JpaRepository<Ism, Long> {
 
     @Query("SELECT i FROM Ism i WHERE LOWER(i.email) = LOWER(:email)")
     java.util.Optional<Ism> findByEmailIgnoreCase(@org.springframework.data.repository.query.Param("email") String email);
+
+    java.util.Optional<Ism> findBySistemaIsmTrue();
+
+    boolean existsBySistemaIsmTrue();
 }

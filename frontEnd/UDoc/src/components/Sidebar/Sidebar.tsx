@@ -12,6 +12,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import {
   IconBriefcase,
   IconBuilding,
+  IconBook2,
   IconBookmark,
   IconCertificate,
   IconChartBar,
@@ -162,6 +163,14 @@ const NAV_ITEMS: NavItemType[] = [
     ],
   },
   {
+    label: "Matrícula",
+    Icon: IconBook2,
+    path: "/catalogo",
+    isActive: (p) => p === "/catalogo",
+    // Visível para todos os perfis — sem adminOnly e sem módulo de filtro extra
+    // (módulo MATRICULA VIEW controla a visibilidade via can())
+  },
+  {
     label: "Minhas Trilhas",
     Icon: IconBookmark,
     path: "/minhas-trilhas",
@@ -244,6 +253,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     "Calendário":             "SALA",
 
     // Itens autônomos
+    "Matrícula":              "MATRICULA",
     "Minhas Trilhas":         "TRILHA",
     "Meus Certificados":      "TRILHA",
 

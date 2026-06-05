@@ -33,4 +33,19 @@ public interface TrailRepository extends JpaRepository<Trail, Long> {
     Page<Trail> searchTrails(@Param("search") String search,
                              @Param("active") Boolean active,
                              Pageable pageable);
+
+    /**
+     * Catálogo: trilhas ativas, filtradas por visibilidade e nome.
+     * visibilidades deve conter os valores de enum como strings (ex: ["AMBAS","INTERNA"]).
+     */
+    @Query(value = """
+        SELECT * FROM trail
+        WHERE active = true
+          AND visibilidade = ANY(CAST(:visibilidades AS varchar[]))
+          AND (:search IS NULL OR name ILIKE CONCAT('%', :search, '%'))
+        ORDER BY sort_order ASC, id ASC
+    """, nativeQuery = true)
+    java.util.List<Trail> findCatalog(
+            @Param("visibilidades") String[] visibilidades,
+            @Param("search") String search);
 }

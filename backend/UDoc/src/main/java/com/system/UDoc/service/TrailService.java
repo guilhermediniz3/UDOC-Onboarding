@@ -61,6 +61,7 @@ public class TrailService {
         trail.setActive(request.getActive() != null ? request.getActive() : true);
         trail.setSortOrder(sortOrder);
         trail.setCards(resolveCards(request.getCardIds()));
+        trail.setVisibilidade(parseVisibilidade(request.getVisibilidade(), com.system.UDoc.entity.Trail.Visibilidade.AMBAS));
 
         return new TrailDTO(trailRepository.save(trail));
     }
@@ -106,6 +107,7 @@ public class TrailService {
         trail.setActive(request.getActive() != null ? request.getActive() : trail.getActive());
         trail.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : trail.getSortOrder());
         trail.setCards(resolveCards(request.getCardIds()));
+        trail.setVisibilidade(parseVisibilidade(request.getVisibilidade(), trail.getVisibilidade()));
 
         return new TrailDTO(trailRepository.save(trail));
     }
@@ -199,6 +201,13 @@ public class TrailService {
 
     private String normalize(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private com.system.UDoc.entity.Trail.Visibilidade parseVisibilidade(
+            String raw, com.system.UDoc.entity.Trail.Visibilidade fallback) {
+        if (raw == null || raw.isBlank()) return fallback;
+        try { return com.system.UDoc.entity.Trail.Visibilidade.valueOf(raw.toUpperCase()); }
+        catch (IllegalArgumentException e) { return fallback; }
     }
 
     private Trail findOrThrow(Long id) {
