@@ -29,6 +29,7 @@ import ResizableImage from "./extensions/ResizableImage";
 import ResizableVideo from "./extensions/ResizableVideo";
 import ResizableRecordingVideo from "./extensions/ResizableRecordingVideo";
 import { uploadGenericRecording, getRecordingFileUrl } from "../../services/recordingService";
+import { uploadImage } from "../../services/imageService";
 
 import {
   FaBold,
@@ -97,7 +98,13 @@ export default function RichTextEditor({
   const [badgeText, setBadgeText] = useState("1");
   const [badgeColor, setBadgeColor] = useState("#2563eb");
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [editingBadgePos, setEditingBadgePos] = useState<number | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+
+  /* ── upload de imagem ── */
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageMsg, setImageMsg] = useState<{ text: string; type: "error" | "success" } | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   /* ── gravação de tela ── */
   const [isRecording, setIsRecording]   = useState(false);
@@ -239,6 +246,32 @@ export default function RichTextEditor({
     const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`;
   }
 
+  async function handleImageFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !editor) return;
+
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setImageMsg({ type: "error", text: "Formato inválido. Use JPG, PNG, GIF ou WebP." });
+      setTimeout(() => setImageMsg(null), 4000);
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const { url } = await uploadImage(file);
+      editor.chain().focus().insertContent({ type: "resizableImage", attrs: { src: url } }).run();
+      setImageMsg({ type: "success", text: "Imagem inserida com sucesso." });
+      setTimeout(() => setImageMsg(null), 3000);
+    } catch (err: any) {
+      setImageMsg({ type: "error", text: err?.message ?? "Erro ao enviar imagem." });
+      setTimeout(() => setImageMsg(null), 5000);
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   const openDialog = (type: "link" | "image" | "video") => {
     setDialogType(type);
     setDialogValue("");
@@ -268,6 +301,7 @@ export default function RichTextEditor({
 
   const insertBadge = () => {
     if (!editor) return;
+    setEditingBadgePos(null);
     setBadgeText("1");
     setBadgeColor("#2563eb");
     setBadgeDialogOpen(true);
@@ -277,11 +311,46 @@ export default function RichTextEditor({
     if (!editor) return;
     const trimmedValue = value.trim();
     if (!trimmedValue) return;
-    editor.chain().focus().insertBadge(trimmedValue, color).run();
+
+    if (editingBadgePos !== null) {
+      const node = editor.state.doc.nodeAt(editingBadgePos);
+      if (node && node.type.name === "badge") {
+        editor.view.dispatch(
+          editor.state.tr.setNodeMarkup(editingBadgePos, undefined, { text: trimmedValue, color })
+        );
+      }
+      setEditingBadgePos(null);
+    } else {
+      editor.chain().focus().insertBadge(trimmedValue, color).run();
+    }
+
     setBadgeText(trimmedValue);
     setBadgeColor(color);
     setBadgeDialogOpen(false);
   };
+
+  function handleEditorDblClick(e: React.MouseEvent) {
+    const target = (e.target as HTMLElement).closest?.("[data-badge]") as HTMLElement | null;
+    if (!target || !editor) return;
+
+    try {
+      const rawPos = editor.view.posAtDOM(target, 0);
+      const tryPos = (p: number) => {
+        const n = editor.state.doc.nodeAt(p);
+        return n?.type.name === "badge" ? { node: n, pos: p } : null;
+      };
+      const found = tryPos(rawPos) ?? tryPos(rawPos - 1);
+      if (!found) return;
+
+      e.preventDefault();
+      setEditingBadgePos(found.pos);
+      setBadgeText(String(found.node.attrs.text ?? "1"));
+      setBadgeColor(String(found.node.attrs.color ?? "#2563eb"));
+      setBadgeDialogOpen(true);
+    } catch {
+      // posAtDOM pode lançar se o elemento não pertencer ao editor
+    }
+  }
 
   const ToolbarButton = ({ title, onClick, active = false, children }: any) => (
     <Tooltip label={title}>
@@ -339,7 +408,13 @@ export default function RichTextEditor({
             <Divider orientation="vertical" />
             <ToolbarButton title="Badge" onClick={insertBadge}><FaCircle /></ToolbarButton>
             <ToolbarButton title="Link" onClick={() => openDialog("link")}><FaLink /></ToolbarButton>
-            <ToolbarButton title="Imagem" onClick={() => openDialog("image")}><FaImage /></ToolbarButton>
+            <Tooltip label={uploadingImage ? "Enviando imagem..." : "Inserir imagem (JPG, PNG, GIF, WebP)"} withArrow>
+              <span>
+                <ToolbarButton title="Imagem" onClick={() => !uploadingImage && imageInputRef.current?.click()}>
+                  <FaImage style={{ opacity: uploadingImage ? 0.4 : 1 }} />
+                </ToolbarButton>
+              </span>
+            </Tooltip>
             <ToolbarButton title="Vídeo" onClick={() => openDialog("video")}><FaVideo /></ToolbarButton>
             {/* Botão de gravação — alterna entre gravar e parar+upload */}
             {/* Botão de gravação */}
@@ -384,6 +459,34 @@ export default function RichTextEditor({
         </ScrollArea>
       </Paper>
 
+      {/* Input hidden para upload de imagem */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        style={{ display: "none" }}
+        onChange={handleImageFileSelected}
+      />
+
+      {/* Banner de upload de imagem */}
+      {imageMsg && (
+        <div style={{
+          padding: "12px 18px",
+          borderRadius: 12,
+          background: imageMsg.type === "error" ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)",
+          border: `1px solid ${imageMsg.type === "error" ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)"}`,
+          color: imageMsg.type === "error" ? "#ef4444" : "#16a34a",
+          fontSize: 13,
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <span style={{ fontSize: 16 }}>{imageMsg.type === "error" ? "⚠️" : "✅"}</span>
+          {imageMsg.text}
+        </div>
+      )}
+
       {/* Banner de aviso de gravação — entre o toolbar e o editor, sempre visível */}
       {recMsg && (
         <div style={{
@@ -415,7 +518,7 @@ export default function RichTextEditor({
           border: dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid #d1d5db",
         }}
       >
-        <div className="editor-content-wrapper">
+        <div className="editor-content-wrapper" onDoubleClick={handleEditorDblClick}>
           <div style={{ zoom: `${zoom}%`, minHeight: "100%" }}>
             <EditorContent editor={editor} className="editor-content" />
           </div>
@@ -469,6 +572,7 @@ export default function RichTextEditor({
         onConfirm={handleConfirmBadge}
         onCancel={() => {
           setBadgeDialogOpen(false);
+          setEditingBadgePos(null);
           setBadgeText("1");
           setBadgeColor("#2563eb");
         }}

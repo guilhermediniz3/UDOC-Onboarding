@@ -21,3 +21,10 @@
 .udoc-badge::before {
   content: attr(data-text);
 }
+
+/* Feedback visual quando o badge está selecionado (NodeSelection do ProseMirror).
+   Sem esse outline o usuário não sabe que pode Ctrl+C para copiar. */
+.udoc-badge.ProseMirror-selectednode {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}

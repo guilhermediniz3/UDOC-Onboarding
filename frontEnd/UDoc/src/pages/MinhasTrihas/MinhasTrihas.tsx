@@ -78,6 +78,7 @@ export default function MinhasTrihas() {
                 boxShadow: "0 4px 20px var(--shadow-color)",
                 cursor: "pointer",
                 transition: "transform 0.15s, box-shadow 0.15s",
+                height: "100%",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-3px)";
@@ -89,7 +90,7 @@ export default function MinhasTrihas() {
               }}
               onClick={() => navigate(`/minhas-trilhas/${trail.id}`)}
             >
-              <Stack gap="md">
+              <Stack gap="md" style={{ height: "100%" }}>
                 <Group justify="space-between" align="flex-start">
                   <div style={{
                     width: 48, height: 48, borderRadius: 14,
@@ -103,7 +104,7 @@ export default function MinhasTrihas() {
                   </Badge>
                 </Group>
 
-                <div>
+                <div style={{ flex: 1 }}>
                   <Text fw={700} fz="lg" c="var(--text-primary)" lineClamp={2}>
                     {trail.name}
                   </Text>

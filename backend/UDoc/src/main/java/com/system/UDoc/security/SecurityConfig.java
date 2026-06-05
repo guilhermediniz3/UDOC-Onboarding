@@ -79,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/nps/*/*/questions").permitAll()
                         // Streaming de gravações de vídeo — o <video> tag não envia Authorization header
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/training-rooms/recordings/*/file").permitAll()
+                        // Imagens de cards — o <img> tag não envia Authorization header
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/cards/images/**").permitAll()
                         // Módulo de Auditoria — restrito a ADMIN
                         .requestMatchers("/auditoria/**").hasAuthority("ADMIN")
                         // Leitura das minhas permissões — qualquer autenticado; PUT só admin via @PreAuthorize
