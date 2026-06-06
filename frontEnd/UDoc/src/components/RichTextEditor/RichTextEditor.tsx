@@ -401,6 +401,10 @@ export default function RichTextEditor({
             <ToolbarButton title="Itálico" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")}><FaItalic /></ToolbarButton>
             <ToolbarButton title="Sublinhado" onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")}><FaUnderline /></ToolbarButton>
             <Divider orientation="vertical" />
+            <ToolbarButton title="Título 1" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })}><span style={{ fontWeight: 800, fontSize: 13 }}>H1</span></ToolbarButton>
+            <ToolbarButton title="Título 2" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}><span style={{ fontWeight: 800, fontSize: 13 }}>H2</span></ToolbarButton>
+            <ToolbarButton title="Título 3" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })}><span style={{ fontWeight: 800, fontSize: 13 }}>H3</span></ToolbarButton>
+            <Divider orientation="vertical" />
             <ToolbarButton title="Lista" onClick={() => editor.chain().focus().toggleBulletList().run()}><FaListUl /></ToolbarButton>
             <ToolbarButton title="Lista Ordenada" onClick={() => editor.chain().focus().toggleOrderedList().run()}><FaListOl /></ToolbarButton>
             <ToolbarButton title="Citação" onClick={() => editor.chain().focus().toggleBlockquote().run()}><FaQuoteLeft /></ToolbarButton>
