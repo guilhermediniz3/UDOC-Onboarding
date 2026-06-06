@@ -40,7 +40,7 @@ public class CatalogService {
     public List<CatalogTrailDTO> getCatalog(User user, String search) {
 
         java.util.List<Trail.Visibilidade> visibilidades = resolveVisibilidades(user);
-        String searchParam = (search == null || search.isBlank()) ? null : search;
+        String searchParam = (search == null || search.isBlank()) ? null : "%" + search.toLowerCase() + "%";
 
         List<Trail> trails = trailRepo.findCatalog(visibilidades, searchParam);
 
