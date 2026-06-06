@@ -44,14 +44,14 @@ import "./index.css";
 interface NavChild {
   label: string;
   path: string;
-  Icon: React.ComponentType<{ size?: number }>;
+  Icon: React.ComponentType<{ size?: string | number }>;
   isActive: (pathname: string) => boolean;
-  adminOnly?: boolean; // oculta este filho para roles não-ADMIN
+  adminOnly?: boolean;
 }
 
 interface NavItemType {
   label: string;
-  Icon: React.ComponentType<{ size?: number }>;
+  Icon: React.ComponentType<{ size?: string | number }>;
   path?: string;
   collapsedPath?: string;
   isActive: (pathname: string) => boolean;

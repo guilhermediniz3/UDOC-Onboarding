@@ -59,7 +59,6 @@ const EMPTY_CARD: Card = {
   icon: "",
   content: "",
   active: true,
-  slug: "",
 };
 
 export default function Admin() {

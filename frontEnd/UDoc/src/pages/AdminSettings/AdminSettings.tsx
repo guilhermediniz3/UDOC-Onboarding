@@ -399,7 +399,7 @@ export default function AdminSettings() {
                     {recSearch ? "Nenhuma gravação encontrada." : "Nenhuma gravação armazenada ainda."}
                   </Text>
                 ) : (
-                  <Table striped highlightOnHover radius="md"
+                  <Table striped highlightOnHover
                     styles={{ th: { color: "var(--text-secondary)", background: "var(--app-bg)" }, td: { color: "var(--text-primary)" } }}>
                     <Table.Thead>
                       <Table.Tr>

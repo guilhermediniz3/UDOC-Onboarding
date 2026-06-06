@@ -82,7 +82,7 @@ export default function AbaSistema() {
       ) : logs.length === 0 ? (
         <Text ta="center" c="var(--text-secondary)" fz="sm" py="xl">Nenhum registro encontrado.</Text>
       ) : (
-        <Table striped highlightOnHover radius="md"
+        <Table striped highlightOnHover
           styles={{ th: { color: "var(--text-secondary)", background: "var(--app-bg)" }, td: { color: "var(--text-primary)" } }}>
           <Table.Thead>
             <Table.Tr>
