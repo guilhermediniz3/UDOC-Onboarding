@@ -4,8 +4,10 @@ import com.system.UDoc.entity.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
@@ -36,6 +38,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                           Pageable pageable);
 
     java.util.Optional<Employee> findByUserId(Long userId);
+
+    @Modifying @Transactional
+    @Query("UPDATE Employee e SET e.user = null WHERE e.user.id = :userId")
+    void clearUserById(@Param("userId") Long userId);
 
     java.util.List<Employee> findByTipoAndActiveTrue(String tipo);
 }

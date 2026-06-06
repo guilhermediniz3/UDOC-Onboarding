@@ -4,8 +4,10 @@ import com.system.UDoc.entity.Ism;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface IsmRepository extends JpaRepository<Ism, Long> {
 
@@ -34,6 +36,10 @@ public interface IsmRepository extends JpaRepository<Ism, Long> {
                      Pageable pageable);
 
     java.util.Optional<Ism> findByUserId(Long userId);
+
+    @Modifying @Transactional
+    @Query("UPDATE Ism i SET i.user = null WHERE i.user.id = :userId")
+    void clearUserById(@Param("userId") Long userId);
 
     @Query("SELECT i FROM Ism i WHERE LOWER(i.email) = LOWER(:email)")
     java.util.Optional<Ism> findByEmailIgnoreCase(@org.springframework.data.repository.query.Param("email") String email);

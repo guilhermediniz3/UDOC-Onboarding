@@ -151,29 +151,26 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        userRepository.findById(id).ifPresent(user -> {
-            // Limpa chat: avaliações e mensagens dependem de conversa; conversa depende do user
-            var conversaIds = chatConversaRepository.findByClienteId(id)
-                    .stream().map(c -> c.getId()).toList();
-            if (!conversaIds.isEmpty()) {
-                chatAvaliacaoRepository.deleteByConversaIdIn(conversaIds);
-                chatMensagemRepository.deleteByConversaIdIn(conversaIds);
-                chatConversaRepository.deleteAllById(conversaIds);
-            }
-            // Remove progresso de trilhas (FK not-nullable)
-            progressRepository.deleteAll(progressRepository.findByUserId(id));
-            // Desvincula ISM (FK nullable)
-            ismRepository.findByUserId(id).ifPresent(ism -> {
-                ism.setUser(null);
-                ismRepository.save(ism);
-            });
-            // Desvincula funcionário (FK nullable)
-            employeeRepository.findByUserId(id).ifPresent(e -> {
-                e.setUser(null);
-                employeeRepository.save(e);
-            });
-            userRepository.delete(user);
-        });
+        if (!userRepository.existsById(id)) return;
+
+        // 1. Limpa chat (avaliações e mensagens dependem de conversa; conversa depende do user)
+        var conversaIds = chatConversaRepository.findByClienteId(id)
+                .stream().map(c -> c.getId()).toList();
+        if (!conversaIds.isEmpty()) {
+            chatAvaliacaoRepository.deleteByConversaIdIn(conversaIds);
+            chatMensagemRepository.deleteByConversaIdIn(conversaIds);
+            chatConversaRepository.deleteAllById(conversaIds);
+        }
+
+        // 2. Remove progresso de trilhas (FK not-nullable)
+        progressRepository.deleteAll(progressRepository.findByUserId(id));
+
+        // 3. Desvincula ISM e Employee via UPDATE direto — evita problema de flush/ordem no JPA
+        ismRepository.clearUserById(id);
+        employeeRepository.clearUserById(id);
+
+        // 4. Deleta o usuário
+        userRepository.deleteById(id);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
