@@ -51,7 +51,7 @@ const FACES = [
   { score: 4, label: "Muito satisfeito", Icon: IconMoodSmileBeam, color: "#7c3aed", bg: "rgba(124,58,237,0.08)"  },
 ];
 
-function MetricCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color: string }) {
+function MetricCard({ label, value, icon: Icon, color, tooltip }: { label: string; value: string | number; icon: React.ElementType; color: string; tooltip?: string }) {
   return (
     <Paper p="24px" radius="20px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 4px 20px var(--shadow-color)", flex: 1 }}>
       <Group gap="lg" align="center">
@@ -59,7 +59,14 @@ function MetricCard({ label, value, icon: Icon, color }: { label: string; value:
           <Icon size={26} color={color} />
         </div>
         <div>
-          <Text fz="xs" c="var(--text-secondary)" tt="uppercase" fw={600}>{label}</Text>
+          <Group gap={5} align="center">
+            <Text fz="xs" c="var(--text-secondary)" tt="uppercase" fw={600}>{label}</Text>
+            {tooltip && (
+              <Tooltip label={tooltip} withArrow multiline w={270} position="top">
+                <IconInfoCircle size={13} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.65 }} />
+              </Tooltip>
+            )}
+          </Group>
           <Text fz="2rem" fw={800} c="var(--text-primary)" style={{ lineHeight: 1 }}>{value}</Text>
         </div>
       </Group>
@@ -305,9 +312,27 @@ export default function Dashboard() {
 
       {/* Métricas */}
       <Group gap="lg" grow>
-        <MetricCard label="Total de acessos" value={data?.totalCardAccesses ?? "—"} icon={IconEye} color="#7c3aed" />
-        <MetricCard label="Média NPS — Trilhas" value={data?.avgNpsScore ? `${data.avgNpsScore.toFixed(1)} / 4` : "—"} icon={IconStar} color="#f97316" />
-        <MetricCard label="Respostas NPS — Trilhas" value={data?.totalRespostas ?? totalFaces} icon={IconMoodSmile} color="#22c55e" />
+        <MetricCard
+          label="Total de acessos"
+          value={data?.totalCardAccesses ?? "—"}
+          icon={IconEye}
+          color="#7c3aed"
+          tooltip="Soma de todos os acessos a documentos do sistema. Cada vez que um usuário abre um documento conta como +1 acesso, independente do usuário ou do documento."
+        />
+        <MetricCard
+          label="Média NPS — Trilhas"
+          value={data?.avgNpsScore ? `${data.avgNpsScore.toFixed(1)} / 4` : "—"}
+          icon={IconStar}
+          color="#f97316"
+          tooltip="Média aritmética de todas as avaliações de satisfação das trilhas. Escala: 1 = Insatisfeito · 2 = Normal · 3 = Satisfeito · 4 = Muito satisfeito. Fórmula: soma de todas as notas ÷ total de respostas."
+        />
+        <MetricCard
+          label="Respostas NPS — Trilhas"
+          value={data?.totalRespostas ?? totalFaces}
+          icon={IconMoodSmile}
+          color="#22c55e"
+          tooltip="Total de avaliações de satisfação enviadas por usuários ao concluírem trilhas de treinamento. Cada resposta representa uma avaliação distinta de um usuário em uma trilha."
+        />
       </Group>
 
       {/* NPS de Trilhas — distribuição por carinha */}

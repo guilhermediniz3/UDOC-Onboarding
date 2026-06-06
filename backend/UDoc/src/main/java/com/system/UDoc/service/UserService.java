@@ -84,8 +84,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserDTO> getAllUsers(String search, Boolean active, Pageable pageable) {
-        return userRepository.search(normalize(search), active, pageable)
+    public Page<UserDTO> getAllUsers(String search, Boolean active, String tipo, String company, Pageable pageable) {
+        return userRepository.search(normalize(search), active, normalize(tipo), normalize(company), pageable)
                 .map(this::buildDTO);
     }
 
@@ -181,6 +181,7 @@ public class UserService {
             dto.setEmployeeId(emp.getId());
             dto.setEmployeeName(emp.getName());
             dto.setEmployeeTipo(emp.getTipo() != null ? emp.getTipo() : "EXTERNO");
+            if (emp.getCompany() != null) dto.setCompanyName(emp.getCompany().getName());
         });
         return dto;
     }

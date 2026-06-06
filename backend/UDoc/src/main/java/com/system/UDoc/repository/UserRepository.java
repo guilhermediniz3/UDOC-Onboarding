@@ -20,23 +20,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(
         value = """
-            SELECT * FROM users
-            WHERE (:search IS NULL
-                   OR name  ILIKE CONCAT('%', :search, '%')
-                   OR email ILIKE CONCAT('%', :search, '%'))
-              AND (:active IS NULL OR active = :active)
-            ORDER BY name ASC
+            SELECT u.* FROM users u
+            LEFT JOIN employee e ON e.user_id = u.id
+            LEFT JOIN company  c ON c.id = e.company_id
+            WHERE (:search  IS NULL OR u.name  ILIKE CONCAT('%', :search,  '%')
+                                    OR u.email ILIKE CONCAT('%', :search,  '%'))
+              AND (:active  IS NULL OR u.active  = :active)
+              AND (:tipo    IS NULL OR e.tipo     = :tipo)
+              AND (:company IS NULL OR c.name    ILIKE CONCAT('%', :company, '%'))
+            ORDER BY u.name ASC
         """,
         countQuery = """
-            SELECT COUNT(*) FROM users
-            WHERE (:search IS NULL
-                   OR name  ILIKE CONCAT('%', :search, '%')
-                   OR email ILIKE CONCAT('%', :search, '%'))
-              AND (:active IS NULL OR active = :active)
+            SELECT COUNT(*) FROM users u
+            LEFT JOIN employee e ON e.user_id = u.id
+            LEFT JOIN company  c ON c.id = e.company_id
+            WHERE (:search  IS NULL OR u.name  ILIKE CONCAT('%', :search,  '%')
+                                    OR u.email ILIKE CONCAT('%', :search,  '%'))
+              AND (:active  IS NULL OR u.active  = :active)
+              AND (:tipo    IS NULL OR e.tipo     = :tipo)
+              AND (:company IS NULL OR c.name    ILIKE CONCAT('%', :company, '%'))
         """,
         nativeQuery = true
     )
-    Page<User> search(@Param("search") String search,
-                      @Param("active") Boolean active,
+    Page<User> search(@Param("search")  String  search,
+                      @Param("active")  Boolean active,
+                      @Param("tipo")    String  tipo,
+                      @Param("company") String  company,
                       Pageable pageable);
 }

@@ -14,6 +14,7 @@ public class UserDTO {
     private Long employeeId;
     private String employeeName;
     private String employeeTipo; // "EXTERNO" | "INTERNO" — tipo do funcionário vinculado
+    private String companyName;
 
     public UserDTO() {}
 
@@ -47,4 +48,6 @@ public class UserDTO {
     public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
     public String getEmployeeTipo() { return employeeTipo; }
     public void setEmployeeTipo(String v) { this.employeeTipo = v; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
 }

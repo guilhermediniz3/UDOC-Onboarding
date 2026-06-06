@@ -12,6 +12,7 @@ export interface UserData {
   employeeId?: number;
   employeeName?: string;
   employeeTipo?: "EXTERNO" | "INTERNO";
+  companyName?: string;
 }
 
 interface UserRequest {
@@ -34,6 +35,8 @@ interface GetUsersParams {
   size?: number;
   search?: string;
   active?: boolean | null;
+  tipo?: string | null;
+  company?: string;
 }
 
 export async function getUsers({
@@ -41,9 +44,17 @@ export async function getUsers({
   size = 10,
   search = "",
   active = null,
+  tipo = null,
+  company = "",
 }: GetUsersParams = {}): Promise<PaginationResponse<UserData>> {
   const response = await api.get<PaginationResponse<UserData>>("/users", {
-    params: { page, size, search, active: active === null ? undefined : active },
+    params: {
+      page, size,
+      search: search || undefined,
+      active: active === null ? undefined : active,
+      tipo: tipo || undefined,
+      company: company || undefined,
+    },
   });
   return response.data;
 }

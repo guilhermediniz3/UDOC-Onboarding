@@ -34,7 +34,15 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
-    @GetMapping public ResponseEntity<Page<UserDTO>> getAllUsers(@RequestParam(required = false) String search, @RequestParam(required = false) Boolean active, Pageable pageable) { return ResponseEntity.ok(userService.getAllUsers(search, active, pageable)); }
+    @GetMapping
+    public ResponseEntity<Page<UserDTO>> getAllUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String tipo,
+            @RequestParam(required = false) String company,
+            Pageable pageable) {
+        return ResponseEntity.ok(userService.getAllUsers(search, active, tipo, company, pageable));
+    }
     @GetMapping("/{id}") public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) { return ResponseEntity.ok(userService.getUserById(id)); }
 
     @PutMapping("/{id}")

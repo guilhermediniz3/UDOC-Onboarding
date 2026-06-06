@@ -37,6 +37,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                           @Param("active") Boolean active,
                           Pageable pageable);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"company"})
     java.util.Optional<Employee> findByUserId(Long userId);
 
     @Modifying @Transactional
