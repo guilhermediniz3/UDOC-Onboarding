@@ -34,3 +34,5 @@ build/
 
 ### Segredos locais ###
 src/main/resources/application-local.properties
+.env
+uploads/

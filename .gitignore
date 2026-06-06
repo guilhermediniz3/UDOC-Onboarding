@@ -1,8 +1,13 @@
-# Dados sensíveis
+# Dados sensíveis — arquivos com segredos reais nunca commitar
 application-local.properties
 .env
-.env.*
-*.env
+.env.local
+.env.*.local
+
+# Arquivos de ambiente de template e configuração (sem segredos) — commitar
+!.env.example
+!.env.development
+!.env.production
 
 # Backups e compactados
 baclup/

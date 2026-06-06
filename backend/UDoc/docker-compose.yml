@@ -1,0 +1,54 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+# UDoc — Docker Compose para produção em servidor próprio
+# Uso: copie .env.example para .env, preencha os valores e rode:
+#   docker compose up -d
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: udoc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: udoc
+      POSTGRES_USER: ${DATABASE_USERNAME:-udoc}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-udoc}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: udoc-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/udoc
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-udoc}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      PORT: 8081
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@udoc.com}
+      AI_KEY: ${AI_KEY:-}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    ports:
+      - "8081:8081"
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads_data:
