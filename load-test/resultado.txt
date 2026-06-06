@@ -1,0 +1,23 @@
+
+╔══════════════════════════════════════════════════════════╗
+║              UDOC — RELATÓRIO DE CARGA                  ║
+╚══════════════════════════════════════════════════════════╝
+
+Requisições totais : 4600
+Taxa de erro       : 0.0%
+Duração req (p95)  : 19ms
+
+LATÊNCIA POR ENDPOINT (mediana / p95 / máximo)
+──────────────────────────────────────────────
+Usuários     : 7ms / 13ms / 22ms
+Catálogo     : 6ms / 9ms / 54ms
+Trilhas      : 4ms / 6ms / 14ms
+Funcionários : 12ms / 16ms / 27ms
+Dashboard    : 16ms / 28ms / 400ms
+
+THRESHOLDS
+──────────────────────────────────────────────
+Erros < 5%      : ✓ PASSOU
+p95 geral < 2s  : ✓ PASSOU
+p95 catalog < 3s: ✓ PASSOU
+p95 dashboard<3s: ✓ PASSOU

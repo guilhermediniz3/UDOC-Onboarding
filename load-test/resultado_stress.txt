@@ -1,0 +1,27 @@
+
+╔══════════════════════════════════════════════════════════╗
+║           UDOC — STRESS TEST (até 400 VUs)              ║
+╚══════════════════════════════════════════════════════════╝
+
+Total de requisições : 36161
+Taxa de erro         : 0.00%
+Timeouts (>9s)       : 0
+
+LATÊNCIA GERAL
+──────────────────────────────────────────────
+Mediana : 30ms
+p90     : 222ms
+p95     : 296ms
+p99     : 0ms
+Máximo  : 1102ms
+
+http_req_duration (k6 nativo)
+Mediana : 30ms
+p95     : 296ms
+p99     : 0ms
+Máximo  : 1102ms
+
+THRESHOLDS
+──────────────────────────────────────────────
+Erros < 10%    : ✓ PASSOU
+p95 < 5s       : ✓ PASSOU
