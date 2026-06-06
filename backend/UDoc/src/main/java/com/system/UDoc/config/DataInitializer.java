@@ -331,7 +331,10 @@ public class DataInitializer {
     private void seedPermissions(PermissionGroupRepository groupRepo,
                                  PermissionRepository permRepo) {
         // Módulos configuráveis do sistema
-        String[] modules = {"CARD", "TRILHA", "SALA", "FUNCIONARIO", "USUARIO", "EMPRESA", "ISM", "TRAINING"};
+        String[] modules = {
+            "CARD", "TRILHA", "SALA", "FUNCIONARIO", "USUARIO", "EMPRESA", "ISM", "TRAINING",
+            "DOCUMENTO", "CADASTRO_DOCUMENTO", "DASHBOARD", "MATRICULA"
+        };
         String[] actions = {"VIEW", "CREATE", "EDIT", "DELETE"};
 
         for (GroupType gt : GroupType.values()) {

@@ -1,13 +1,12 @@
 import {
-  ActionIcon, Avatar, Badge, Button, Group, Modal, Pagination,
+  ActionIcon, Avatar, Badge, Button, Group, Pagination,
   Paper, Select, Stack, Table, Text, TextInput, useMantineColorScheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { IconEdit, IconPlus, IconSearch, IconTrash, IconUser } from "@tabler/icons-react";
+import { IconEdit, IconPlus, IconSearch, IconUser } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { deleteUser, getUsers, type UserData } from "../../services/userService";
+import { getUsers, type UserData } from "../../services/userService";
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", ISM: "ISM", FUNCIONARIO_EXTERNO: "Funcionário" };
 const ROLE_COLOR: Record<string, string> = { ADMIN: "violet", ISM: "blue", FUNCIONARIO_EXTERNO: "teal" };
@@ -25,9 +24,6 @@ export default function AdminListUsers() {
   const [size, setSize] = useState("10");
   const [totalPages, setTotalPages] = useState(1);
 
-  const [opened, { open, close }] = useDisclosure(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
   async function load() {
     const active = activeFilter === null ? null : activeFilter === "true";
     const response = await getUsers({ page: page - 1, size: Number(size), search, active });
@@ -37,24 +33,10 @@ export default function AdminListUsers() {
 
   useEffect(() => { load(); }, [search, activeFilter, page, size]);
 
-  async function handleDelete() {
-    if (!selectedId) return;
-    await deleteUser(selectedId);
-    close(); load();
-  }
-
   const s = { input: { background: "var(--input-bg)", border: "1px solid var(--border-color)", color: "var(--text-primary)" } };
 
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
-
-      <Modal opened={opened} onClose={close} centered radius="xl" title="Remover usuário">
-        <Text mb="lg">Deseja remover este usuário?</Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={close}>Cancelar</Button>
-          <Button color="red" onClick={handleDelete}>Remover</Button>
-        </Group>
-      </Modal>
 
       <Paper p="30px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
         <Group justify="space-between" align="center">
@@ -92,10 +74,7 @@ export default function AdminListUsers() {
                 <Table.Td><Badge color={ROLE_COLOR[u.role] || "gray"} radius="xl" size="md" variant="light">{ROLE_LABEL[u.role] || u.role}</Badge></Table.Td>
                 <Table.Td><Badge color={u.active ? "green" : "red"} radius="xl" size="lg">{u.active ? "ATIVO" : "INATIVO"}</Badge></Table.Td>
                 <Table.Td>
-                  <Group gap="xs">
-                    <ActionIcon radius="xl" size="lg" color="blue" variant={dark ? "light" : "filled"} onClick={() => navigate(`/admin/user/${u.id}`)}><IconEdit size={18} /></ActionIcon>
-                    <ActionIcon radius="xl" size="lg" color="red" variant={dark ? "light" : "filled"} onClick={() => { setSelectedId(u.id!); open(); }}><IconTrash size={18} /></ActionIcon>
-                  </Group>
+                  <ActionIcon radius="xl" size="lg" color="blue" variant={dark ? "light" : "filled"} onClick={() => navigate(`/admin/user/${u.id}`)}><IconEdit size={18} /></ActionIcon>
                 </Table.Td>
               </Table.Tr>
             ))}

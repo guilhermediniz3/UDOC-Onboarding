@@ -5,9 +5,13 @@ import com.system.UDoc.entity.Employee;
 import com.system.UDoc.entity.Ism;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.exception.ResourceNotFoundException;
+import com.system.UDoc.repository.ChatAvaliacaoRepository;
+import com.system.UDoc.repository.ChatConversaRepository;
+import com.system.UDoc.repository.ChatMensagemRepository;
 import com.system.UDoc.repository.EmployeeRepository;
 import com.system.UDoc.repository.IsmRepository;
 import com.system.UDoc.repository.UserRepository;
+import com.system.UDoc.repository.UserTrailProgressRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -22,16 +26,28 @@ public class UserService {
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
     private final IsmRepository ismRepository;
+    private final UserTrailProgressRepository progressRepository;
+    private final ChatConversaRepository chatConversaRepository;
+    private final ChatMensagemRepository chatMensagemRepository;
+    private final ChatAvaliacaoRepository chatAvaliacaoRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
                        EmployeeRepository employeeRepository,
                        IsmRepository ismRepository,
+                       UserTrailProgressRepository progressRepository,
+                       ChatConversaRepository chatConversaRepository,
+                       ChatMensagemRepository chatMensagemRepository,
+                       ChatAvaliacaoRepository chatAvaliacaoRepository,
                        PasswordEncoder passwordEncoder) {
-        this.userRepository    = userRepository;
-        this.employeeRepository = employeeRepository;
-        this.ismRepository     = ismRepository;
-        this.passwordEncoder   = passwordEncoder;
+        this.userRepository       = userRepository;
+        this.employeeRepository   = employeeRepository;
+        this.ismRepository        = ismRepository;
+        this.progressRepository   = progressRepository;
+        this.chatConversaRepository = chatConversaRepository;
+        this.chatMensagemRepository = chatMensagemRepository;
+        this.chatAvaliacaoRepository = chatAvaliacaoRepository;
+        this.passwordEncoder      = passwordEncoder;
     }
 
     @Transactional
@@ -135,17 +151,28 @@ public class UserService {
 
     @Transactional
     public void deleteUser(Long id) {
-        // Soft delete tolerante: se o registro não existe no banco, trata como já deletado
         userRepository.findById(id).ifPresent(user -> {
-            user.setActive(false);
-            user.setResetToken(null);
-            user.setResetTokenExpiry(null);
-            userRepository.save(user);
-            // Desvincula o funcionário para evitar referências órfãs
+            // Limpa chat: avaliações e mensagens dependem de conversa; conversa depende do user
+            var conversaIds = chatConversaRepository.findByClienteId(id)
+                    .stream().map(c -> c.getId()).toList();
+            if (!conversaIds.isEmpty()) {
+                chatAvaliacaoRepository.deleteByConversaIdIn(conversaIds);
+                chatMensagemRepository.deleteByConversaIdIn(conversaIds);
+                chatConversaRepository.deleteAllById(conversaIds);
+            }
+            // Remove progresso de trilhas (FK not-nullable)
+            progressRepository.deleteAll(progressRepository.findByUserId(id));
+            // Desvincula ISM (FK nullable)
+            ismRepository.findByUserId(id).ifPresent(ism -> {
+                ism.setUser(null);
+                ismRepository.save(ism);
+            });
+            // Desvincula funcionário (FK nullable)
             employeeRepository.findByUserId(id).ifPresent(e -> {
                 e.setUser(null);
                 employeeRepository.save(e);
             });
+            userRepository.delete(user);
         });
     }
 

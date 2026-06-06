@@ -24,4 +24,8 @@ public interface ChatMensagemRepository extends JpaRepository<ChatMensagem, Long
     long countByConversaIdAndTipoAndLidaFalse(Long conversaId, ChatMensagem.Tipo tipo);
 
     long countByConversaIdAndTipoInAndLidaFalse(Long conversaId, java.util.List<ChatMensagem.Tipo> tipos);
+
+    @Modifying @Transactional
+    @Query("DELETE FROM ChatMensagem m WHERE m.conversa.id IN :ids")
+    void deleteByConversaIdIn(@Param("ids") java.util.List<Long> ids);
 }

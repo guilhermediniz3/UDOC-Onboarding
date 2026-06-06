@@ -41,7 +41,7 @@ public interface TrailRepository extends JpaRepository<Trail, Long> {
     @org.springframework.data.jpa.repository.Query("""
         SELECT t FROM Trail t
         WHERE t.active = true
-          AND t.visibilidade IN :visibilidades
+          AND (t.visibilidade IN :visibilidades OR t.visibilidade IS NULL)
           AND (:search IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%')))
         ORDER BY t.sortOrder ASC, t.id ASC
     """)

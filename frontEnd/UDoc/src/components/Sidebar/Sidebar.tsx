@@ -236,8 +236,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   // Itens sem módulo mapeado = sempre visíveis (ex: Dashboard, Configurações, Auditoria)
   const MODULE_FOR_ITEM: Record<string, string> = {
     // Cadastro (filhos)
-    "Cadastro de Documentos": "CARD",
-    "Documentos":             "CARD",      // visualização pública dos cards
+    "Cadastro de Documentos": "CADASTRO_DOCUMENTO",
+    "Documentos":             "DOCUMENTO",
     "Empresa":                "EMPRESA",
     "Funcionário":            "FUNCIONARIO",
     "ISM":                    "ISM",
@@ -254,6 +254,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
     // Itens autônomos
     "Matrícula":              "MATRICULA",
+    "Dashboard":              "DASHBOARD",
     "Minhas Trilhas":         "TRILHA",
     "Meus Certificados":      "TRILHA",
 

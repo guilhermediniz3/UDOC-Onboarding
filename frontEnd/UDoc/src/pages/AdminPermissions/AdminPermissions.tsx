@@ -42,15 +42,22 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const MODULE_LABELS: Record<string, string> = {
-  CARD:       "Documentos (Cards)",
-  TRILHA:     "Trilhas",
-  SALA:       "Salas de Treinamento",
-  FUNCIONARIO:"Funcionários",
-  USUARIO:    "Usuários",
-  EMPRESA:    "Empresas",
-  ISM:        "ISM",
-  TRAINING:   "Treinamentos",
+  CARD:               "Documentos (Cards)",
+  TRILHA:             "Trilhas",
+  SALA:               "Salas de Treinamento",
+  FUNCIONARIO:        "Funcionários",
+  USUARIO:            "Usuários",
+  EMPRESA:            "Empresas",
+  ISM:                "ISM",
+  TRAINING:           "Treinamentos",
+  DOCUMENTO:          "Documentos (menu)",
+  CADASTRO_DOCUMENTO: "Cadastro de Documentos (menu)",
+  DASHBOARD:          "Dashboard (menu)",
+  MATRICULA:          "Matrícula (menu)",
 };
+
+// Módulos que só têm a ação VIEW relevante (controle de visibilidade de menu)
+const VIEW_ONLY_MODULES = new Set(["DOCUMENTO", "CADASTRO_DOCUMENTO", "DASHBOARD", "MATRICULA"]);
 
 const ACTIONS_ORDER = ["VIEW", "CREATE", "EDIT", "DELETE"];
 const GROUPS_ORDER: GroupType[] = ["FUNCIONARIO_INTERNO", "FUNCIONARIO_EXTERNO", "ISM"];
@@ -77,8 +84,9 @@ const SPECIAL_ACTION_LABELS: Record<string, string> = {
 
 // ── Cartão de um grupo (ex: Func. Interno) ────────────────────────────────────
 function GroupCard({
-  groupType, actions, onToggle,
+  module, groupType, actions, onToggle,
 }: {
+  module: string;
   groupType: GroupType;
   actions: Record<string, PermissionDTO>;
   onToggle: (perm: PermissionDTO) => void;
@@ -87,8 +95,9 @@ function GroupCard({
   const border = GROUP_BORDER[groupType];
   const bg     = GROUP_BG[groupType];
 
+  const visibleActions = VIEW_ONLY_MODULES.has(module) ? ["VIEW"] : ACTIONS_ORDER;
   // Separa permissões padrão de especiais
-  const standardPerms = ACTIONS_ORDER.map(a => actions[a]).filter(Boolean);
+  const standardPerms = visibleActions.map(a => actions[a]).filter(Boolean);
   const specialPerms  = SPECIAL_ACTIONS.map(a => actions[a]).filter(Boolean);
 
   return (
@@ -109,7 +118,7 @@ function GroupCard({
       </Badge>
 
       {/* CRUD padrão — bloqueio geral (inclui recursos próprios) */}
-      {ACTIONS_ORDER.map(action => {
+      {visibleActions.map(action => {
         const perm = actions[action];
         if (!perm) return (
           <Text key={action} fz="xs" c="var(--text-secondary)" style={{ height: 24 }}>—</Text>
@@ -289,6 +298,7 @@ export default function AdminPermissions() {
                       {GROUPS_ORDER.map(gt => (
                         <GroupCard
                           key={gt}
+                          module={module}
                           groupType={gt}
                           actions={groups[gt] ?? {}}
                           onToggle={toggle}

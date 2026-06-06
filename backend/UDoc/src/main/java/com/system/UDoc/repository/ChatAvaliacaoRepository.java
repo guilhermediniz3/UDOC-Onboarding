@@ -12,6 +12,11 @@ public interface ChatAvaliacaoRepository extends JpaRepository<ChatAvaliacao, Lo
 
     boolean existsByConversaIdAndTipo(Long conversaId, ChatAvaliacao.TipoChat tipo);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query("DELETE FROM ChatAvaliacao a WHERE a.conversa.id IN :ids")
+    void deleteByConversaIdIn(@org.springframework.data.repository.query.Param("ids") java.util.List<Long> ids);
+
     /** NPS por ISM — agrupa avaliações tipo=ISM por ism_id, com nome e foto do ISM */
     @Query(value = """
         SELECT

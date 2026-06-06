@@ -4,8 +4,10 @@ import com.system.UDoc.entity.ChatConversa;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +41,12 @@ public interface ChatConversaRepository extends JpaRepository<ChatConversa, Long
             @Param("ismId")  Long   ismId,
             @Param("status") String status,
             Pageable pageable);
+
+    List<ChatConversa> findByClienteId(Long clienteId);
+
+    @Modifying @Transactional
+    @Query("UPDATE ChatConversa c SET c.ism = null WHERE c.ism.id = :ismId")
+    void clearIsmFromConversas(@Param("ismId") Long ismId);
 
     /** Número de conversas abertas com mensagens não lidas do cliente para um ISM */
     @Query("""
