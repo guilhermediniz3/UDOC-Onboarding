@@ -101,23 +101,37 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             @Param("endDate") String endDate
     );
 
-    /** Busca semântica com pg_trgm para o chat IA — retorna content para que a IA leia o documento completo */
+    /**
+     * Busca de cards por termo (palavra-chave ou frase) para o chat IA.
+     * Usa udoc_unaccent() para ignorar acentuação/caixa dos dois lados da comparação
+     * (ex: "vinculo" casa com "Vínculo") e combina pg_trgm + correspondência por
+     * substring em título/descrição/conteúdo, retornando uma pontuação de relevância.
+     * Quando hideInterno=true, cards marcados como internos são excluídos
+     * (mesma regra usada para funcionários externos no catálogo público).
+     */
     @Query(value = """
-        SELECT c.id, c.title, c.description, c.content
+        SELECT c.id, c.title, c.description, c.content,
+               GREATEST(
+                   similarity(udoc_unaccent(c.title || ' ' || COALESCE(c.description,'')), udoc_unaccent(:term)),
+                   CASE WHEN udoc_unaccent(c.title)       LIKE '%' || udoc_unaccent(:term) || '%' THEN 0.6  ELSE 0 END,
+                   CASE WHEN udoc_unaccent(c.description) LIKE '%' || udoc_unaccent(:term) || '%' THEN 0.45 ELSE 0 END,
+                   CASE WHEN udoc_unaccent(c.content)     LIKE '%' || udoc_unaccent(:term) || '%' THEN 0.3  ELSE 0 END
+               ) AS score
         FROM card c
         WHERE c.active = true
-          AND c.interno = false
+          AND (:hideInterno = false OR c.interno = false)
           AND (
-              similarity(c.title || ' ' || COALESCE(c.description,''), :query) > 0.15
-              OR c.title       ILIKE CONCAT('%', :query, '%')
-              OR c.description ILIKE CONCAT('%', :query, '%')
-              OR c.content     ILIKE CONCAT('%', :query, '%')
+              similarity(udoc_unaccent(c.title || ' ' || COALESCE(c.description,'')), udoc_unaccent(:term)) > 0.12
+              OR udoc_unaccent(c.title)       LIKE '%' || udoc_unaccent(:term) || '%'
+              OR udoc_unaccent(c.description) LIKE '%' || udoc_unaccent(:term) || '%'
+              OR udoc_unaccent(c.content)     LIKE '%' || udoc_unaccent(:term) || '%'
           )
-        ORDER BY similarity(c.title || ' ' || COALESCE(c.description,''), :query) DESC
+        ORDER BY score DESC
         LIMIT :lim
     """, nativeQuery = true)
-    java.util.List<java.util.Map<String, Object>> searchByTrgm(
-            @Param("query") String query,
+    java.util.List<java.util.Map<String, Object>> searchByTerm(
+            @Param("term") String term,
+            @Param("hideInterno") boolean hideInterno,
             @Param("lim") int lim
     );
 }

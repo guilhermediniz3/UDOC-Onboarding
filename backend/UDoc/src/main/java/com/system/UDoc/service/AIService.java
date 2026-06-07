@@ -43,6 +43,11 @@ public class AIService {
     }
 
     public AIResponseDTO generate(String userPrompt) {
+        return generate(SYSTEM_INSTRUCTION, userPrompt);
+    }
+
+    /** Variante que permite customizar a instrução de sistema (ex: chat de Q&A, que não deve gerar HTML). */
+    public AIResponseDTO generate(String systemInstruction, String userPrompt) {
 
         // Banco tem prioridade sobre application.properties
         String dbKey = configService.getStringValue(GlobalConfigService.KEY_AI_API_KEY);
@@ -55,7 +60,7 @@ public class AIService {
         Map<String, Object> body = Map.of(
                 "model", model,
                 "messages", List.of(
-                        Map.of("role", "system", "content", SYSTEM_INSTRUCTION),
+                        Map.of("role", "system", "content", systemInstruction),
                         Map.of("role", "user", "content", userPrompt)
                 ),
                 "max_tokens", 4096

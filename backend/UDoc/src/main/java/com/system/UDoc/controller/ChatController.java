@@ -63,10 +63,18 @@ public class ChatController {
     }
 
     @PostMapping("/ia/perguntar")
-    public ResponseEntity<Map<String, String>> perguntar(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, String>> perguntar(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal User user
+    ) {
         String pergunta = body.getOrDefault("pergunta", "");
         if (pergunta.isBlank()) return ResponseEntity.badRequest().build();
-        return ResponseEntity.ok(Map.of("resposta", chatIAService.responder(pergunta)));
+
+        // Mesma regra de visibilidade do catálogo: cards internos ficam ocultos apenas
+        // para funcionários externos — ADMIN, ISM e funcionário interno enxergam tudo.
+        boolean hideInterno = user != null && "FUNCIONARIO_EXTERNO".equals(user.getRole().name());
+
+        return ResponseEntity.ok(Map.of("resposta", chatIAService.responder(pergunta, hideInterno)));
     }
 
     // ── Conversa (cliente) ────────────────────────────────────────────────────

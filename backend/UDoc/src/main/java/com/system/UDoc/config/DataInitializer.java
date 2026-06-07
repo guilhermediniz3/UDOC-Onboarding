@@ -48,6 +48,20 @@ public class DataInitializer {
                 ON card USING GIN ((title || ' ' || COALESCE(description, '')) gin_trgm_ops)
             """);
 
+            // Função auxiliar para ignorar acentuação/caixa nas buscas do assistente IA
+            // (ex: "vinculo" deve casar com "Vínculo"). IMMUTABLE para poder ser usada
+            // em índices/queries sem depender da extensão "unaccent" (nem sempre disponível
+            // em provedores gerenciados sem privilégios de superusuário).
+            runSilently(jdbc, """
+                CREATE OR REPLACE FUNCTION udoc_unaccent(text) RETURNS text AS $$
+                  SELECT translate(
+                      lower($1),
+                      'àáâãäåèéêëìíîïòóôõöùúûüçñÀÁÂÃÄÅÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÇÑ',
+                      'aaaaaaeeeeiiiiooooouuuucnAAAAAAEEEEIIIIOOOOOUUUUCN'
+                  )
+                $$ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+            """);
+
             // Campos de chat no employee (funcionário externo)
             runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS ism_id bigint REFERENCES ism(id)");
             runSilently(jdbc, "ALTER TABLE employee ADD COLUMN IF NOT EXISTS chat_ism_habilitado boolean NOT NULL DEFAULT true");
