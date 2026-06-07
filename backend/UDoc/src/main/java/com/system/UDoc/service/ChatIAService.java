@@ -30,10 +30,10 @@ public class ChatIAService {
     private static final Set<String> STOP_WORDS = Set.of(
             "a","o","as","os","de","da","do","das","dos","e","ou","que","com","para","por",
             "em","um","uma","uns","umas","no","na","nos","nas","se","sua","seu","suas","seus",
-            "como","qual","quais","quando","onde","quem","porque","por","que","é","sao","são",
+            "como","qual","quais","quando","onde","quem","porque","é","sao","são",
             "ao","aos","à","às","mais","menos","muito","pouco","tem","têm","ser","estar","fazer",
             "isso","essa","esse","esta","este","minha","meu","minhas","meus","nossa","nosso",
-            "sobre","ele","ela","eles","elas","voce","você","eu","nos","nós","vos","lhe","lhes",
+            "sobre","ele","ela","eles","elas","voce","você","eu","nós","vos","lhe","lhes",
             "mas","também","já","ja","ainda","só","so","me","te","lo","la","num","numa","pelo","pela"
     );
 
