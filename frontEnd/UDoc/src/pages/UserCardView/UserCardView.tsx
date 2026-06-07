@@ -67,6 +67,14 @@ export default function UserCardView() {
 
     const html2pdf = (await import("html2pdf.js")).default;
 
+    // html2canvas usa fundo branco por padrão; no tema escuro o texto claro
+    // fica ilegível sobre esse branco. Usamos o fundo real da página (mesma
+    // cor do --app-bg) para que o contraste capturado seja igual ao que o
+    // usuário vê na tela, sem alterar nenhum estilo visual.
+    const isDarkScheme =
+      document.documentElement.getAttribute("data-mantine-color-scheme") === "dark";
+    const canvasBackground = isDarkScheme ? "#020617" : "#ffffff";
+
     // ─── 1. Substitui cada iframe de vídeo por um link clicável ───────────────
     type VideoReplacement = {
       container: HTMLElement;
@@ -129,6 +137,7 @@ export default function UserCardView() {
           scale: 2,
           useCORS: true,
           logging: false,
+          backgroundColor: canvasBackground,
         },
         jsPDF: {
           unit: "mm",
