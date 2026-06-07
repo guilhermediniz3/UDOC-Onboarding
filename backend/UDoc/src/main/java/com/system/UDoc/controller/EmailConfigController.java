@@ -30,4 +30,11 @@ public class EmailConfigController {
     ) {
         return ResponseEntity.ok(emailConfigService.saveConfig(request));
     }
+
+    /** Remove a configuração SMTP personalizada — o sistema volta a usar o SendGrid padrão */
+    @DeleteMapping
+    public ResponseEntity<Void> deleteConfig() {
+        emailConfigService.deleteConfig();
+        return ResponseEntity.noContent().build();
+    }
 }

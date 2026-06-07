@@ -46,8 +46,8 @@ import {
 } from "../../services/userService";
 
 import {
-  getEmailConfig,
   saveEmailConfig,
+  deleteEmailConfig,
   type EmailConfigData,
 } from "../../services/emailConfigService";
 
@@ -124,23 +124,11 @@ export default function AdminUser() {
           navigate("/admin/users");
         });
     }
-    // Carrega apenas as configurações técnicas (host, porta, criptografia) como defaults.
-    // NUNCA pré-preenche username (email pessoal) nem fromName (nome pessoal)
-    // para não vazar dados do admin ao editar outros usuários.
-    getEmailConfig()
-      .then((data) => {
-        setEmailConfig({
-          host:       data.host || "",
-          port:       data.port || 587,
-          username:   "",           // sempre vazio — cada usuário digita o seu
-          password:   "",           // nunca carrega senha
-          sslEnabled: data.sslEnabled ?? false,
-          tlsEnabled: data.tlsEnabled ?? true,
-          fromName:   "",           // sempre vazio — cada usuário coloca o seu nome
-        });
-        setHasEmailConfig(false);   // não considerar como "já configurado" para forçar salvamento explícito
-      })
-      .catch(() => { setEmailConfig(EMPTY_EMAIL); });
+    // O formulário sempre começa vazio — host/porta/credenciais são exemplos
+    // exibidos apenas como placeholder (ex.: "smtp.gmail.com" / "587"), nunca
+    // como valor pré-preenchido. Isso evita salvar de novo, sem querer, uma
+    // configuração de SMTP já existente (e possivelmente quebrada).
+    setEmailConfig(EMPTY_EMAIL);
     getEmployees({ size: 1000, active: true })
       .then((r) => setEmployeeOptions(r.content));
   }, [id]);
@@ -271,21 +259,38 @@ export default function AdminUser() {
     } finally { setSendingInvite(false); }
   }
 
-  /* ── salvar config de e-mail ── */
+  /* ── salvar config de e-mail ──
+   * Regra: SMTP é totalmente opcional.
+   *   - Formulário vazio  → remove a configuração personalizada (sistema volta a usar o SendGrid).
+   *   - Formulário preenchido → exige Host + E-mail e salva como SMTP personalizado (passa a ter prioridade sobre o SendGrid).
+   */
   async function handleSaveEmail() {
-    if (!emailConfig.host.trim() || !emailConfig.username.trim()) {
-      showEmailMessage("error", "Host e e-mail são obrigatórios.");
-      return;
-    }
-    if (!hasEmailConfig && (!emailConfig.password || !emailConfig.password.trim())) {
-      showEmailMessage("error", "A senha de app é obrigatória na primeira configuração.");
-      return;
-    }
+    const isBlank = (v?: string) => !v || !v.trim();
+    const formIsEmpty =
+      isBlank(emailConfig.host) && isBlank(emailConfig.username) &&
+      isBlank(emailConfig.password) && isBlank(emailConfig.fromName);
+
     setSavingEmail(true);
     try {
+      if (formIsEmpty) {
+        await deleteEmailConfig();
+        setHasEmailConfig(false);
+        showEmailMessage("success", "Configuração de SMTP removida — o sistema voltará a usar o SendGrid padrão.");
+        return;
+      }
+
+      if (isBlank(emailConfig.host) || isBlank(emailConfig.username)) {
+        showEmailMessage("error", "Para configurar um SMTP próprio, Host e E-mail são obrigatórios. Ou deixe tudo em branco para usar o SendGrid padrão.");
+        return;
+      }
+      if (!hasEmailConfig && isBlank(emailConfig.password)) {
+        showEmailMessage("error", "A senha de app é obrigatória na primeira configuração.");
+        return;
+      }
+
       await saveEmailConfig(emailConfig);
       setHasEmailConfig(true);
-      showEmailMessage("success", "Configurações de e-mail salvas! Serão usadas para envio de redefinição de senha.");
+      showEmailMessage("success", "Configurações de e-mail salvas! Serão usadas (com prioridade sobre o SendGrid) para envio de e-mails.");
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       showEmailMessage("error", error?.response?.data?.message || "Erro ao salvar as configurações.");
@@ -571,9 +576,11 @@ export default function AdminUser() {
 
                 <Alert color="blue" radius="xl" variant="light">
                   <Text fz="sm">
-                    Configure aqui o e-mail para envio de redefinição de senha.
-                    Se preenchido, ele tem <strong>prioridade sobre o SendGrid</strong>.
-                    Use Gmail com senha de app ou qualquer servidor SMTP.
+                    Configurar um SMTP aqui é <strong>opcional</strong>. Sem nenhuma configuração,
+                    o sistema usa o <strong>SendGrid</strong> normalmente. Se você preencher os
+                    campos abaixo (Gmail com senha de app ou qualquer servidor SMTP), eles passam
+                    a ter <strong>prioridade sobre o SendGrid</strong>. Para remover uma configuração
+                    já salva e voltar ao SendGrid, deixe tudo em branco e clique em salvar.
                   </Text>
                 </Alert>
 

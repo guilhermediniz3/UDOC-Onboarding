@@ -21,6 +21,10 @@ export async function saveEmailConfig(data: EmailConfigData): Promise<EmailConfi
   return response.data;
 }
 
+export async function deleteEmailConfig(): Promise<void> {
+  await api.delete("/email-config");
+}
+
 export async function forgotPassword(email: string): Promise<void> {
   await api.post("/auth/forgot-password", { email });
 }

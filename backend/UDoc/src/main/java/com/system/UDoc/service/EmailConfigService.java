@@ -54,4 +54,10 @@ public class EmailConfigService {
 
         return new EmailConfigDTO(emailConfigRepository.save(config));
     }
+
+    /** Remove a configuração SMTP personalizada — o sistema volta a usar o SendGrid padrão */
+    @Transactional
+    public void deleteConfig() {
+        emailConfigRepository.findFirstByOrderByIdAsc().ifPresent(emailConfigRepository::delete);
+    }
 }
