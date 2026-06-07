@@ -1,7 +1,9 @@
 package com.system.UDoc.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Registro de auditoria para alterações em configurações sensíveis.
@@ -26,8 +28,10 @@ public class AuditLog {
     @Column
     private String performedBy; // email do usuário que realizou a ação
 
+    // Sempre capturado em UTC (instante absoluto), independente do fuso do servidor,
+    // para que cada usuário possa converter corretamente para o seu próprio horário local.
     @Column(nullable = false, updatable = false)
-    private LocalDateTime timestamp = LocalDateTime.now();
+    private LocalDateTime timestamp = LocalDateTime.now(ZoneOffset.UTC);
 
     @Column(columnDefinition = "TEXT")
     private String details; // detalhes adicionais SEM valores sensíveis
@@ -54,6 +58,9 @@ public class AuditLog {
     public String getAction() { return action; }
     public String getTarget() { return target; }
     public String getPerformedBy() { return performedBy; }
+    // O valor já está em UTC (ver inicialização do campo); o sufixo 'Z' literal informa
+    // explicitamente isso ao cliente, que então converte para o horário local do usuário.
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
     public LocalDateTime getTimestamp() { return timestamp; }
     public String getDetails() { return details; }
 }
