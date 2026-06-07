@@ -1,8 +1,10 @@
 package com.system.UDoc.service;
 
 import com.system.UDoc.dto.*;
+import com.system.UDoc.entity.AuditLog;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.exception.ResourceNotFoundException;
+import com.system.UDoc.repository.AuditLogRepository;
 import com.system.UDoc.repository.UserRepository;
 import com.system.UDoc.security.JwtUtil;
 
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +30,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final AuditLogRepository auditLogRepository;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
@@ -36,13 +40,15 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
             @Lazy AuthenticationManager authenticationManager,
-            EmailService emailService
+            EmailService emailService,
+            AuditLogRepository auditLogRepository
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
+        this.auditLogRepository = auditLogRepository;
     }
 
     @Transactional
@@ -139,6 +145,26 @@ public class AuthService {
                     "Falha ao enviar e-mail de boas-vindas: " + e.getMessage()
             );
         }
+
+        try {
+            auditLogRepository.save(new AuditLog(
+                    "USER", "WELCOME_EMAIL_SENT",
+                    "user#" + user.getId() + " — " + user.getName(),
+                    resolveCurrentUser(),
+                    "Convite de boas-vindas enviado para " + user.getEmail()
+            ));
+        } catch (Exception ignored) {
+            // Falha ao registrar auditoria não deve impedir o fluxo de envio (já concluído)
+        }
+    }
+
+    /** E-mail do usuário autenticado que disparou a ação, para fins de auditoria */
+    private String resolveCurrentUser() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            return auth.getName();
+        }
+        return "system";
     }
 
     @Transactional

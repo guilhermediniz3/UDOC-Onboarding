@@ -72,6 +72,12 @@ public class AuditAspect {
             preDeleteName = lookupEntityName(module, pjp.getArgs());
         }
 
+        // Para UPDATE de usuário: captura o estado anterior para descrever o que mudou
+        UserSnapshot beforeUser = null;
+        if ("USER".equals(module) && "UPDATED".equals(action)) {
+            beforeUser = snapshotUser(pjp.getArgs());
+        }
+
         // Executa o método original
         Object result = pjp.proceed();
 
@@ -79,9 +85,10 @@ public class AuditAspect {
         String name   = preDeleteName != null ? preDeleteName : extractName(result);
         Long   id     = extractId(pjp.getArgs(), result);
         String target = buildTarget(module, id, name);
+        String details = beforeUser != null ? buildUserUpdateDetails(beforeUser, result) : null;
 
         try {
-            auditLogRepository.save(new AuditLog(module, action, target, performedBy, null));
+            auditLogRepository.save(new AuditLog(module, action, target, performedBy, details));
         } catch (Exception e) {
             log.warn("AuditAspect: falha ao salvar audit_log — {}", e.getMessage());
         }
@@ -112,6 +119,56 @@ public class AuditAspect {
             return auth.getName();
         }
         return "system";
+    }
+
+    /** Estado do usuário antes da atualização — usado para descrever o que mudou */
+    private record UserSnapshot(String name, String email, Boolean active, String role) {}
+
+    /** Captura nome, e-mail, status e perfil do usuário ANTES de atualizar */
+    private UserSnapshot snapshotUser(Object[] args) {
+        Long id = firstLong(args);
+        if (id == null) return null;
+        try {
+            User user = entityManager.find(User.class, id);
+            if (user == null) return null;
+            return new UserSnapshot(
+                user.getName(),
+                user.getEmail(),
+                user.getActive(),
+                user.getRole() != null ? user.getRole().name() : null
+            );
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Compara o estado anterior do usuário com o resultado da atualização e descreve as mudanças */
+    private String buildUserUpdateDetails(UserSnapshot before, Object result) {
+        if (result == null) return null;
+        try {
+            String  newName   = (String) result.getClass().getMethod("getName").invoke(result);
+            String  newEmail  = (String) result.getClass().getMethod("getEmail").invoke(result);
+            String  newRole   = (String) result.getClass().getMethod("getRole").invoke(result);
+            Object  activeObj = result.getClass().getMethod("getActive").invoke(result);
+            Boolean newActive = activeObj instanceof Boolean b ? b : null;
+
+            java.util.List<String> changes = new java.util.ArrayList<>();
+            if (!java.util.Objects.equals(before.email(), newEmail)) {
+                changes.add("E-mail alterado de '" + before.email() + "' para '" + newEmail + "'");
+            }
+            if (!java.util.Objects.equals(before.name(), newName)) {
+                changes.add("Nome alterado de '" + before.name() + "' para '" + newName + "'");
+            }
+            if (!java.util.Objects.equals(before.role(), newRole)) {
+                changes.add("Perfil alterado de '" + before.role() + "' para '" + newRole + "'");
+            }
+            if (!java.util.Objects.equals(before.active(), newActive)) {
+                changes.add(Boolean.FALSE.equals(newActive) ? "Usuário inativado" : "Usuário reativado");
+            }
+            return changes.isEmpty() ? null : String.join("; ", changes);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Busca o nome/título da entidade no banco ANTES de deletar */
