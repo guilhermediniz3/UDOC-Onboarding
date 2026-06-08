@@ -42,12 +42,6 @@ public class DataInitializer {
             // pg_trgm para busca semântica de cards
             runSilently(jdbc, "CREATE EXTENSION IF NOT EXISTS pg_trgm");
 
-            // Índice GIN para busca de cards por title e description
-            runSilently(jdbc, """
-                CREATE INDEX IF NOT EXISTS idx_card_trgm
-                ON card USING GIN ((title || ' ' || COALESCE(description, '')) gin_trgm_ops)
-            """);
-
             // Função auxiliar para ignorar acentuação/caixa nas buscas do assistente IA
             // (ex: "vinculo" deve casar com "Vínculo"). IMMUTABLE para poder ser usada
             // em índices/queries sem depender da extensão "unaccent" (nem sempre disponível
@@ -60,6 +54,30 @@ public class DataInitializer {
                       'aaaaaaeeeeiiiiooooouuuucnAAAAAAEEEEIIIIOOOOOUUUUCN'
                   )
                 $$ LANGUAGE sql IMMUTABLE PARALLEL SAFE
+            """);
+
+            // Índice antigo não casava com as expressões usadas em CardRepository.searchByTerm
+            // (a query envolve tudo em udoc_unaccent(...), então o Postgres nunca conseguia
+            // usar esse índice e caía em sequential scan computando similarity()/LIKE linha
+            // a linha — média de ~525ms por busca). Substituído pelos índices abaixo, que
+            // casam exatamente com as expressões da query (similarity + LIKE em title/description/content).
+            runSilently(jdbc, "DROP INDEX IF EXISTS idx_card_trgm");
+
+            runSilently(jdbc, """
+                CREATE INDEX IF NOT EXISTS idx_card_trgm_titledesc
+                ON card USING GIN (udoc_unaccent(title || ' ' || COALESCE(description, '')) gin_trgm_ops)
+            """);
+            runSilently(jdbc, """
+                CREATE INDEX IF NOT EXISTS idx_card_trgm_title
+                ON card USING GIN (udoc_unaccent(title) gin_trgm_ops)
+            """);
+            runSilently(jdbc, """
+                CREATE INDEX IF NOT EXISTS idx_card_trgm_description
+                ON card USING GIN (udoc_unaccent(description) gin_trgm_ops)
+            """);
+            runSilently(jdbc, """
+                CREATE INDEX IF NOT EXISTS idx_card_trgm_content
+                ON card USING GIN (udoc_unaccent(content) gin_trgm_ops)
             """);
 
             // Campos de chat no employee (funcionário externo)
