@@ -49,6 +49,11 @@ public class ChatIAService {
      * @param hideInterno true para excluir cards marcados como internos (funcionários externos)
      */
     public String responder(String pergunta, boolean hideInterno) {
+        // Pergunta sobre a própria IA — responde direto, sem buscar documentos
+        if (isIdentityQuestion(pergunta)) {
+            return "Estou usando " + aiService.resolveCurrentProviderDisplayName() + ".";
+        }
+
         List<Map<String, Object>> cards = buscarCardsRelevantes(pergunta, hideInterno);
 
         if (cards.isEmpty()) {
@@ -87,10 +92,25 @@ public class ChatIAService {
             if (status == 401 || status == 403) {
                 return "Erro de autenticação com o serviço de IA (HTTP " + status + "). Verifique a chave configurada em Integrações.";
             }
+            if (status == 402) {
+                return "Sua conta no provedor de IA não possui créditos suficientes (HTTP 402). Adicione créditos ou configure outro provedor em Integrações.";
+            }
             return "Erro ao chamar o serviço de IA (HTTP " + status + "). Tente novamente.";
         } catch (Exception e) {
             return "Desculpe, estou com dificuldades técnicas no momento. Tente novamente em instantes.";
         }
+    }
+
+    /** Detecta perguntas sobre o próprio provedor de IA em uso — respondidas sem buscar documentos. */
+    private static boolean isIdentityQuestion(String pergunta) {
+        String q = pergunta.toLowerCase();
+        return q.contains("qual ia") || q.contains("que ia") ||
+               q.contains("qual ai ") || q.contains("que ai ") ||
+               q.contains("qual modelo") || q.contains("que modelo") ||
+               q.contains("qual assistente") || q.contains("que assistente") ||
+               q.contains("qual provedor") || q.contains("que provedor") ||
+               q.contains("você é") || q.contains("voce é") || q.contains("voce e ") ||
+               q.contains("quem é você") || q.contains("quem e voce");
     }
 
     /**
