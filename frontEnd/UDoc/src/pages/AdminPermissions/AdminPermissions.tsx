@@ -297,8 +297,8 @@ export default function AdminPermissions() {
 
                 <Accordion.Panel>
                   <Stack gap="16px">
-                    {/* 3 cards lado a lado, um por grupo */}
-                    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
+                    {/* 1 card por grupo, lado a lado */}
+                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
                       {GROUPS_ORDER.map(gt => (
                         <GroupCard
                           key={gt}
