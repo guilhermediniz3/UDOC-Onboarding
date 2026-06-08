@@ -21,17 +21,20 @@ public class CatalogService {
     private final TrainingRoomRepository         roomRepo;
     private final EmployeeRepository             employeeRepo;
     private final IsmRepository                  ismRepo;
+    private final TrailContentRepository         trailContentRepo;
 
     public CatalogService(TrailRepository trailRepo,
                           UserTrailProgressRepository progressRepo,
                           TrainingRoomRepository roomRepo,
                           EmployeeRepository employeeRepo,
-                          IsmRepository ismRepo) {
+                          IsmRepository ismRepo,
+                          TrailContentRepository trailContentRepo) {
         this.trailRepo    = trailRepo;
         this.progressRepo = progressRepo;
         this.roomRepo     = roomRepo;
         this.employeeRepo = employeeRepo;
         this.ismRepo      = ismRepo;
+        this.trailContentRepo = trailContentRepo;
     }
 
     // ── Listar trilhas do catálogo ────────────────────────────────────────────
@@ -70,7 +73,7 @@ public class CatalogService {
                 trail.getId(),
                 trail.getName(),
                 trail.getDescription(),
-                trail.getCards() != null ? trail.getCards().size() : 0,
+                (int) trailContentRepo.countByTrailIdAndTipo(trail.getId(), "card"),
                 trail.getVisibilidade() != null ? trail.getVisibilidade().name() : "AMBAS",
                 enrollStatus
             );

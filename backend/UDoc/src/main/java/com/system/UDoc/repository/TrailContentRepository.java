@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 public interface TrailContentRepository extends JpaRepository<TrailContent, Long> {
     List<TrailContent> findByTrailIdOrderByOrdemAsc(Long trailId);
+    @Query("SELECT COUNT(c) FROM TrailContent c WHERE c.trail.id = :trailId AND c.tipo = :tipo")
+    long countByTrailIdAndTipo(@Param("trailId") Long trailId, @Param("tipo") String tipo);
     @Modifying
     @Query("DELETE FROM TrailContent c WHERE c.trail.id = :trailId")
     void deleteByTrailId(@Param("trailId") Long trailId);
