@@ -328,6 +328,11 @@ public class DataInitializer {
                 )
             """);
 
+            // Remove check constraint que o Hibernate gera para colunas @Enumerated(STRING)
+            // com base nos valores do enum no momento da criação da coluna — fica obsoleta
+            // sempre que um novo GroupType é adicionado (ex: GESTOR), travando o insert do seed.
+            runSilently(jdbc, "ALTER TABLE permission_groups DROP CONSTRAINT IF EXISTS permission_groups_group_type_check");
+
             // ── Seed: grupos e permissões padrão (tudo granted=true) ─────────
             seedPermissions(permGroupRepo, permRepo);
 
