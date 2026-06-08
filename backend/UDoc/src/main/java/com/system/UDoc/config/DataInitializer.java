@@ -333,6 +333,10 @@ public class DataInitializer {
             // sempre que um novo GroupType é adicionado (ex: GESTOR), travando o insert do seed.
             runSilently(jdbc, "ALTER TABLE permission_groups DROP CONSTRAINT IF EXISTS permission_groups_group_type_check");
 
+            // Mesmo problema na coluna users.role: a constraint antiga não inclui GESTOR,
+            // travando o UPDATE ao promover um usuário para esse novo perfil.
+            runSilently(jdbc, "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
+
             // ── Seed: grupos e permissões padrão (tudo granted=true) ─────────
             seedPermissions(permGroupRepo, permRepo);
 
