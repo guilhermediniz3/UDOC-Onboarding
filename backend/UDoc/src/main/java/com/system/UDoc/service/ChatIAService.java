@@ -1,6 +1,8 @@
 package com.system.UDoc.service;
 
+import com.system.UDoc.exception.AIQuotaExceededException;
 import com.system.UDoc.repository.CardRepository;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -73,6 +75,14 @@ public class ChatIAService {
 
         try {
             return aiService.generate(SYSTEM_INSTRUCTION, contexto.toString()).content();
+        } catch (AIQuotaExceededException e) {
+            return e.getMessage();
+        } catch (HttpClientErrorException e) {
+            int status = e.getStatusCode().value();
+            if (status == 401 || status == 403) {
+                return "Erro de autenticação com o serviço de IA (HTTP " + status + "). Verifique a chave configurada em Integrações.";
+            }
+            return "Erro ao chamar o serviço de IA (HTTP " + status + "). Tente novamente.";
         } catch (Exception e) {
             return "Desculpe, estou com dificuldades técnicas no momento. Tente novamente em instantes.";
         }

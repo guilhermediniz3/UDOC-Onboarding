@@ -97,18 +97,18 @@ public class CardQuizService {
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             int st = e.getStatusCode().value();
             String body = e.getResponseBodyAsString();
-            System.err.println("[Groq/CardQuiz] HTTP " + st + ": " + body);
+            System.err.println("[IA/CardQuiz] HTTP " + st + ": " + body);
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Erro " + st + " ao chamar o Groq: " + body);
+                    "Erro " + st + " ao chamar o provedor de IA: " + body);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Falha na comunicacao com o Groq: " + e.getMessage());
+                    "Falha na comunicação com o provedor de IA: " + e.getMessage());
         }
         String raw = resp.content().trim();
         if (raw.startsWith("```")) raw = raw.replaceAll("```json|```", "").trim();
         int s = raw.indexOf('['), end = raw.lastIndexOf(']');
         if (s == -1 || end == -1)
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Groq retornou formato invalido.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Provedor de IA retornou formato inválido.");
         return raw.substring(s, end + 1);
     }
 

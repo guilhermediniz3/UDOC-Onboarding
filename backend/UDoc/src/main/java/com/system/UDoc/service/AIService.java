@@ -124,13 +124,22 @@ public class AIService {
     }
 
     /**
-     * Resolve um nível (usuário/empresa/config global): só "vence" se houver um provedor
-     * ativo explicitamente selecionado E uma chave disponível para ele (no novo mapa por
-     * provedor, ou — exclusivamente para Groq — no campo legado de chave única).
+     * Resolve um nível (usuário/empresa/config global).
+     * Ordem de precedência dentro do nível:
+     *   1) provedor ativo explícito + chave no novo mapa por provedor
+     *   2) provedor ativo = GROQ + chave legada (campo único antigo)
+     *   3) sem provedor ativo, mas há chave legada → usa GROQ com ela (retrocompatibilidade)
      */
     private Optional<EffectiveConfig> resolveLevel(String activeProviderRaw, String providerKeysJson, String legacyGroqKey) {
         AIProvider provider = AIProvider.fromString(activeProviderRaw);
-        if (provider == null) return Optional.empty();
+
+        if (provider == null) {
+            // Sem provedor ativo selecionado — retrocompatibilidade: usa chave legada Groq
+            if (legacyGroqKey != null && !legacyGroqKey.isBlank()) {
+                return Optional.of(new EffectiveConfig(AIProvider.GROQ, legacyGroqKey, defaultGroqModel));
+            }
+            return Optional.empty();
+        }
 
         Map<AIProvider, String> keys = keyStore.readKeys(providerKeysJson);
         String key = keys.get(provider);

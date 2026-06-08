@@ -131,39 +131,36 @@ public class TrailCertificationService {
             "Para tipo \"vf\": opcoes deve ser [\"Verdadeiro\",\"Falso\"].\n" +
             "Para tipo \"multipla\": inclua exatamente 4 opcoes.\n\n" +
             "Conteudo dos cards:\n" + context.toString();
-        // Captura erros do Groq para nao propagar o status HTTP externo ao frontend (evita logout)
+        // Captura erros do provedor de IA para nao propagar o status HTTP externo ao frontend (evita logout)
         com.system.UDoc.dto.AIResponseDTO aiResponse;
         try {
             aiResponse = aiService.generate(prompt);
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             int status = e.getStatusCode().value();
-            String groqBody = e.getResponseBodyAsString();
-            // Loga para facilitar diagnostico no console do backend
-            System.err.println("[Groq] Erro HTTP " + status + " — corpo da resposta: " + groqBody);
+            String body = e.getResponseBodyAsString();
+            System.err.println("[IA] Erro HTTP " + status + " — corpo da resposta: " + body);
             String msg;
             if (status == 401) {
-                msg = "Groq retornou 401. A chave AI_KEY pode ter expirado ou sido revogada. " +
-                      "Verifique em console.groq.com > API Keys. Detalhes: " + groqBody;
+                msg = "Provedor de IA retornou 401. A chave pode ter expirado ou sido revogada. Verifique em Integrações. Detalhes: " + body;
             } else if (status == 403) {
-                msg = "Groq retornou 403 (sem permissao para o modelo configurado). " +
-                      "Verifique o valor de 'ai.model' e se sua conta tem acesso. Detalhes: " + groqBody;
+                msg = "Provedor de IA retornou 403 (sem permissão para o modelo configurado). Detalhes: " + body;
             } else if (status == 400) {
-                msg = "Groq recusou a requisicao (400). O conteudo pode ser muito longo ou o formato invalido. Detalhes: " + groqBody;
+                msg = "Provedor de IA recusou a requisição (400). O conteúdo pode ser muito longo. Detalhes: " + body;
             } else {
-                msg = "Erro HTTP " + status + " ao chamar o Groq. Detalhes: " + groqBody;
+                msg = "Erro HTTP " + status + " ao chamar o provedor de IA. Detalhes: " + body;
             }
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, msg);
         } catch (Exception e) {
-            System.err.println("[Groq] Excecao: " + e.getClass().getSimpleName() + " — " + e.getMessage());
+            System.err.println("[IA] Exceção: " + e.getClass().getSimpleName() + " — " + e.getMessage());
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
-                    "Falha na comunicacao com o Groq (" + e.getClass().getSimpleName() + "): " + e.getMessage());
+                    "Falha na comunicação com o provedor de IA (" + e.getClass().getSimpleName() + "): " + e.getMessage());
         }
         String raw = aiResponse.content().trim();
         if (raw.startsWith("```")) { raw = raw.replaceAll("```json|```","").trim(); }
         int start = raw.indexOf('['); int end = raw.lastIndexOf(']');
-        if (start == -1 || end == -1) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Groq retornou formato invalido.");
+        if (start == -1 || end == -1) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "Provedor de IA retornou formato inválido.");
         raw = raw.substring(start, end + 1);
         try {
             List<Map<String, Object>> parsed = objectMapper.readValue(raw, new TypeReference<>() {});

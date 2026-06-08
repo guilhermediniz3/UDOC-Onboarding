@@ -134,25 +134,25 @@ public class NpsService {
             Conteudo:
             """ + context;
 
-        // Chama Groq com proteção contra erros HTTP (evita logout no frontend)
+        // Chama o provedor de IA com proteção contra erros HTTP (evita logout no frontend)
         AIResponseDTO resp;
         try {
             resp = aiService.generate(prompt);
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             int st = e.getStatusCode().value();
-            System.err.println("[Groq/NPS] HTTP " + st + ": " + e.getResponseBodyAsString());
+            System.err.println("[IA/NPS] HTTP " + st + ": " + e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Erro " + st + " ao chamar o Groq: " + e.getResponseBodyAsString());
+                    "Erro " + st + " ao chamar o provedor de IA: " + e.getResponseBodyAsString());
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Falha na comunicacao com o Groq: " + e.getMessage());
+                    "Falha na comunicação com o provedor de IA: " + e.getMessage());
         }
 
         String raw = resp.content().trim();
         if (raw.startsWith("```")) raw = raw.replaceAll("```json|```", "").trim();
         int s = raw.indexOf('['), end = raw.lastIndexOf(']');
         if (s == -1 || end == -1)
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Groq retornou formato invalido.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Provedor de IA retornou formato inválido.");
         raw = raw.substring(s, end + 1);
 
         try {
