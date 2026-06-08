@@ -107,9 +107,9 @@ public class GlobalConfigController {
         if (!ai.contains("...")   && !ai.isBlank())   configService.setStringValue(GlobalConfigService.KEY_AI_API_KEY, ai, performedBy);
         if (!mail.isBlank())                          configService.setStringValue(GlobalConfigService.KEY_MAIL_FROM, mail, performedBy);
 
-        String newActiveProvider = getString(body, "aiActiveProvider");
-        if (!newActiveProvider.isBlank()) {
-            configService.setStringValue(GlobalConfigService.KEY_AI_ACTIVE_PROVIDER, newActiveProvider, performedBy);
+        if (body.containsKey("aiActiveProvider")) {
+            String newActiveProvider = getString(body, "aiActiveProvider");
+            configService.setStringValue(GlobalConfigService.KEY_AI_ACTIVE_PROVIDER, newActiveProvider.trim(), performedBy);
         }
 
         @SuppressWarnings("unchecked")

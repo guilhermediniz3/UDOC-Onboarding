@@ -69,9 +69,10 @@ public class CompanyController {
         Company company = companyRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa não encontrada."));
 
-        Object apRaw = body.get("activeProvider");
-        if (apRaw != null) {
-            company.setAiActiveProvider(apRaw.toString().isBlank() ? null : apRaw.toString());
+        if (body.containsKey("activeProvider")) {
+            Object apRaw = body.get("activeProvider");
+            String ap = (apRaw != null) ? apRaw.toString().trim() : "";
+            company.setAiActiveProvider(ap.isBlank() ? null : ap);
         }
 
         @SuppressWarnings("unchecked")

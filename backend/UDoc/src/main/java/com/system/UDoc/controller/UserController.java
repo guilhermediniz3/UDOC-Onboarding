@@ -196,9 +196,10 @@ public class UserController {
         User managed = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
 
-        Object apRaw = body.get("activeProvider");
-        if (apRaw != null) {
-            managed.setAiActiveProvider(apRaw.toString().isBlank() ? null : apRaw.toString());
+        if (body.containsKey("activeProvider")) {
+            Object apRaw = body.get("activeProvider");
+            String ap = (apRaw != null) ? apRaw.toString().trim() : "";
+            managed.setAiActiveProvider(ap.isBlank() ? null : ap);
         }
 
         @SuppressWarnings("unchecked")
