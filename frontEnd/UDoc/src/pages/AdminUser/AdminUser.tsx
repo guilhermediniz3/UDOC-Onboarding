@@ -26,6 +26,7 @@ import {
   IconInfoCircle,
   IconKey,
   IconMail,
+  IconRobot,
   IconSend,
   IconUser,
   IconUserCog,
@@ -39,7 +40,9 @@ import {
   changePassword,
   createUser,
   generateInviteLink,
+  getMyAiKey,
   getUserById,
+  saveMyAiKey,
   sendWelcomeEmail,
   updateUser,
   type UserData,
@@ -104,6 +107,13 @@ export default function AdminUser() {
   const [emailMessageType, setEmailMessageType] = useState<"success" | "error">("success");
   const [hasEmailConfig, setHasEmailConfig] = useState(false);
 
+  /* ── estado: chave pessoal de IA ── */
+  const [aiKey, setAiKey] = useState("");
+  const [aiKeyMasked, setAiKeyMasked] = useState<string | null>(null);
+  const [savingAiKey, setSavingAiKey] = useState(false);
+  const [aiKeyMessage, setAiKeyMessage] = useState("");
+  const [aiKeyMessageType, setAiKeyMessageType] = useState<"success" | "error">("success");
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* ── helpers de mensagem ── */
@@ -115,6 +125,9 @@ export default function AdminUser() {
   }
   function showEmailMessage(type: "success" | "error", text: string) {
     setEmailMessageType(type); setEmailMessage(text); setTimeout(() => setEmailMessage(""), 4000);
+  }
+  function showAiKeyMessage(type: "success" | "error", text: string) {
+    setAiKeyMessageType(type); setAiKeyMessage(text); setTimeout(() => setAiKeyMessage(""), 3500);
   }
 
   /* ── carregamento inicial ── */
@@ -135,6 +148,17 @@ export default function AdminUser() {
     getEmployees({ size: 1000, active: true })
       .then((r) => setEmployeeOptions(r.content));
   }, [id]);
+
+  /* ── carregamento da chave pessoal de IA (somente ao editar o próprio perfil) ── */
+  useEffect(() => {
+    setAiKey("");
+    setAiKeyMasked(null);
+    if (!isNew && currentUser?.id === Number(id)) {
+      getMyAiKey()
+        .then(setAiKeyMasked)
+        .catch(() => {});
+    }
+  }, [id, currentUser?.id]);
 
   /* ── foto ── */
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -301,6 +325,29 @@ export default function AdminUser() {
     } finally { setSavingEmail(false); }
   }
 
+  /* ── salvar chave pessoal de IA ──
+   * Regra: campo vazio remove a chave pessoal (volta a usar a chave geral de Configurações).
+   * Campo preenchido salva como chave pessoal — passa a ter prioridade sobre a chave geral.
+   */
+  async function handleSaveAiKey() {
+    setSavingAiKey(true);
+    try {
+      await saveMyAiKey(aiKey.trim());
+      const masked = await getMyAiKey();
+      setAiKeyMasked(masked);
+      setAiKey("");
+      showAiKeyMessage(
+        "success",
+        masked
+          ? "Chave pessoal de IA salva! Suas gerações de conteúdo passarão a usar essa chave."
+          : "Chave pessoal removida — suas gerações voltarão a usar a chave geral de Configurações."
+      );
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      showAiKeyMessage("error", error?.response?.data?.message || "Erro ao salvar a chave.");
+    } finally { setSavingAiKey(false); }
+  }
+
   // ── Regras de role × vínculo ─────────────────────────────────────────────
   const linkedEmployee = employeeOptions.find((e) => e.id === userData.employeeId) ?? null;
   const linkedTipo     = linkedEmployee?.tipo ?? null; // "EXTERNO" | "INTERNO" | null
@@ -378,6 +425,11 @@ export default function AdminUser() {
             {!isNew && (
               <Tabs.Tab value="seguranca" leftSection={<IconKey size={16} />}>
                 Segurança
+              </Tabs.Tab>
+            )}
+            {!isNew && currentUser?.id === Number(id) && (
+              <Tabs.Tab value="ia" leftSection={<IconRobot size={16} />}>
+                IA
               </Tabs.Tab>
             )}
           </Tabs.List>
@@ -699,6 +751,52 @@ export default function AdminUser() {
                     leftSection={<IconKey size={16} />}
                     loading={savingPwd} onClick={handleChangePassword}>
                     Salvar nova senha
+                  </Button>
+                </Group>
+
+              </Stack>
+            </Tabs.Panel>
+          )}
+
+          {/* ── ABA IA (chave pessoal) ── */}
+          {!isNew && currentUser?.id === Number(id) && (
+            <Tabs.Panel value="ia">
+              <Stack gap="20px">
+
+                <Alert color="blue" radius="xl" variant="light" icon={<IconInfoCircle size={16} />}>
+                  <Text fz="sm">
+                    Configure aqui sua <strong>chave pessoal da Groq</strong> para gerar conteúdo
+                    com IA. Quando preenchida, suas gerações passam a consumir <strong>essa chave</strong>{" "}
+                    (poupando a chave geral do sistema). Deixe em branco e salve para remover —
+                    suas gerações voltam a usar a chave geral configurada em Configurações.
+                  </Text>
+                </Alert>
+
+                {aiKeyMessage && (
+                  <Alert color={aiKeyMessageType === "success" ? "green" : "red"}
+                    icon={aiKeyMessageType === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
+                    radius="xl">
+                    {aiKeyMessage}
+                  </Alert>
+                )}
+
+                <PasswordInput
+                  label="Chave de API da Groq"
+                  description={aiKeyMasked ? `Chave pessoal configurada: ${aiKeyMasked}` : "Nenhuma chave pessoal configurada — usando a chave geral"}
+                  placeholder={aiKeyMasked ?? "gsk_..."}
+                  radius="xl" size="md"
+                  value={aiKey}
+                  onChange={(e) => setAiKey(e.currentTarget.value)}
+                  styles={inputStyles}
+                  leftSection={<IconRobot size={16} />}
+                />
+
+                <Group justify="flex-end" mt="8px">
+                  <Button radius="xl" size="md" variant="gradient"
+                    gradient={{ from: "violet", to: "blue" }}
+                    leftSection={<IconKey size={16} />}
+                    loading={savingAiKey} onClick={handleSaveAiKey}>
+                    Salvar chave pessoal
                   </Button>
                 </Group>
 

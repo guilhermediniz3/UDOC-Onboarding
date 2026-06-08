@@ -4,7 +4,9 @@ import com.system.UDoc.dto.*;
 import com.system.UDoc.entity.PermissionGroup.GroupType;
 import com.system.UDoc.entity.Role;
 import com.system.UDoc.entity.User;
+import com.system.UDoc.repository.UserRepository;
 import com.system.UDoc.service.AuthService;
+import com.system.UDoc.service.EncryptionService;
 import com.system.UDoc.service.PermissionService;
 import com.system.UDoc.service.UserService;
 import jakarta.validation.Valid;
@@ -23,12 +25,17 @@ public class UserController {
     private final UserService userService;
     private final AuthService authService;
     private final PermissionService permissionService;
+    private final UserRepository userRepository;
+    private final EncryptionService encryptionService;
 
     public UserController(UserService userService, @Lazy AuthService authService,
-                           PermissionService permissionService) {
+                           PermissionService permissionService, UserRepository userRepository,
+                           EncryptionService encryptionService) {
         this.userService = userService;
         this.authService = authService;
         this.permissionService = permissionService;
+        this.userRepository = userRepository;
+        this.encryptionService = encryptionService;
     }
 
     @PostMapping
@@ -122,5 +129,51 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Você não tem permissão para enviar o link de redefinição de senha.");
         }
+    }
+
+    /**
+     * Chave pessoal de IA do próprio usuário (economiza tokens da chave geral).
+     * Estritamente self-only: resolvido via @AuthenticationPrincipal, sem {id} — não pode ser
+     * usado para ler/alterar a chave de outro usuário, independentemente de rotas/guards do front.
+     */
+    @GetMapping("/me/ai-key")
+    public ResponseEntity<java.util.Map<String, String>> getMyAiKey(@AuthenticationPrincipal User currentUser) {
+        String encrypted = currentUser.getAiApiKey();
+        String masked = (encrypted == null || encrypted.isBlank())
+                ? null
+                : maskKey(encryptionService.decrypt(encrypted));
+        java.util.Map<String, String> body = new java.util.HashMap<>();
+        body.put("aiApiKey", masked);
+        return ResponseEntity.ok(body);
+    }
+
+    @PutMapping("/me/ai-key")
+    public ResponseEntity<Void> saveMyAiKey(@AuthenticationPrincipal User currentUser,
+                                            @RequestBody java.util.Map<String, String> body) {
+        String value = body.get("aiApiKey");
+
+        // Mantém o valor atual se vier mascarado ("...") — significa que o usuário não editou
+        if (value != null && value.contains("...")) {
+            return ResponseEntity.noContent().build();
+        }
+
+        User managed = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
+
+        if (value == null || value.isBlank()) {
+            managed.setAiApiKey(null);
+        } else {
+            managed.setAiApiKey(encryptionService.encrypt(value.trim()));
+        }
+        userRepository.save(managed);
+        return ResponseEntity.noContent().build();
+    }
+
+    private String maskKey(String plainValue) {
+        if (plainValue == null || plainValue.isBlank()) return null;
+        int len = plainValue.length();
+        if (len <= 8) return "***";
+        int prefixLen = Math.min(6, len - 4);
+        return plainValue.substring(0, prefixLen) + "..." + plainValue.substring(len - 4);
     }
 }

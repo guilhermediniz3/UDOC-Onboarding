@@ -90,3 +90,13 @@ export async function generateInviteLink(id: number): Promise<string> {
   const r = await api.post<{ link: string }>(`/users/${id}/invite-link`);
   return r.data.link;
 }
+
+/** Chave pessoal de IA do próprio usuário autenticado (self-only — sem {id}) */
+export async function getMyAiKey(): Promise<string | null> {
+  const r = await api.get<{ aiApiKey: string | null }>("/users/me/ai-key");
+  return r.data.aiApiKey;
+}
+
+export async function saveMyAiKey(aiApiKey: string): Promise<void> {
+  await api.put("/users/me/ai-key", { aiApiKey });
+}

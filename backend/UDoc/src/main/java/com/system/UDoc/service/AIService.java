@@ -1,8 +1,11 @@
 package com.system.UDoc.service;
 
 import com.system.UDoc.dto.AIResponseDTO;
+import com.system.UDoc.entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,6 +23,7 @@ public class AIService {
 
     private final RestTemplate restTemplate;
     private final GlobalConfigService configService;
+    private final EncryptionService encryptionService;
 
     private static final String GROQ_URL =
             "https://api.groq.com/openai/v1/chat/completions";
@@ -37,9 +41,39 @@ public class AIService {
         Cada seção deve ter pelo menos 3 parágrafos ou itens. Não resuma, detalhe ao máximo.
         """;
 
-    public AIService(RestTemplate restTemplate, GlobalConfigService configService) {
+    public AIService(RestTemplate restTemplate, GlobalConfigService configService, EncryptionService encryptionService) {
         this.restTemplate = restTemplate;
         this.configService = configService;
+        this.encryptionService = encryptionService;
+    }
+
+    /**
+     * Resolve a chave efetiva a usar, em ordem de prioridade:
+     * 1) chave pessoal do usuário autenticado (economiza tokens da chave geral)
+     * 2) chave geral configurada no banco (Configurações → Integrações)
+     * 3) chave padrão do application.properties
+     */
+    private String resolveEffectiveKey() {
+        String personalKey = currentUserPersonalKey();
+        if (personalKey != null && !personalKey.isBlank()) return personalKey;
+
+        String dbKey = configService.getStringValue(GlobalConfigService.KEY_AI_API_KEY);
+        if (dbKey != null && !dbKey.isBlank()) return dbKey;
+
+        return apiKey;
+    }
+
+    private String currentUserPersonalKey() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof User user)) return null;
+
+        String encrypted = user.getAiApiKey();
+        if (encrypted == null || encrypted.isBlank()) return null;
+        try {
+            return encryptionService.decrypt(encrypted);
+        } catch (Exception e) {
+            return null; // chave corrompida/ilegível — cai para a chave geral
+        }
     }
 
     public AIResponseDTO generate(String userPrompt) {
@@ -49,9 +83,7 @@ public class AIService {
     /** Variante que permite customizar a instrução de sistema (ex: chat de Q&A, que não deve gerar HTML). */
     public AIResponseDTO generate(String systemInstruction, String userPrompt) {
 
-        // Banco tem prioridade sobre application.properties
-        String dbKey = configService.getStringValue(GlobalConfigService.KEY_AI_API_KEY);
-        String effectiveKey = (dbKey != null && !dbKey.isBlank()) ? dbKey : apiKey;
+        String effectiveKey = resolveEffectiveKey();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -35,6 +35,10 @@ public class User extends AuditableEntity implements UserDetails {
     @Column
     private LocalDateTime resetTokenExpiry;
 
+    /** Chave pessoal de IA (Groq), criptografada — usada no lugar da chave geral quando preenchida */
+    @Column(columnDefinition = "TEXT")
+    private String aiApiKey;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -74,4 +78,6 @@ public class User extends AuditableEntity implements UserDetails {
     public void setResetToken(String resetToken) { this.resetToken = resetToken; }
     public LocalDateTime getResetTokenExpiry() { return resetTokenExpiry; }
     public void setResetTokenExpiry(LocalDateTime v) { this.resetTokenExpiry = v; }
+    public String getAiApiKey() { return aiApiKey; }
+    public void setAiApiKey(String aiApiKey) { this.aiApiKey = aiApiKey; }
 }
