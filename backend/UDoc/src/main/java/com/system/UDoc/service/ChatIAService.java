@@ -73,8 +73,13 @@ public class ChatIAService {
         contexto.append("PERGUNTA: ").append(pergunta).append("\n\n");
         contexto.append("Resposta (somente texto puro, sem HTML, sem formatação, apenas sobre a pergunta feita):");
 
+        String providerName = aiService.resolveCurrentProviderDisplayName();
+        String effectiveInstruction = SYSTEM_INSTRUCTION +
+                "\n- Se o usuário perguntar qual IA, modelo ou assistente está sendo utilizado, responda apenas: " +
+                "\"Estou usando " + providerName + ".\" Esta é a única exceção à regra de usar apenas os documentos fornecidos.";
+
         try {
-            return aiService.generate(SYSTEM_INSTRUCTION, contexto.toString()).content();
+            return aiService.generate(effectiveInstruction, contexto.toString()).content();
         } catch (AIQuotaExceededException e) {
             return e.getMessage();
         } catch (HttpClientErrorException e) {

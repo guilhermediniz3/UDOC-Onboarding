@@ -157,6 +157,15 @@ public class AIService {
         return providerRegistry.get(provider).defaultModel();
     }
 
+    /** Retorna o displayName do provedor que será usado na próxima chamada (reflete a cascata). */
+    public String resolveCurrentProviderDisplayName() {
+        try {
+            return resolveEffectiveConfig().provider().getDisplayName();
+        } catch (Exception e) {
+            return "IA";
+        }
+    }
+
     private User currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User user) return user;
