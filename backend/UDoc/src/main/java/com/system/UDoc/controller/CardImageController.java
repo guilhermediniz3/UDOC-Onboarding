@@ -25,6 +25,9 @@ public class CardImageController {
     @Value("${app.upload.images.dir:uploads/images}")
     private String imageUploadDir;
 
+    @Value("${app.backend-url}")
+    private String backendUrl;
+
     private static final long MAX_SIZE_BYTES = 10L * 1024 * 1024; // 10 MB
 
     @PostMapping(value = "/upload", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -49,7 +52,7 @@ public class CardImageController {
                     .body(Map.of("error", "Arquivo excede o limite de 10 MB."));
         }
 
-        String url = "http://localhost:8081/cards/images/" + safeName;
+        String url = backendUrl + "/cards/images/" + safeName;
         return ResponseEntity.ok(Map.of("url", url, "filename", safeName));
     }
 
