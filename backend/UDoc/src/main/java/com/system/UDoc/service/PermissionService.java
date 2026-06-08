@@ -57,6 +57,8 @@ public class PermissionService {
 
         if ("ISM".equals(roleName)) return GroupType.ISM;
 
+        if ("GESTOR".equals(roleName)) return GroupType.GESTOR;
+
         if ("FUNCIONARIO_EXTERNO".equals(roleName)) {
             // Distingue INTERNO vs EXTERNO pelo employee.tipo
             try {

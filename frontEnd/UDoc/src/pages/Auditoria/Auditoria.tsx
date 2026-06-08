@@ -18,12 +18,12 @@ export default function Auditoria() {
 
   // Guard de segurança client-side — backend já bloqueia via @PreAuthorize
   useEffect(() => {
-    if (user && user.role !== "ADMIN") {
+    if (user && user.role !== "ADMIN" && user.role !== "GESTOR") {
       navigate("/403", { replace: true });
     }
   }, [user]);
 
-  if (!user || user.role !== "ADMIN") return null;
+  if (!user || (user.role !== "ADMIN" && user.role !== "GESTOR")) return null;
 
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">

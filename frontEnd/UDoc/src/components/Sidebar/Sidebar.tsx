@@ -287,7 +287,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </Group>
 
         {NAV_ITEMS.filter((item) => {
-          if (item.adminOnly && user?.role !== "ADMIN") return false;
+          if (item.adminOnly && user?.role !== "ADMIN" && user?.role !== "GESTOR") return false;
           // Oculta item se permissão VIEW foi revogada para este grupo
           const mod = MODULE_FOR_ITEM[item.label];
           if (mod && !can(mod, "VIEW")) return false;
@@ -315,7 +315,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           if (item.children) {
             const visibleChildren = item.children.filter(child => {
               // Filho com adminOnly: oculto para não-ADMIN
-              if (child.adminOnly && user?.role !== "ADMIN") return false;
+              if (child.adminOnly && user?.role !== "ADMIN" && user?.role !== "GESTOR") return false;
               // Filho com módulo mapeado: verifica permissão VIEW
               const mod = MODULE_FOR_ITEM[child.label];
               return !mod || can(mod, "VIEW");

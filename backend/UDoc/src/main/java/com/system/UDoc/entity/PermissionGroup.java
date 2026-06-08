@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 @Table(name = "permission_groups")
 public class PermissionGroup extends AuditableEntity {
 
-    public enum GroupType { FUNCIONARIO_INTERNO, FUNCIONARIO_EXTERNO, ISM }
+    public enum GroupType { FUNCIONARIO_INTERNO, FUNCIONARIO_EXTERNO, ISM, GESTOR }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

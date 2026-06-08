@@ -85,7 +85,7 @@ public class SecurityConfig {
                         // Imagens de cards — o <img> tag não envia Authorization header
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/cards/images/**").permitAll()
                         // Módulo de Auditoria — restrito a ADMIN
-                        .requestMatchers("/auditoria/**").hasAuthority("ADMIN")
+                        .requestMatchers("/auditoria/**").hasAnyAuthority("ADMIN", "GESTOR")
                         // Leitura das minhas permissões — qualquer autenticado; PUT só admin via @PreAuthorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/permissions/my").authenticated()
                         // Todo o resto exige autenticação

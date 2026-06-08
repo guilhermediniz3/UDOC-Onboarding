@@ -63,14 +63,14 @@ public class UserController {
      * - ISM / FUNCIONARIO_EXTERNO: vínculo com funcionário obrigatório
      */
     private void validateRoleAndEmployee(UserRequestDTO request, User currentUser) {
-        // Somente admin pode definir role ADMIN
-        if (request.getRole() == Role.ADMIN &&
+        // Somente admin pode definir role ADMIN ou GESTOR
+        if ((request.getRole() == Role.ADMIN || request.getRole() == Role.GESTOR) &&
                 (currentUser == null || currentUser.getRole() != Role.ADMIN)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Apenas administradores podem criar ou promover usuários com perfil Admin.");
+                    "Apenas administradores podem criar ou promover usuários com perfil Admin ou Gestor.");
         }
-        // Roles não-Admin exigem vínculo com funcionário
-        if (request.getRole() != Role.ADMIN && request.getEmployeeId() == null) {
+        // Roles não-Admin/Gestor exigem vínculo com funcionário
+        if (request.getRole() != Role.ADMIN && request.getRole() != Role.GESTOR && request.getEmployeeId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Perfis Funcionário e ISM precisam ter um funcionário vinculado (Externo ou Interno).");
         }

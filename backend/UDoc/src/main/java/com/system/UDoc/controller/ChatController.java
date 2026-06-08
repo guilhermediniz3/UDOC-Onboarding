@@ -169,7 +169,7 @@ public class ChatController {
     // ── Admin: monitoramento ──────────────────────────────────────────────────
 
     @GetMapping("/admin/conversas")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
     public ResponseEntity<Page<ChatConversaDTO>> adminListarConversas(
             @RequestParam(required = false) Long ismId,
             @RequestParam(required = false) String status,
@@ -181,7 +181,7 @@ public class ChatController {
     }
 
     @GetMapping("/admin/conversas/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
     public ResponseEntity<ChatConversaDTO> adminDetalharConversa(@PathVariable Long id) {
         return ResponseEntity.ok(chatService.detalharConversaAdmin(id));
     }

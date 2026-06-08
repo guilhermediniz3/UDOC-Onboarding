@@ -15,6 +15,7 @@ const GROUP_LABELS: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "Func. Interno",
   FUNCIONARIO_EXTERNO: "Func. Externo",
   ISM:                 "ISM",
+  GESTOR:              "Gestor",
 };
 
 // Mantine color tokens
@@ -22,6 +23,7 @@ const GROUP_COLOR: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "blue",
   FUNCIONARIO_EXTERNO: "teal",
   ISM:                 "violet",
+  GESTOR:              "orange",
 };
 
 // Cor de borda/fundo do card de grupo
@@ -29,12 +31,14 @@ const GROUP_BORDER: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "rgba(37,99,235,0.25)",
   FUNCIONARIO_EXTERNO: "rgba(5,150,105,0.25)",
   ISM:                 "rgba(124,58,237,0.25)",
+  GESTOR:              "rgba(234,88,12,0.25)",
 };
 
 const GROUP_BG: Record<GroupType, string> = {
   FUNCIONARIO_INTERNO: "rgba(37,99,235,0.06)",
   FUNCIONARIO_EXTERNO: "rgba(5,150,105,0.06)",
   ISM:                 "rgba(124,58,237,0.06)",
+  GESTOR:              "rgba(234,88,12,0.06)",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -60,7 +64,7 @@ const MODULE_LABELS: Record<string, string> = {
 const VIEW_ONLY_MODULES = new Set(["DOCUMENTO", "CADASTRO_DOCUMENTO", "DASHBOARD", "MATRICULA"]);
 
 const ACTIONS_ORDER = ["VIEW", "CREATE", "EDIT", "DELETE"];
-const GROUPS_ORDER: GroupType[] = ["FUNCIONARIO_INTERNO", "FUNCIONARIO_EXTERNO", "ISM"];
+const GROUPS_ORDER: GroupType[] = ["FUNCIONARIO_INTERNO", "FUNCIONARIO_EXTERNO", "ISM", "GESTOR"];
 
 type ModuleMap = Record<string, Record<GroupType, Record<string, PermissionDTO>>>;
 
@@ -194,7 +198,7 @@ export default function AdminPermissions() {
   const [msg, setMsg]           = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    if (user?.role !== "ADMIN") { navigate("/403", { replace: true }); return; }
+    if (user?.role !== "ADMIN" && user?.role !== "GESTOR") { navigate("/403", { replace: true }); return; }
     getAllPermissions()
       .then(setAllPerms)
       .catch(() => setMsg({ type: "error", text: "Erro ao carregar permissões." }))

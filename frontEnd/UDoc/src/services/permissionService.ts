@@ -1,6 +1,6 @@
 import api from "./api";
 
-export type GroupType = "FUNCIONARIO_INTERNO" | "FUNCIONARIO_EXTERNO" | "ISM";
+export type GroupType = "FUNCIONARIO_INTERNO" | "FUNCIONARIO_EXTERNO" | "ISM" | "GESTOR";
 export type ActionType = "VIEW" | "CREATE" | "EDIT" | "DELETE";
 
 export interface PermissionDTO {

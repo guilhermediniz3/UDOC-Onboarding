@@ -8,8 +8,8 @@ import { useNavigate } from "react-router-dom";
 
 import { getUsers, type UserData } from "../../services/userService";
 
-const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", ISM: "ISM", FUNCIONARIO_EXTERNO: "Funcionário" };
-const ROLE_COLOR: Record<string, string> = { ADMIN: "violet", ISM: "blue", FUNCIONARIO_EXTERNO: "teal" };
+const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", ISM: "ISM", FUNCIONARIO_EXTERNO: "Funcionário", GESTOR: "Gestor" };
+const ROLE_COLOR: Record<string, string> = { ADMIN: "violet", ISM: "blue", FUNCIONARIO_EXTERNO: "teal", GESTOR: "orange" };
 
 export default function AdminListUsers() {
 

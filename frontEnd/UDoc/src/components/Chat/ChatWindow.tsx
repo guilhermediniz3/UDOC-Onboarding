@@ -22,7 +22,7 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
   const disconnectRef = useRef<() => void>(() => {});
 
   const isIsm   = user?.role === "ISM";
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "GESTOR";
 
   useEffect(() => {
     // Todos os perfis carregam/criam conversa para usar o assistente IA

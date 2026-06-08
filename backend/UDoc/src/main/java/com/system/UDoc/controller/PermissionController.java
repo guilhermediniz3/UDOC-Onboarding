@@ -22,14 +22,14 @@ public class PermissionController {
 
     /** Admin: lista todas as permissões para a tela de configuração */
     @GetMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
     public ResponseEntity<List<PermissionDTO>> getAll() {
         return ResponseEntity.ok(permissionService.getAll());
     }
 
     /** Admin: salva alterações de granted */
     @PutMapping
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
     public ResponseEntity<Void> update(@RequestBody List<PermissionUpdateDTO> updates) {
         permissionService.updatePermissions(updates);
         return ResponseEntity.noContent().build();

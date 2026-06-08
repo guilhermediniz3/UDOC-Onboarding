@@ -135,7 +135,7 @@ public class CatalogService {
 
     private List<Visibilidade> resolveVisibilidades(User user) {
         Role role = user.getRole();
-        if (role == Role.ADMIN || role == Role.ISM) {
+        if (role == Role.ADMIN || role == Role.ISM || role == Role.GESTOR) {
             return List.of(Visibilidade.INTERNA, Visibilidade.EXTERNA, Visibilidade.AMBAS);
         }
         Employee emp = employeeRepo.findByUserId(user.getId()).orElse(null);

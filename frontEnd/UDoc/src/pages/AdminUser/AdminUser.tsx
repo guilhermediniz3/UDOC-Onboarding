@@ -149,9 +149,9 @@ export default function AdminUser() {
   async function handleSave() {
     if (!userData.name.trim()) { showMessage("error", "O nome é obrigatório."); return; }
 
-    // Vínculo obrigatório para perfis não-Admin
-    if (userData.role !== "ADMIN" && !userData.employeeId) {
-      showMessage("error", "Selecione um Funcionário Externo (perfil Funcionário) ou Interno (perfil ISM/Funcionário) antes de salvar.");
+    // Vínculo obrigatório para perfis não-Admin/Gestor
+    if (userData.role !== "ADMIN" && userData.role !== "GESTOR" && !userData.employeeId) {
+      showMessage("error", "Selecione um Funcionário Externo (perfil Funcionário) ou Interno (perfil ISM/Funcionário/Gestor) antes de salvar.");
       return;
     }
     // Consistência Externo → Funcionário
@@ -164,9 +164,9 @@ export default function AdminUser() {
       showMessage("error", "Funcionário Interno não pode ter o perfil Admin.");
       return;
     }
-    // Apenas Admin pode criar/promover Admin
-    if (userData.role === "ADMIN" && currentUser?.role !== "ADMIN") {
-      showMessage("error", "Apenas administradores podem criar usuários com perfil Admin.");
+    // Apenas Admin pode criar/promover Admin ou Gestor
+    if ((userData.role === "ADMIN" || userData.role === "GESTOR") && currentUser?.role !== "ADMIN") {
+      showMessage("error", "Apenas administradores podem criar usuários com perfil Admin ou Gestor.");
       return;
     }
 
@@ -305,21 +305,26 @@ export default function AdminUser() {
     if (linkedTipo === "EXTERNO") return [
       { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
     ];
-    if (linkedTipo === "INTERNO") return [
-      { value: "ISM",                 label: "ISM (Instrutor)" },
-      { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
-    ];
-    // Sem vínculo: apenas Admin pode definir role Admin
+    if (linkedTipo === "INTERNO") {
+      const roles = [
+        { value: "ISM",                 label: "ISM (Instrutor)" },
+        { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
+      ];
+      // Apenas Admin pode definir/promover para Gestor
+      if (currentUser?.role === "ADMIN") roles.push({ value: "GESTOR", label: "Gestor" });
+      return roles;
+    }
+    // Sem vínculo: apenas Admin pode definir role Admin/Gestor
     return currentUser?.role === "ADMIN"
-      ? [{ value: "ADMIN", label: "Admin" }]
+      ? [{ value: "ADMIN", label: "Admin" }, { value: "GESTOR", label: "Gestor" }]
       : [];
   })();
 
   // Descrição contextual do campo Role
   const roleDescription =
     linkedTipo === "EXTERNO" ? "Funcionário Externo → apenas perfil Funcionário" :
-    linkedTipo === "INTERNO" ? "Funcionário Interno → ISM ou Funcionário (sem Admin)" :
-    currentUser?.role === "ADMIN" ? "Sem vínculo → apenas perfil Admin" : "";
+    linkedTipo === "INTERNO" ? "Funcionário Interno → ISM, Funcionário ou Gestor (sem Admin)" :
+    currentUser?.role === "ADMIN" ? "Sem vínculo → perfil Admin ou Gestor" : "";
 
   /* ── estilos ── */
   const inputStyles = {
@@ -464,6 +469,7 @@ export default function AdminUser() {
               <Alert color="blue" radius="xl" variant="light" icon={<IconInfoCircle size={15} />}>
                 <Text fz="xs">
                   <strong>Admin</strong> — sem vínculo obrigatório (só admin pode criar)<br />
+                  <strong>Gestor</strong> — visão completa como Admin; vínculo com Funcionário Interno é opcional, usado para participar de trilhas (só admin pode criar)<br />
                   <strong>ISM</strong> — vincule um Funcionário Interno<br />
                   <strong>Funcionário</strong> — vincule um Funcionário Externo
                 </Text>
@@ -488,8 +494,10 @@ export default function AdminUser() {
                   setUserData((p) => ({
                     ...p,
                     employeeId: empId,
-                    role: empId ? "FUNCIONARIO_EXTERNO"
-                               : (currentUser?.role === "ADMIN" ? "ADMIN" : p.role),
+                    role: empId
+                      ? "FUNCIONARIO_EXTERNO"
+                      : (p.role === "ADMIN" || p.role === "GESTOR" ? p.role
+                          : (currentUser?.role === "ADMIN" ? "ADMIN" : p.role)),
                   }));
                 }}
                 styles={inputStyles}
@@ -514,8 +522,10 @@ export default function AdminUser() {
                   setUserData((p) => ({
                     ...p,
                     employeeId: empId,
-                    role: empId ? (p.role === "ADMIN" ? "ISM" : p.role)
-                               : (currentUser?.role === "ADMIN" ? "ADMIN" : p.role),
+                    role: empId
+                      ? (p.role === "ADMIN" ? "ISM" : p.role)
+                      : (p.role === "ADMIN" || p.role === "GESTOR" ? p.role
+                          : (currentUser?.role === "ADMIN" ? "ADMIN" : p.role)),
                   }));
                 }}
                 styles={inputStyles}
