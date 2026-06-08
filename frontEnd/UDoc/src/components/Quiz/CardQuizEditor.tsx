@@ -21,6 +21,7 @@ import {
 import { IconCheck, IconPlus, IconRobot, IconTrash, IconX } from "@tabler/icons-react";
 import { Title } from "@mantine/core";
 import { useEffect, useState } from "react";
+import { useActiveAILabel } from "../../hooks/useActiveAILabel";
 
 import {
   generateCardQuestions,
@@ -36,6 +37,7 @@ const EMPTY = (cardId: number): CardQuestion => ({
 });
 
 export default function CardQuizEditor({ cardId }: Props) {
+  const aiLabel = useActiveAILabel();
 
   const [questions, setQuestions]   = useState<CardQuestion[]>([]);
   const [preview, setPreview]       = useState<CardQuestion[]>([]);
@@ -59,7 +61,7 @@ export default function CardQuizEditor({ cardId }: Props) {
     setPreview([]);
     try {
       const generated = await generateCardQuestions(cardId);
-      if (generated.length === 0) { showMsg("error", "O Groq não retornou perguntas. Verifique se o card tem conteúdo."); return; }
+      if (generated.length === 0) { showMsg("error", "A IA não retornou perguntas. Verifique se o card tem conteúdo."); return; }
       setPreview(generated);
       showMsg("success", `${generated.length} perguntas geradas! Revise e clique em "Adicionar todas" para incluir.`);
     } catch (e: any) {
@@ -105,7 +107,7 @@ export default function CardQuizEditor({ cardId }: Props) {
           variant="gradient" gradient={{ from: "violet", to: "blue" }}
           loading={generating} onClick={handleGenerate}
         >
-          Gerar com Groq IA
+          Gerar com {aiLabel}
         </Button>
         <Button leftSection={<IconPlus size={16} />} radius="xl" size="sm" variant="light" color="violet"
           onClick={() => setQuestions((p) => [...p, EMPTY(cardId)])}>

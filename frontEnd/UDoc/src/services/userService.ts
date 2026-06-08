@@ -118,3 +118,9 @@ export async function saveMyAiProviders(data: {
 }): Promise<void> {
   await api.put("/users/me/ai-providers", data);
 }
+
+/** Retorna o displayName do provedor de IA efetivo (cascata usuário→empresa→global→default). */
+export async function getActiveAIProviderName(): Promise<string> {
+  const r = await api.get<{ displayName: string }>("/users/me/ai-provider/active");
+  return r.data.displayName ?? "IA";
+}

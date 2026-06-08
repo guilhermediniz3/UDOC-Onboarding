@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
+import { useActiveAILabel } from "../../hooks/useActiveAILabel";
 
 import {
   generateNpsQuestions,
@@ -54,6 +55,7 @@ const EMPTY_QUESTION = (refType: "card" | "trail", refId: number): NpsQuestion =
 });
 
 export default function NpsQuestionEditor({ refType, refId }: Props) {
+  const aiLabel = useActiveAILabel();
   const [questions, setQuestions]           = useState<NpsQuestion[]>([]);
   const [preview, setPreview]               = useState<NpsQuestion[]>([]);
   const [enabled, setEnabled]               = useState(true);
@@ -91,7 +93,7 @@ export default function NpsQuestionEditor({ refType, refId }: Props) {
     setPreview([]);
     try {
       const generated = await generateNpsQuestions(refType, refId);
-      if (generated.length === 0) { showMsg("error", "O Groq não retornou perguntas. Verifique se há conteúdo disponível."); return; }
+      if (generated.length === 0) { showMsg("error", "A IA não retornou perguntas. Verifique se há conteúdo disponível."); return; }
       setPreview(generated.map((q) => ({ ...q, referenceType: refType, referenceId: refId })));
       showMsg("success", `${generated.length} perguntas geradas! Revise e clique em "Adicionar todas" para incluir.`);
     } catch (e: any) {
@@ -194,7 +196,7 @@ export default function NpsQuestionEditor({ refType, refId }: Props) {
               variant="gradient" gradient={{ from: "violet", to: "blue" }}
               loading={generating} onClick={handleGenerate}
             >
-              Gerar com Groq IA
+              Gerar com {aiLabel}
             </Button>
             <Button leftSection={<IconPlus size={16} />} radius="xl" size="sm"
               variant="light" color="violet" onClick={addQuestion}>

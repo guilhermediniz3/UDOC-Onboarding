@@ -25,6 +25,7 @@ import {
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
+import { useActiveAILabel } from "../../hooks/useActiveAILabel";
 
 import {
   getCertificationConfig,
@@ -151,6 +152,7 @@ function QuestionEditor({
 
 /* ── Aba principal ── */
 export default function TrailCertificationTab({ trailId }: Props) {
+  const aiLabel = useActiveAILabel();
 
   const [config, setConfig] = useState<CertificationConfig>({ notaMinima: 7, totalPontos: 0, quantidadePerguntas: 0 });
   const [questions, setQuestions] = useState<TrailQuestion[]>([]);
@@ -260,7 +262,7 @@ export default function TrailCertificationTab({ trailId }: Props) {
           loading={generatingAI}
           onClick={handleGenerateWithGroq}
         >
-          Gerar com Groq IA
+          Gerar com {aiLabel}
         </Button>
         <Button leftSection={<IconPlus size={16} />} radius="xl" size="sm" variant="light" color="violet"
           onClick={() => setQuestions((prev) => [...prev, { ...EMPTY_QUESTION }])}>
