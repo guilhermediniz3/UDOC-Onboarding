@@ -32,9 +32,11 @@ export async function getAllRecordings(): Promise<RecordingEntry[]> {
 
 /* ── Configurações de integração ── */
 export interface IntegrationConfig {
-  sendgridKey: string; // mascarado: ***...xxxx ou vazio
-  aiKey: string;       // mascarado: ***...xxxx ou vazio
+  sendgridKey: string;
+  aiKey: string;       // legado: chave única Groq (mantido como fallback)
   mailFrom: string;
+  aiActiveProvider: string;
+  aiProviderKeys: Record<string, string | null>; // provedor → chave mascarada ou null
 }
 
 export async function getIntegrationConfig(): Promise<IntegrationConfig> {

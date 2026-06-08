@@ -95,6 +95,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
+    /** Limite de uso da chave de IA atingido (HTTP 429) — mensagem já amigável, orienta a trocar de provedor. */
+    @ExceptionHandler(AIQuotaExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleAIQuotaExceeded(
+            AIQuotaExceededException exception,
+            HttpServletRequest request) {
+
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+        error.put("error", "AI Quota Exceeded");
+        error.put("message", exception.getMessage());
+        error.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(error);
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(
             ResponseStatusException exception,

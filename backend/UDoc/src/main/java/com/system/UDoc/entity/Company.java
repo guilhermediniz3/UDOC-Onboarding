@@ -35,6 +35,14 @@ public class Company extends AuditableEntity {
     @Column(columnDefinition = "TEXT")
     private String logo; // base64 da logo da empresa
 
+    /** Provedor de IA ativo da empresa (GROQ, GEMINI, OPENAI, DEEPSEEK, CLAUDE) */
+    @Column
+    private String aiActiveProvider;
+
+    /** Mapa JSON {"GROQ": "<criptografada>", ...} — uma chave por provedor, prevalece sobre a chave geral */
+    @Column(columnDefinition = "TEXT")
+    private String aiProviderKeys;
+
     public Company() {}
 
     public Long getId() { return id; }
@@ -55,4 +63,8 @@ public class Company extends AuditableEntity {
     public void setActive(Boolean active) { this.active = active; }
     public String getLogo() { return logo; }
     public void setLogo(String logo) { this.logo = logo; }
+    public String getAiActiveProvider() { return aiActiveProvider; }
+    public void setAiActiveProvider(String aiActiveProvider) { this.aiActiveProvider = aiActiveProvider; }
+    public String getAiProviderKeys() { return aiProviderKeys; }
+    public void setAiProviderKeys(String aiProviderKeys) { this.aiProviderKeys = aiProviderKeys; }
 }

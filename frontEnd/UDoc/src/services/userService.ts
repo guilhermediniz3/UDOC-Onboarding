@@ -91,12 +91,30 @@ export async function generateInviteLink(id: number): Promise<string> {
   return r.data.link;
 }
 
-/** Chave pessoal de IA do próprio usuário autenticado (self-only — sem {id}) */
+/** @deprecated Use getMyAiProviders */
 export async function getMyAiKey(): Promise<string | null> {
   const r = await api.get<{ aiApiKey: string | null }>("/users/me/ai-key");
   return r.data.aiApiKey;
 }
 
+/** @deprecated Use saveMyAiProviders */
 export async function saveMyAiKey(aiApiKey: string): Promise<void> {
   await api.put("/users/me/ai-key", { aiApiKey });
+}
+
+export interface AiProvidersConfig {
+  activeProvider: string | null;
+  providerKeys: Record<string, string | null>;
+}
+
+export async function getMyAiProviders(): Promise<AiProvidersConfig> {
+  const r = await api.get<AiProvidersConfig>("/users/me/ai-providers");
+  return r.data;
+}
+
+export async function saveMyAiProviders(data: {
+  activeProvider: string | null;
+  providerKeys: Record<string, string>;
+}): Promise<void> {
+  await api.put("/users/me/ai-providers", data);
 }

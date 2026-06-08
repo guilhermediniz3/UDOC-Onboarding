@@ -56,3 +56,20 @@ export async function updateCompany(id: number, data: CompanyRequest): Promise<C
 export async function deleteCompany(id: number): Promise<void> {
   await api.delete(`/companies/${id}`);
 }
+
+export interface CompanyAiProvidersConfig {
+  activeProvider: string | null;
+  providerKeys: Record<string, string | null>;
+}
+
+export async function getCompanyAiProviders(id: number): Promise<CompanyAiProvidersConfig> {
+  const r = await api.get<CompanyAiProvidersConfig>(`/companies/${id}/ai-providers`);
+  return r.data;
+}
+
+export async function saveCompanyAiProviders(
+  id: number,
+  data: { activeProvider: string | null; providerKeys: Record<string, string> }
+): Promise<void> {
+  await api.put(`/companies/${id}/ai-providers`, data);
+}

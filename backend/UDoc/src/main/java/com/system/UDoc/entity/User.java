@@ -35,9 +35,18 @@ public class User extends AuditableEntity implements UserDetails {
     @Column
     private LocalDateTime resetTokenExpiry;
 
-    /** Chave pessoal de IA (Groq), criptografada — usada no lugar da chave geral quando preenchida */
+    /** @deprecated chave pessoal legada (sempre Groq) — mantida só como fallback de leitura; substituída por aiProviderKeys */
+    @Deprecated
     @Column(columnDefinition = "TEXT")
     private String aiApiKey;
+
+    /** Provedor de IA ativo do usuário (GROQ, GEMINI, OPENAI, DEEPSEEK, CLAUDE) */
+    @Column
+    private String aiActiveProvider;
+
+    /** Mapa JSON {"GROQ": "<criptografada>", "GEMINI": "<criptografada>", ...} — uma chave por provedor */
+    @Column(columnDefinition = "TEXT")
+    private String aiProviderKeys;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -80,4 +89,8 @@ public class User extends AuditableEntity implements UserDetails {
     public void setResetTokenExpiry(LocalDateTime v) { this.resetTokenExpiry = v; }
     public String getAiApiKey() { return aiApiKey; }
     public void setAiApiKey(String aiApiKey) { this.aiApiKey = aiApiKey; }
+    public String getAiActiveProvider() { return aiActiveProvider; }
+    public void setAiActiveProvider(String aiActiveProvider) { this.aiActiveProvider = aiActiveProvider; }
+    public String getAiProviderKeys() { return aiProviderKeys; }
+    public void setAiProviderKeys(String aiProviderKeys) { this.aiProviderKeys = aiProviderKeys; }
 }

@@ -40,13 +40,14 @@ import {
   changePassword,
   createUser,
   generateInviteLink,
-  getMyAiKey,
+  getMyAiProviders,
   getUserById,
-  saveMyAiKey,
+  saveMyAiProviders,
   sendWelcomeEmail,
   updateUser,
   type UserData,
 } from "../../services/userService";
+import AIProvidersPanel from "../../components/AIProvidersPanel/AIProvidersPanel";
 
 import {
   saveEmailConfig,
@@ -107,9 +108,9 @@ export default function AdminUser() {
   const [emailMessageType, setEmailMessageType] = useState<"success" | "error">("success");
   const [hasEmailConfig, setHasEmailConfig] = useState(false);
 
-  /* ── estado: chave pessoal de IA ── */
-  const [aiKey, setAiKey] = useState("");
-  const [aiKeyMasked, setAiKeyMasked] = useState<string | null>(null);
+  /* ── estado: provedores de IA ── */
+  const [aiActiveProvider, setAiActiveProvider] = useState("");
+  const [aiProviderKeys, setAiProviderKeys] = useState<Record<string, string>>({});
   const [savingAiKey, setSavingAiKey] = useState(false);
   const [aiKeyMessage, setAiKeyMessage] = useState("");
   const [aiKeyMessageType, setAiKeyMessageType] = useState<"success" | "error">("success");
@@ -149,13 +150,16 @@ export default function AdminUser() {
       .then((r) => setEmployeeOptions(r.content));
   }, [id]);
 
-  /* ── carregamento da chave pessoal de IA (somente ao editar o próprio perfil) ── */
+  /* ── carregamento dos provedores de IA (somente ao editar o próprio perfil) ── */
   useEffect(() => {
-    setAiKey("");
-    setAiKeyMasked(null);
+    setAiActiveProvider("");
+    setAiProviderKeys({});
     if (!isNew && currentUser?.id === Number(id)) {
-      getMyAiKey()
-        .then(setAiKeyMasked)
+      getMyAiProviders()
+        .then((cfg) => {
+          setAiActiveProvider(cfg.activeProvider ?? "");
+          setAiProviderKeys((cfg.providerKeys as Record<string, string>) ?? {});
+        })
         .catch(() => {});
     }
   }, [id, currentUser?.id]);
@@ -325,26 +329,17 @@ export default function AdminUser() {
     } finally { setSavingEmail(false); }
   }
 
-  /* ── salvar chave pessoal de IA ──
-   * Regra: campo vazio remove a chave pessoal (volta a usar a chave geral de Configurações).
-   * Campo preenchido salva como chave pessoal — passa a ter prioridade sobre a chave geral.
-   */
-  async function handleSaveAiKey() {
+  async function handleSaveAiProviders() {
     setSavingAiKey(true);
     try {
-      await saveMyAiKey(aiKey.trim());
-      const masked = await getMyAiKey();
-      setAiKeyMasked(masked);
-      setAiKey("");
-      showAiKeyMessage(
-        "success",
-        masked
-          ? "Chave pessoal de IA salva! Suas gerações de conteúdo passarão a usar essa chave."
-          : "Chave pessoal removida — suas gerações voltarão a usar a chave geral de Configurações."
-      );
+      await saveMyAiProviders({ activeProvider: aiActiveProvider || null, providerKeys: aiProviderKeys });
+      const cfg = await getMyAiProviders();
+      setAiActiveProvider(cfg.activeProvider ?? "");
+      setAiProviderKeys((cfg.providerKeys as Record<string, string>) ?? {});
+      showAiKeyMessage("success", "Configurações de IA salvas! Suas gerações passarão a usar o provedor selecionado.");
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      showAiKeyMessage("error", error?.response?.data?.message || "Erro ao salvar a chave.");
+      showAiKeyMessage("error", error?.response?.data?.message || "Erro ao salvar as configurações.");
     } finally { setSavingAiKey(false); }
   }
 
@@ -758,17 +753,16 @@ export default function AdminUser() {
             </Tabs.Panel>
           )}
 
-          {/* ── ABA IA (chave pessoal) ── */}
+          {/* ── ABA IA (provedores pessoais) ── */}
           {!isNew && currentUser?.id === Number(id) && (
             <Tabs.Panel value="ia">
               <Stack gap="20px">
 
                 <Alert color="blue" radius="xl" variant="light" icon={<IconInfoCircle size={16} />}>
                   <Text fz="sm">
-                    Configure aqui sua <strong>chave pessoal da Groq</strong> para gerar conteúdo
-                    com IA. Quando preenchida, suas gerações passam a consumir <strong>essa chave</strong>{" "}
-                    (poupando a chave geral do sistema). Deixe em branco e salve para remover —
-                    suas gerações voltam a usar a chave geral configurada em Configurações.
+                    Configure aqui seu <strong>provedor de IA pessoal</strong>. Quando preenchido,
+                    suas gerações de conteúdo usam <strong>sua própria chave</strong> (maior prioridade).
+                    Sem configuração pessoal, o sistema usa a chave da empresa ou de Configurações.
                   </Text>
                 </Alert>
 
@@ -780,23 +774,21 @@ export default function AdminUser() {
                   </Alert>
                 )}
 
-                <PasswordInput
-                  label="Chave de API da Groq"
-                  description={aiKeyMasked ? `Chave pessoal configurada: ${aiKeyMasked}` : "Nenhuma chave pessoal configurada — usando a chave geral"}
-                  placeholder={aiKeyMasked ?? "gsk_..."}
-                  radius="xl" size="md"
-                  value={aiKey}
-                  onChange={(e) => setAiKey(e.currentTarget.value)}
-                  styles={inputStyles}
-                  leftSection={<IconRobot size={16} />}
+                <AIProvidersPanel
+                  activeProvider={aiActiveProvider}
+                  providerKeys={aiProviderKeys}
+                  onActiveProviderChange={setAiActiveProvider}
+                  onProviderKeyChange={(provider, value) =>
+                    setAiProviderKeys((p) => ({ ...p, [provider]: value }))
+                  }
                 />
 
                 <Group justify="flex-end" mt="8px">
                   <Button radius="xl" size="md" variant="gradient"
                     gradient={{ from: "violet", to: "blue" }}
                     leftSection={<IconKey size={16} />}
-                    loading={savingAiKey} onClick={handleSaveAiKey}>
-                    Salvar chave pessoal
+                    loading={savingAiKey} onClick={handleSaveAiProviders}>
+                    Salvar configurações de IA
                   </Button>
                 </Group>
 

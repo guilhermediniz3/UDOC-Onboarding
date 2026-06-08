@@ -19,8 +19,16 @@ public class GlobalConfigService {
 
     /** Chaves de integração — valores criptografados no banco */
     public static final String KEY_SENDGRID_API_KEY = "sendgrid_api_key";
-    public static final String KEY_AI_API_KEY       = "ai_api_key";
-    public static final String KEY_MAIL_FROM        = "mail_from_address";
+    /** @deprecated chave única legada (sempre Groq) — mantida só como fallback de leitura; ver KEY_AI_PROVIDER_KEYS */
+    @Deprecated
+    public static final String KEY_AI_API_KEY        = "ai_api_key";
+    public static final String KEY_MAIL_FROM         = "mail_from_address";
+
+    /** Provedor de IA ativo das Configurações gerais (GROQ, GEMINI, OPENAI, DEEPSEEK, CLAUDE) */
+    public static final String KEY_AI_ACTIVE_PROVIDER = "ai_active_provider";
+    /** Mapa JSON {"GROQ": "<criptografada>", ...} — cada entrada já vem criptografada individualmente
+     *  (ver AIProviderKeyStore), por isso NÃO entra em SENSITIVE_KEYS — evitaria dupla criptografia. */
+    public static final String KEY_AI_PROVIDER_KEYS   = "ai_provider_keys";
 
     private final GlobalConfigRepository configRepo;
     private final VideoRecordingRepository recordingRepo;

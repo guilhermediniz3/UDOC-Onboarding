@@ -36,8 +36,9 @@ export default function AIPromptModal({
       onGenerated(html);
       setPrompt("");
       onClose();
-    } catch {
-      setError("Erro ao gerar conteúdo. Tente novamente.");
+    } catch (err: unknown) {
+      const apiMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(apiMsg || "Erro ao gerar conteúdo. Tente novamente.");
     } finally {
       setLoading(false);
     }

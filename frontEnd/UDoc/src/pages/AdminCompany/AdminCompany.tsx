@@ -1,10 +1,39 @@
-import { Alert, Avatar, Button, Group, NumberInput, Paper, Stack, Switch, Text, TextInput, Title } from "@mantine/core";
-import { IconArrowLeft, IconBuilding, IconCamera, IconCheck, IconX } from "@tabler/icons-react";
+import {
+  Alert,
+  Avatar,
+  Button,
+  Group,
+  NumberInput,
+  Paper,
+  Stack,
+  Switch,
+  Tabs,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
+import {
+  IconArrowLeft,
+  IconBuilding,
+  IconCamera,
+  IconCheck,
+  IconKey,
+  IconRobot,
+  IconUserCog,
+  IconX,
+} from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { createCompany, getCompanyById, updateCompany } from "../../services/companyService";
+import {
+  createCompany,
+  getCompanyAiProviders,
+  getCompanyById,
+  saveCompanyAiProviders,
+  updateCompany,
+} from "../../services/companyService";
 import type { Company } from "../../types/Company";
+import AIProvidersPanel from "../../components/AIProvidersPanel/AIProvidersPanel";
 
 const EMPTY: Company = { headquarters: undefined, name: "", phone: "", cnpj: "", email: "", employeeCount: 0, active: true };
 
@@ -20,8 +49,18 @@ export default function AdminCompany() {
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const logoRef = useRef<HTMLInputElement>(null);
 
+  /* ── estado: provedores de IA da empresa ── */
+  const [aiActiveProvider, setAiActiveProvider] = useState("");
+  const [aiProviderKeys, setAiProviderKeys] = useState<Record<string, string>>({});
+  const [savingAi, setSavingAi] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
+  const [aiMessageType, setAiMessageType] = useState<"success" | "error">("success");
+
   function showMessage(type: "success" | "error", text: string) {
     setMessageType(type); setMessage(text); setTimeout(() => setMessage(""), 3000);
+  }
+  function showAiMessage(type: "success" | "error", text: string) {
+    setAiMessageType(type); setAiMessage(text); setTimeout(() => setAiMessage(""), 3500);
   }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -32,7 +71,17 @@ export default function AdminCompany() {
     reader.readAsDataURL(file);
   }
 
-  useEffect(() => { if (!isNew) getCompanyById(Number(id)).then(setCompany); }, [id]);
+  useEffect(() => {
+    if (!isNew) {
+      getCompanyById(Number(id)).then(setCompany);
+      getCompanyAiProviders(Number(id))
+        .then((cfg) => {
+          setAiActiveProvider(cfg.activeProvider ?? "");
+          setAiProviderKeys((cfg.providerKeys as Record<string, string>) ?? {});
+        })
+        .catch(() => {});
+    }
+  }, [id]);
 
   async function handleSave() {
     if (!company.name.trim()) { showMessage("error", "O nome da empresa é obrigatório."); return; }
@@ -59,6 +108,23 @@ export default function AdminCompany() {
     } finally { setSaving(false); }
   }
 
+  async function handleSaveAi() {
+    setSavingAi(true);
+    try {
+      await saveCompanyAiProviders(Number(id), {
+        activeProvider: aiActiveProvider || null,
+        providerKeys: aiProviderKeys,
+      });
+      const cfg = await getCompanyAiProviders(Number(id));
+      setAiActiveProvider(cfg.activeProvider ?? "");
+      setAiProviderKeys((cfg.providerKeys as Record<string, string>) ?? {});
+      showAiMessage("success", "Configurações de IA da empresa salvas!");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      showAiMessage("error", error?.response?.data?.message || "Erro ao salvar as configurações.");
+    } finally { setSavingAi(false); }
+  }
+
   const inputStyles = {
     input: { background: "var(--input-bg)", border: "1px solid var(--border-color)", color: "var(--text-primary)" },
     label: { color: "var(--text-primary)", marginBottom: 6 },
@@ -79,70 +145,130 @@ export default function AdminCompany() {
       </Paper>
 
       <Paper p="30px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
-        <Stack gap="20px">
-          {message && (
-            <Alert color={messageType === "success" ? "green" : "red"} icon={messageType === "success" ? <IconCheck size={18} /> : <IconX size={18} />} radius="xl">
-              {message}
-            </Alert>
+
+        <Tabs defaultValue="dados" color="violet">
+          <Tabs.List mb="xl">
+            <Tabs.Tab value="dados" leftSection={<IconUserCog size={16} />}>Dados</Tabs.Tab>
+            {!isNew && (
+              <Tabs.Tab value="ia" leftSection={<IconRobot size={16} />}>IA</Tabs.Tab>
+            )}
+          </Tabs.List>
+
+          {/* ── ABA DADOS ── */}
+          <Tabs.Panel value="dados">
+            <Stack gap="20px">
+
+              {message && (
+                <Alert color={messageType === "success" ? "green" : "red"} icon={messageType === "success" ? <IconCheck size={18} /> : <IconX size={18} />} radius="xl">
+                  {message}
+                </Alert>
+              )}
+
+              {/* Logo da empresa */}
+              <Group align="flex-end" gap="lg">
+                <div style={{ position: "relative", width: 90, height: 90 }}>
+                  <Avatar
+                    src={company.logo || null}
+                    radius="50%"
+                    size={90}
+                    style={{ border: "3px solid rgba(139,92,246,0.6)", cursor: "pointer" }}
+                    onClick={() => logoRef.current?.click()}
+                  >
+                    {!company.logo && <IconBuilding size={40} color="var(--text-secondary)" />}
+                  </Avatar>
+                  <div
+                    onClick={() => logoRef.current?.click()}
+                    style={{ position: "absolute", bottom: 0, right: 0, background: "rgba(139,92,246,0.9)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  >
+                    <IconCamera size={13} color="white" />
+                  </div>
+                  <input ref={logoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoChange} />
+                </div>
+                <Stack gap={4}>
+                  <Text fw={600} c="var(--text-primary)" fz="sm">Logo da empresa</Text>
+                  <Text c="var(--text-secondary)" fz="xs">Clique para selecionar (PNG, JPG)</Text>
+                  {company.logo && (
+                    <Button size="xs" variant="subtle" color="red" p={0} onClick={() => setCompany((p) => ({ ...p, logo: undefined }))}>
+                      Remover logo
+                    </Button>
+                  )}
+                </Stack>
+              </Group>
+
+              <NumberInput
+                label="Matriz"
+                description="Opcional — informe apenas se esta empresa tiver uma matriz identificada"
+                placeholder="Número da matriz"
+                radius="xl" size="md" min={1}
+                value={company.headquarters ?? ""}
+                onChange={(v) => setCompany((p) => ({ ...p, headquarters: v === "" ? undefined : Number(v) }))}
+                styles={inputStyles}
+              />
+              <TextInput label="Nome" placeholder="Nome da empresa" required radius="xl" size="md" value={company.name} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, name: v })); }} styles={inputStyles} />
+              <TextInput label="CNPJ" placeholder="00.000.000/0000-00" required radius="xl" size="md" value={company.cnpj} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, cnpj: v })); }} styles={inputStyles} />
+              <TextInput label="Telefone" placeholder="(00) 00000-0000" radius="xl" size="md" value={company.phone} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, phone: v })); }} styles={inputStyles} />
+              <TextInput label="E-mail" placeholder="contato@empresa.com" radius="xl" size="md" value={company.email} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, email: v })); }} styles={inputStyles} />
+              <NumberInput label="Número de Funcionários" placeholder="Ex: 50" radius="xl" size="md" min={0} value={company.employeeCount} onChange={(v) => setCompany((p) => ({ ...p, employeeCount: Number(v) || 0 }))} styles={inputStyles} />
+
+              <Group>
+                <Switch label={company.active ? "Ativa" : "Inativa"} checked={company.active} onChange={(e) => { const c = e.currentTarget.checked; setCompany((p) => ({ ...p, active: c })); }} size="md" color="violet" styles={{ label: { color: "var(--text-primary)", cursor: "pointer" } }} />
+              </Group>
+
+              <Group justify="flex-end" mt="10px">
+                <Button variant="default" radius="xl" size="md" onClick={() => navigate("/admin/companies")}>Cancelar</Button>
+                <Button radius="xl" size="md" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>
+                  {isNew ? "Criar Empresa" : "Salvar Alterações"}
+                </Button>
+              </Group>
+
+            </Stack>
+          </Tabs.Panel>
+
+          {/* ── ABA IA ── */}
+          {!isNew && (
+            <Tabs.Panel value="ia">
+              <Stack gap="20px">
+
+                <Alert color="blue" radius="xl" variant="light">
+                  <Text fz="sm">
+                    Configure aqui o <strong>provedor de IA da empresa</strong>. Todos os usuários desta empresa que não
+                    tiverem um provedor pessoal usarão este. Se também estiver vazio, o sistema usa as{" "}
+                    <strong>Configurações Globais</strong>.
+                  </Text>
+                </Alert>
+
+                {aiMessage && (
+                  <Alert color={aiMessageType === "success" ? "green" : "red"}
+                    icon={aiMessageType === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
+                    radius="xl">
+                    {aiMessage}
+                  </Alert>
+                )}
+
+                <AIProvidersPanel
+                  activeProvider={aiActiveProvider}
+                  providerKeys={aiProviderKeys}
+                  onActiveProviderChange={setAiActiveProvider}
+                  onProviderKeyChange={(provider, value) =>
+                    setAiProviderKeys((p) => ({ ...p, [provider]: value }))
+                  }
+                />
+
+                <Group justify="flex-end" mt="8px">
+                  <Button radius="xl" size="md" variant="gradient"
+                    gradient={{ from: "violet", to: "blue" }}
+                    leftSection={<IconKey size={16} />}
+                    loading={savingAi} onClick={handleSaveAi}>
+                    Salvar configurações de IA
+                  </Button>
+                </Group>
+
+              </Stack>
+            </Tabs.Panel>
           )}
 
-          {/* Logo da empresa */}
-          <Group align="flex-end" gap="lg">
-            <div style={{ position: "relative", width: 90, height: 90 }}>
-              <Avatar
-                src={company.logo || null}
-                radius="50%"
-                size={90}
-                style={{ border: "3px solid rgba(139,92,246,0.6)", cursor: "pointer" }}
-                onClick={() => logoRef.current?.click()}
-              >
-                {!company.logo && <IconBuilding size={40} color="var(--text-secondary)" />}
-              </Avatar>
-              <div
-                onClick={() => logoRef.current?.click()}
-                style={{ position: "absolute", bottom: 0, right: 0, background: "rgba(139,92,246,0.9)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-              >
-                <IconCamera size={13} color="white" />
-              </div>
-              <input ref={logoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoChange} />
-            </div>
-            <Stack gap={4}>
-              <Text fw={600} c="var(--text-primary)" fz="sm">Logo da empresa</Text>
-              <Text c="var(--text-secondary)" fz="xs">Clique para selecionar (PNG, JPG)</Text>
-              {company.logo && (
-                <Button size="xs" variant="subtle" color="red" p={0} onClick={() => setCompany((p) => ({ ...p, logo: undefined }))}>
-                  Remover logo
-                </Button>
-              )}
-            </Stack>
-          </Group>
+        </Tabs>
 
-          <NumberInput
-            label="Matriz"
-            description="Opcional — informe apenas se esta empresa tiver uma matriz identificada"
-            placeholder="Número da matriz"
-            radius="xl" size="md" min={1}
-            value={company.headquarters ?? ""}
-            onChange={(v) => setCompany((p) => ({ ...p, headquarters: v === "" ? undefined : Number(v) }))}
-            styles={inputStyles}
-          />
-          <TextInput label="Nome" placeholder="Nome da empresa" required radius="xl" size="md" value={company.name} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, name: v })); }} styles={inputStyles} />
-          <TextInput label="CNPJ" placeholder="00.000.000/0000-00" required radius="xl" size="md" value={company.cnpj} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, cnpj: v })); }} styles={inputStyles} />
-          <TextInput label="Telefone" placeholder="(00) 00000-0000" radius="xl" size="md" value={company.phone} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, phone: v })); }} styles={inputStyles} />
-          <TextInput label="E-mail" placeholder="contato@empresa.com" radius="xl" size="md" value={company.email} onChange={(e) => { const v = e.currentTarget.value; setCompany((p) => ({ ...p, email: v })); }} styles={inputStyles} />
-          <NumberInput label="Número de Funcionários" placeholder="Ex: 50" radius="xl" size="md" min={0} value={company.employeeCount} onChange={(v) => setCompany((p) => ({ ...p, employeeCount: Number(v) || 0 }))} styles={inputStyles} />
-
-          <Group>
-            <Switch label={company.active ? "Ativa" : "Inativa"} checked={company.active} onChange={(e) => { const c = e.currentTarget.checked; setCompany((p) => ({ ...p, active: c })); }} size="md" color="violet" styles={{ label: { color: "var(--text-primary)", cursor: "pointer" } }} />
-          </Group>
-
-          <Group justify="flex-end" mt="10px">
-            <Button variant="default" radius="xl" size="md" onClick={() => navigate("/admin/companies")}>Cancelar</Button>
-            <Button radius="xl" size="md" variant="gradient" gradient={{ from: "violet", to: "blue" }} loading={saving} onClick={handleSave}>
-              {isNew ? "Criar Empresa" : "Salvar Alterações"}
-            </Button>
-          </Group>
-        </Stack>
       </Paper>
 
     </Stack>

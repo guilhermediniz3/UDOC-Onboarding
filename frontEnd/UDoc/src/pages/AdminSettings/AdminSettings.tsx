@@ -41,6 +41,7 @@ import {
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import ChatAdminMonitor from "../../components/Chat/ChatAdminMonitor";
+import AIProvidersPanel from "../../components/AIProvidersPanel/AIProvidersPanel";
 
 import {
   deleteRoomRecording,
@@ -200,7 +201,9 @@ export default function AdminSettings() {
   const [sizeFilter, setSizeFilter]       = useState<"all"|"small"|"medium"|"large">("all");
 
   /* ── Integrações ── */
-  const [integrations, setIntegrations] = useState<IntegrationConfig>({ sendgridKey: "", aiKey: "", mailFrom: "" });
+  const [integrations, setIntegrations] = useState<IntegrationConfig>({
+    sendgridKey: "", aiKey: "", mailFrom: "", aiActiveProvider: "", aiProviderKeys: {},
+  });
   const [savingInt, setSavingInt] = useState(false);
 
   /* ── Mensagens ── */
@@ -509,22 +512,28 @@ export default function AdminSettings() {
                 </Stack>
               </Paper>
 
-              {/* Groq AI */}
+              {/* Multi-provedor de IA */}
               <Paper p="20px" radius="16px"
                 style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
                 <Stack gap="16px">
                   <Group gap="sm">
                     <IconRobot size={20} color="#7c3aed" />
-                    <Text fw={700} c="var(--text-primary)">Groq — Geração de perguntas com IA</Text>
+                    <Text fw={700} c="var(--text-primary)">Inteligência Artificial — Geração de conteúdo</Text>
                   </Group>
+                  <Text fz="xs" c="var(--text-secondary)">
+                    Configure quantos provedores quiser. A prioridade é: chave do <strong>usuário</strong> → chave da <strong>empresa</strong> → chave aqui das <strong>Configurações</strong>.
+                  </Text>
 
-                  <ApiKeyField
-                    label="API Key"
-                    description="Encontre em console.groq.com → API Keys. Começa com gsk_."
-                    value={integrations.aiKey}
-                    onChange={(v) => setIntegrations((p) => ({ ...p, aiKey: v }))}
-                    icon={IconKey}
-                    placeholder="gsk_xxxxxxxxxxxxx"
+                  <AIProvidersPanel
+                    activeProvider={integrations.aiActiveProvider}
+                    providerKeys={integrations.aiProviderKeys as Record<string, string>}
+                    onActiveProviderChange={(v) => setIntegrations((p) => ({ ...p, aiActiveProvider: v }))}
+                    onProviderKeyChange={(provider, value) =>
+                      setIntegrations((p) => ({
+                        ...p,
+                        aiProviderKeys: { ...p.aiProviderKeys, [provider]: value },
+                      }))
+                    }
                   />
                 </Stack>
               </Paper>

@@ -1,10 +1,12 @@
 package com.system.UDoc.controller;
 
 import com.system.UDoc.dto.*;
+import com.system.UDoc.entity.AIProvider;
 import com.system.UDoc.entity.PermissionGroup.GroupType;
 import com.system.UDoc.entity.Role;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.repository.UserRepository;
+import com.system.UDoc.service.AIProviderKeyStore;
 import com.system.UDoc.service.AuthService;
 import com.system.UDoc.service.EncryptionService;
 import com.system.UDoc.service.PermissionService;
@@ -27,15 +29,17 @@ public class UserController {
     private final PermissionService permissionService;
     private final UserRepository userRepository;
     private final EncryptionService encryptionService;
+    private final AIProviderKeyStore keyStore;
 
     public UserController(UserService userService, @Lazy AuthService authService,
                            PermissionService permissionService, UserRepository userRepository,
-                           EncryptionService encryptionService) {
+                           EncryptionService encryptionService, AIProviderKeyStore keyStore) {
         this.userService = userService;
         this.authService = authService;
         this.permissionService = permissionService;
         this.userRepository = userRepository;
         this.encryptionService = encryptionService;
+        this.keyStore = keyStore;
     }
 
     @PostMapping
@@ -135,6 +139,7 @@ public class UserController {
      * Chave pessoal de IA do próprio usuário (economiza tokens da chave geral).
      * Estritamente self-only: resolvido via @AuthenticationPrincipal, sem {id} — não pode ser
      * usado para ler/alterar a chave de outro usuário, independentemente de rotas/guards do front.
+     * @deprecated Use /me/ai-providers
      */
     @GetMapping("/me/ai-key")
     public ResponseEntity<java.util.Map<String, String>> getMyAiKey(@AuthenticationPrincipal User currentUser) {
@@ -151,19 +156,63 @@ public class UserController {
     public ResponseEntity<Void> saveMyAiKey(@AuthenticationPrincipal User currentUser,
                                             @RequestBody java.util.Map<String, String> body) {
         String value = body.get("aiApiKey");
-
-        // Mantém o valor atual se vier mascarado ("...") — significa que o usuário não editou
         if (value != null && value.contains("...")) {
             return ResponseEntity.noContent().build();
         }
-
         User managed = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
-
         if (value == null || value.isBlank()) {
             managed.setAiApiKey(null);
         } else {
             managed.setAiApiKey(encryptionService.encrypt(value.trim()));
+        }
+        userRepository.save(managed);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Retorna o provedor ativo e as chaves por provedor (mascaradas) do próprio usuário. */
+    @GetMapping("/me/ai-providers")
+    public ResponseEntity<java.util.Map<String, Object>> getMyAiProviders(@AuthenticationPrincipal User currentUser) {
+        java.util.Map<AIProvider, String> plain  = keyStore.readKeys(currentUser.getAiProviderKeys());
+        java.util.Map<AIProvider, String> masked  = keyStore.maskAll(plain);
+        java.util.Map<String, String> maskedStr = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<AIProvider, String> e : masked.entrySet()) {
+            maskedStr.put(e.getKey().name(), e.getValue());
+        }
+        java.util.Map<String, Object> resp = new java.util.LinkedHashMap<>();
+        resp.put("activeProvider", currentUser.getAiActiveProvider());
+        resp.put("providerKeys", maskedStr);
+        return ResponseEntity.ok(resp);
+    }
+
+    /**
+     * Salva o provedor ativo e as chaves por provedor do próprio usuário.
+     * Chaves que contêm "..." são ignoradas (valor mascarado, sem edição).
+     * Chave vazia remove o provedor do mapa.
+     */
+    @PutMapping("/me/ai-providers")
+    public ResponseEntity<Void> saveMyAiProviders(@AuthenticationPrincipal User currentUser,
+                                                  @RequestBody java.util.Map<String, Object> body) {
+        User managed = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
+
+        Object apRaw = body.get("activeProvider");
+        if (apRaw != null) {
+            managed.setAiActiveProvider(apRaw.toString().isBlank() ? null : apRaw.toString());
+        }
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, String> keysRaw = (java.util.Map<String, String>) body.get("providerKeys");
+        if (keysRaw != null) {
+            java.util.Map<AIProvider, String> updates = new java.util.EnumMap<>(AIProvider.class);
+            for (java.util.Map.Entry<String, String> entry : keysRaw.entrySet()) {
+                AIProvider provider = AIProvider.fromString(entry.getKey());
+                String val = entry.getValue();
+                if (provider != null && (val == null || !val.contains("..."))) {
+                    updates.put(provider, val != null ? val : "");
+                }
+            }
+            managed.setAiProviderKeys(keyStore.mergeAndWrite(managed.getAiProviderKeys(), updates));
         }
         userRepository.save(managed);
         return ResponseEntity.noContent().build();
