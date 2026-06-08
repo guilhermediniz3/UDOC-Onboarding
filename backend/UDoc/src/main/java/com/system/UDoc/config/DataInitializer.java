@@ -391,6 +391,13 @@ public class DataInitializer {
                 }
             }
 
+            // Envio do link de redefinição de senha (convite) por e-mail/WhatsApp — todos os grupos
+            if (!permRepo.existsByGroupAndModuleAndAction(group, "USUARIO", "ENVIAR_CONVITE")) {
+                permRepo.save(new Permission(group, "USUARIO", "ENVIAR_CONVITE", true, true,
+                    "Permite enviar o link de redefinição de senha (convite de acesso) para o usuário, "
+                    + "por e-mail ou WhatsApp."));
+            }
+
             // Permissões especiais do ISM — só afetam recursos de OUTRO ISM (não os próprios)
             if (gt == GroupType.ISM) {
                 // Alterar o ISM responsável de um funcionário externo

@@ -1,9 +1,11 @@
 package com.system.UDoc.controller;
 
 import com.system.UDoc.dto.*;
+import com.system.UDoc.entity.PermissionGroup.GroupType;
 import com.system.UDoc.entity.Role;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.service.AuthService;
+import com.system.UDoc.service.PermissionService;
 import com.system.UDoc.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +22,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
     private final UserService userService;
     private final AuthService authService;
+    private final PermissionService permissionService;
 
-    public UserController(UserService userService, @Lazy AuthService authService) {
+    public UserController(UserService userService, @Lazy AuthService authService,
+                           PermissionService permissionService) {
         this.userService = userService;
         this.authService = authService;
+        this.permissionService = permissionService;
     }
 
     @PostMapping
@@ -78,6 +83,7 @@ public class UserController {
 
     @PostMapping("/{id}/send-welcome-email")
     public ResponseEntity<Void> sendWelcomeEmail(@PathVariable Long id) {
+        requireSendInvitePermission();
         authService.sendWelcomeEmail(id);
         return ResponseEntity.noContent().build();
     }
@@ -102,7 +108,19 @@ public class UserController {
     /** Gera link de convite sem enviar e-mail — admin envia pelo canal que preferir (ex: WhatsApp) */
     @PostMapping("/{id}/invite-link")
     public ResponseEntity<java.util.Map<String, String>> getInviteLink(@PathVariable Long id) {
+        requireSendInvitePermission();
         String link = authService.generateInviteLink(id);
         return ResponseEntity.ok(java.util.Map.of("link", link));
+    }
+
+    /** Bloqueia o envio do convite (e-mail/WhatsApp) para grupos sem a permissão USUARIO/ENVIAR_CONVITE. ADMIN bypassa. */
+    private void requireSendInvitePermission() {
+        GroupType groupType = permissionService.resolveCurrentUserGroup();
+        if (groupType == null) return; // ADMIN bypassa
+
+        if (!permissionService.hasPermission(groupType, "USUARIO", "ENVIAR_CONVITE")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Você não tem permissão para enviar o link de redefinição de senha.");
+        }
     }
 }

@@ -78,12 +78,13 @@ function buildModuleMap(perms: PermissionDTO[]): ModuleMap {
   return map;
 }
 
-// Ações especiais do ISM (não são CRUD padrão — afetam só recursos de outro ISM)
-const SPECIAL_ACTIONS = ["ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE"];
+// Ações extras (não são CRUD padrão — cada uma tem sua própria descrição/escopo)
+const SPECIAL_ACTIONS = ["ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE", "ENVIAR_CONVITE"];
 
 const SPECIAL_ACTION_LABELS: Record<string, string> = {
   ISM_RESPONSAVEL:   "Alterar ISM responsável de funcionário externo",
   OUTRO_ISM_MANAGE:  "Gerenciar salas de outro ISM",
+  ENVIAR_CONVITE:    "Enviar link de redefinição de senha (e-mail/WhatsApp)",
 };
 
 // ── Cartão de um grupo (ex: Func. Interno) ────────────────────────────────────
@@ -149,7 +150,7 @@ function GroupCard({
             label={
               <Group gap={4}>
                 <IconAlertTriangle size={11} color="#f97316" />
-                <Text fz="10px" c="var(--text-secondary)">Somente para outro ISM</Text>
+                <Text fz="10px" c="var(--text-secondary)">Permissões adicionais</Text>
               </Group>
             }
             labelPosition="left"

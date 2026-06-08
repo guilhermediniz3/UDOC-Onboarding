@@ -55,6 +55,7 @@ import { getEmployees } from "../../services/employeeService";
 import type { Employee } from "../../types/Employee";
 
 import { useAuth } from "../../contexts/AuthContext";
+import { usePermission } from "../../contexts/PermissionContext";
 
 // Role padrão para novo usuário: Admin (sem vínculo) — auto-ajustado ao selecionar funcionário
 const EMPTY_USER: UserData = { name: "", email: "", photo: "", role: "ADMIN", active: true };
@@ -75,6 +76,8 @@ export default function AdminUser() {
   const { id } = useParams();
   const isNew = !id;
   const { user: currentUser, updateUser: updateAuthUser } = useAuth();
+  const { can } = usePermission();
+  const canSendInvite = can("USUARIO", "ENVIAR_CONVITE");
 
   /* ── estado: dados ── */
   const [userData, setUserData] = useState<UserData>(EMPTY_USER);
@@ -239,8 +242,9 @@ export default function AdminUser() {
         `${link}\n\n` +
         `⏰ O link expira em 24 horas.`;
       window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer");
-    } catch {
-      showMessage("error", "Erro ao gerar o link. Tente novamente.");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      showMessage("error", error?.response?.data?.message || "Erro ao gerar o link. Tente novamente.");
     } finally {
       setSendingWhatsApp(false);
     }
@@ -429,7 +433,7 @@ export default function AdminUser() {
                   onChange={(e) => { const v = e.currentTarget.value; setUserData((p) => ({ ...p, email: v })); }}
                   styles={inputStyles}
                 />
-                {!isNew && (
+                {!isNew && canSendInvite && (
                   <>
                     <Tooltip
                       label="Enviar convite por e-mail — link para definir a senha (válido por 24h)"
