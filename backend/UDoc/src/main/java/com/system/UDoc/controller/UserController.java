@@ -7,6 +7,7 @@ import com.system.UDoc.entity.Role;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.repository.UserRepository;
 import com.system.UDoc.service.AIProviderKeyStore;
+import com.system.UDoc.service.AIService;
 import com.system.UDoc.service.AuthService;
 import com.system.UDoc.service.EncryptionService;
 import com.system.UDoc.service.PermissionService;
@@ -30,16 +31,26 @@ public class UserController {
     private final UserRepository userRepository;
     private final EncryptionService encryptionService;
     private final AIProviderKeyStore keyStore;
+    private final AIService aiService;
 
     public UserController(UserService userService, @Lazy AuthService authService,
                            PermissionService permissionService, UserRepository userRepository,
-                           EncryptionService encryptionService, AIProviderKeyStore keyStore) {
+                           EncryptionService encryptionService, AIProviderKeyStore keyStore,
+                           AIService aiService) {
         this.userService = userService;
         this.authService = authService;
         this.permissionService = permissionService;
         this.userRepository = userRepository;
         this.encryptionService = encryptionService;
         this.keyStore = keyStore;
+        this.aiService = aiService;
+    }
+
+    /** Retorna o displayName do provedor de IA efetivo (cascata usuário → empresa → global → default). */
+    @GetMapping("/me/ai-provider/active")
+    public ResponseEntity<java.util.Map<String, String>> getActiveAIProvider() {
+        String displayName = aiService.resolveCurrentProviderDisplayName();
+        return ResponseEntity.ok(java.util.Map.of("displayName", displayName));
     }
 
     @PostMapping
