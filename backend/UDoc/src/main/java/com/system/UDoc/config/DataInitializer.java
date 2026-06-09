@@ -355,6 +355,9 @@ public class DataInitializer {
             // travando o UPDATE ao promover um usuário para esse novo perfil.
             runSilently(jdbc, "ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
 
+            // Amplia action de varchar(20) para varchar(50) — novas ações granulares ultrapassam 20 chars
+            runSilently(jdbc, "ALTER TABLE permissions ALTER COLUMN action TYPE varchar(50)");
+
             // ── Seed: grupos e permissões padrão (tudo granted=true) ─────────
             seedPermissions(permGroupRepo, permRepo);
 
