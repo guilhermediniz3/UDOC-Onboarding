@@ -29,7 +29,7 @@ import ResizableImage from "./extensions/ResizableImage";
 import ResizableVideo from "./extensions/ResizableVideo";
 import ResizableRecordingVideo from "./extensions/ResizableRecordingVideo";
 import { uploadGenericRecording, getRecordingFileUrl } from "../../services/recordingService";
-import { uploadImage } from "../../services/imageService";
+import { compressImageToBase64 } from "../../services/imageService";
 
 import {
   FaBold,
@@ -260,12 +260,12 @@ export default function RichTextEditor({
 
     setUploadingImage(true);
     try {
-      const { url } = await uploadImage(file);
-      editor.chain().focus().insertContent({ type: "resizableImage", attrs: { src: url } }).run();
+      const base64 = await compressImageToBase64(file);
+      editor.chain().focus().insertContent({ type: "resizableImage", attrs: { src: base64 } }).run();
       setImageMsg({ type: "success", text: "Imagem inserida com sucesso." });
       setTimeout(() => setImageMsg(null), 3000);
     } catch (err: any) {
-      setImageMsg({ type: "error", text: err?.message ?? "Erro ao enviar imagem." });
+      setImageMsg({ type: "error", text: err?.message ?? "Erro ao processar imagem." });
       setTimeout(() => setImageMsg(null), 5000);
     } finally {
       setUploadingImage(false);
@@ -412,7 +412,7 @@ export default function RichTextEditor({
             <Divider orientation="vertical" />
             <ToolbarButton title="Badge" onClick={insertBadge}><FaCircle /></ToolbarButton>
             <ToolbarButton title="Link" onClick={() => openDialog("link")}><FaLink /></ToolbarButton>
-            <Tooltip label={uploadingImage ? "Enviando imagem..." : "Inserir imagem (JPG, PNG, GIF, WebP)"} withArrow>
+            <Tooltip label={uploadingImage ? "Comprimindo imagem..." : "Inserir imagem (JPG, PNG, GIF, WebP)"} withArrow>
               <span>
                 <ToolbarButton title="Imagem" onClick={() => !uploadingImage && imageInputRef.current?.click()}>
                   <FaImage style={{ opacity: uploadingImage ? 0.4 : 1 }} />
