@@ -364,6 +364,12 @@ public class DataInitializer {
             // ── Seed: permissões do módulo MATRICULA (VIEW + CREATE) ──────────
             seedMatriculaPermissions(permGroupRepo, permRepo);
 
+            // ── Seed: permissões especiais granulares do módulo USUARIO ───────
+            seedUsuarioExtendedPermissions(permGroupRepo, permRepo);
+
+            // ── Seed: permissão VIEW do módulo RANKING (gamificação) ──────────
+            seedRankingPermissions(permGroupRepo, permRepo);
+
             // Seed do usuário padrão movido para DataSeeder (ApplicationRunner @Order(2))
         };
     }
@@ -438,6 +444,42 @@ public class DataInitializer {
                 if (!permRepo.existsByGroupAndModuleAndAction(group, "MATRICULA", action)) {
                     permRepo.save(new Permission(group, "MATRICULA", action, true, false));
                 }
+            }
+        }
+    }
+
+    /** Adiciona permissões especiais granulares do módulo USUARIO para todos os grupos. Idempotente. */
+    private void seedUsuarioExtendedPermissions(PermissionGroupRepository groupRepo,
+                                                PermissionRepository permRepo) {
+        String[][] perms = {
+            { "EDITAR_ISM_OUTRO",         "Permite editar dados de outros usuários com perfil ISM. Não bloqueia a edição do próprio perfil." },
+            { "EDITAR_INTERNO_OUTRO",     "Permite editar dados de outros usuários com perfil Funcionário Interno." },
+            { "EDITAR_EXTERNO",           "Permite editar dados de usuários com perfil Funcionário Externo." },
+            { "EDITAR_EXTERNO_OUTRO_ISM", "Permite editar dados de usuários externos cujo ISM responsável não seja o usuário logado." },
+            { "VER_ISM_OUTRO",            "Permite visualizar dados de outros usuários com perfil ISM." },
+            { "VER_INTERNO_OUTRO",        "Permite visualizar dados de outros usuários com perfil Funcionário Interno." },
+            { "VER_EXTERNO",              "Permite visualizar dados de usuários com perfil Funcionário Externo." },
+            { "VER_EXTERNO_OUTRO_ISM",    "Permite visualizar dados de usuários externos cujo ISM responsável não seja o usuário logado." },
+        };
+        for (GroupType gt : GroupType.values()) {
+            PermissionGroup group = groupRepo.findByGroupType(gt).orElse(null);
+            if (group == null) continue;
+            for (String[] p : perms) {
+                if (!permRepo.existsByGroupAndModuleAndAction(group, "USUARIO", p[0])) {
+                    permRepo.save(new Permission(group, "USUARIO", p[0], true, true, p[1]));
+                }
+            }
+        }
+    }
+
+    /** Adiciona permissão VIEW do módulo RANKING (gamificação) para todos os grupos. Idempotente. */
+    private void seedRankingPermissions(PermissionGroupRepository groupRepo,
+                                        PermissionRepository permRepo) {
+        for (GroupType gt : GroupType.values()) {
+            PermissionGroup group = groupRepo.findByGroupType(gt).orElse(null);
+            if (group == null) continue;
+            if (!permRepo.existsByGroupAndModuleAndAction(group, "RANKING", "VIEW")) {
+                permRepo.save(new Permission(group, "RANKING", "VIEW", true, false));
             }
         }
     }
