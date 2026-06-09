@@ -28,7 +28,8 @@ public class EmailConfigController {
     public ResponseEntity<EmailConfigDTO> saveConfig(
             @Valid @RequestBody EmailConfigRequestDTO request
     ) {
-        return ResponseEntity.ok(emailConfigService.saveConfig(request));
+        EmailConfigDTO result = emailConfigService.saveConfig(request);
+        return result != null ? ResponseEntity.ok(result) : ResponseEntity.noContent().build();
     }
 
     /** Remove a configuração SMTP personalizada — o sistema volta a usar o SendGrid padrão */

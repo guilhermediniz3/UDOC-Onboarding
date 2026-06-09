@@ -37,6 +37,12 @@ public class EmailConfigService {
 
     @Transactional
     public EmailConfigDTO saveConfig(EmailConfigRequestDTO request) {
+        // Campos em branco = usuário quer voltar ao SendGrid padrão
+        if (request.getHost() == null || request.getHost().isBlank()) {
+            deleteConfig();
+            return null;
+        }
+
         EmailConfig config = emailConfigRepository.findFirstByOrderByIdAsc()
                 .orElse(new EmailConfig());
 
