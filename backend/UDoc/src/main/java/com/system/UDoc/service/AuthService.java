@@ -93,18 +93,15 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequestDTO request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "No account found with this email"
-                ));
-
-        String token = UUID.randomUUID().toString();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
-        userRepository.save(user);
-
-        String resetLink = frontendUrl + "/reset-password?token=" + token;
-        emailService.sendPasswordReset(user.getEmail(), user.getName(), resetLink);
+        // Email não cadastrado: retorna silenciosamente — não revela se o endereço existe (anti-enumeration)
+        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+            String token = UUID.randomUUID().toString();
+            user.setResetToken(token);
+            user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+            userRepository.save(user);
+            String resetLink = frontendUrl + "/reset-password?token=" + token;
+            emailService.sendPasswordReset(user.getEmail(), user.getName(), resetLink);
+        });
     }
 
     /** Gera token de convite e retorna o link — sem enviar e-mail (usado pelo WhatsApp ou outros canais) */

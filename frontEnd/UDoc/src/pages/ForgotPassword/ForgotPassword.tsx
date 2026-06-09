@@ -33,9 +33,8 @@ export default function ForgotPassword() {
     try {
       await forgotPassword(email);
       setSuccess(true);
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      setError(e?.response?.data?.message || "Não foi possível enviar o e-mail. Verifique se o e-mail está cadastrado e se as configurações de SMTP estão definidas.");
+    } catch {
+      setError("Não foi possível processar a solicitação. Tente novamente em instantes.");
     } finally {
       setLoading(false);
     }
