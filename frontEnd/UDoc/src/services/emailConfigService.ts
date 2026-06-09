@@ -3,7 +3,7 @@ import api from "./api";
 export interface EmailConfigData {
   id?: number;
   host: string;
-  port: number;
+  port?: number;
   username: string;
   password?: string;
   sslEnabled: boolean;

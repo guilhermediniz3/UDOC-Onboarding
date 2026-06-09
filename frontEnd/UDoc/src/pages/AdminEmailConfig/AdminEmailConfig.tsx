@@ -23,7 +23,7 @@ import {
 
 const EMPTY: EmailConfigData = {
   host: "",
-  port: 587,
+  port: undefined,
   username: "",
   password: "",
   sslEnabled: false,
@@ -57,8 +57,24 @@ export default function AdminEmailConfig() {
   }, []);
 
   async function handleSave() {
-    if (!config.host.trim() || !config.username.trim()) {
-      showMessage("error", "Host e e-mail são obrigatórios.");
+    // Host vazio = limpar configuração e voltar ao SendGrid
+    if (!config.host.trim()) {
+      setSaving(true);
+      try {
+        await saveEmailConfig(config);
+        setHasExisting(false);
+        setConfig(EMPTY);
+        showMessage("success", "Configuração removida. O sistema voltará a usar o SendGrid padrão.");
+      } catch {
+        showMessage("error", "Erro ao remover configuração.");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    if (!config.username.trim()) {
+      showMessage("error", "E-mail remetente é obrigatório.");
       return;
     }
     if (!hasExisting && (!config.password || !config.password.trim())) {
@@ -132,7 +148,7 @@ export default function AdminEmailConfig() {
               radius="xl" size="md"
               min={1} max={65535}
               value={config.port}
-              onChange={(v) => setConfig((p) => ({ ...p, port: Number(v) || 587 }))}
+              onChange={(v) => setConfig((p) => ({ ...p, port: v === "" ? undefined : Number(v) }))}
               styles={inputStyles}
             />
           </Group>
