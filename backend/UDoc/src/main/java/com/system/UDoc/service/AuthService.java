@@ -104,15 +104,7 @@ public class AuthService {
         userRepository.save(user);
 
         String resetLink = frontendUrl + "/reset-password?token=" + token;
-
-        try {
-            emailService.sendPasswordReset(user.getEmail(), user.getName(), resetLink);
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "Failed to send reset email. Please verify SMTP settings. " + e.getMessage()
-            );
-        }
+        emailService.sendPasswordReset(user.getEmail(), user.getName(), resetLink);
     }
 
     /** Gera token de convite e retorna o link — sem enviar e-mail (usado pelo WhatsApp ou outros canais) */
@@ -137,14 +129,7 @@ public class AuthService {
         user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
         userRepository.save(user);
         String link = frontendUrl + "/reset-password?token=" + token;
-        try {
-            emailService.sendWelcomeEmail(user.getEmail(), user.getName(), link);
-        } catch (Exception e) {
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "Falha ao enviar e-mail de boas-vindas: " + e.getMessage()
-            );
-        }
+        emailService.sendWelcomeEmail(user.getEmail(), user.getName(), link);
 
         try {
             auditLogRepository.save(new AuditLog(

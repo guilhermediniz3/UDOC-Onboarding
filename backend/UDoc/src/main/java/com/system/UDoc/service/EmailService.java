@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -62,6 +63,7 @@ public class EmailService {
         return sender;
     }
 
+    @Async("emailExecutor")
     public void sendPasswordReset(String toEmail, String userName, String resetLink) {
 
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
@@ -104,6 +106,7 @@ public class EmailService {
         return sender;
     }
 
+    @Async("emailExecutor")
     public void sendTrainingInvite(String toEmail, String employeeName,
                                    String roomTitle, String jitsiLink, String ismName) {
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
@@ -149,6 +152,7 @@ public class EmailService {
                          link, link, link);
     }
 
+    @Async("emailExecutor")
     public void sendWelcomeEmail(String toEmail, String userName, String setPasswordLink) {
         Optional<EmailConfig> customConfig = emailConfigRepository.findFirstByOrderByIdAsc();
         JavaMailSender sender    = customConfig.isPresent() ? buildFromConfig(customConfig.get()) : resolveDefaultSender();
