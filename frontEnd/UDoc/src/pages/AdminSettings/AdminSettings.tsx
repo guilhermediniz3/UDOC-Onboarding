@@ -525,6 +525,7 @@ export default function AdminSettings() {
                   </Text>
 
                   <AIProvidersPanel
+                    showLocalProviders
                     activeProvider={integrations.aiActiveProvider}
                     providerKeys={integrations.aiProviderKeys as Record<string, string>}
                     onActiveProviderChange={(v) => setIntegrations((p) => ({ ...p, aiActiveProvider: v }))}
