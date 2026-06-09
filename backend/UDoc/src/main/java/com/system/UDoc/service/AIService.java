@@ -149,6 +149,12 @@ public class AIService {
         }
         if (key == null || key.isBlank()) return Optional.empty();
 
+        // Provedores locais (Ollama): o campo "chave" armazena o nome do modelo.
+        // Passamos "ollama" como Bearer auth (ignorado pelo Ollama) e usamos o campo como modelo.
+        if (provider.isLocal()) {
+            return Optional.of(new EffectiveConfig(provider, "ollama", key.trim()));
+        }
+
         return Optional.of(new EffectiveConfig(provider, key, modelFor(provider)));
     }
 

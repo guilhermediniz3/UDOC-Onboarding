@@ -6,7 +6,9 @@ public enum AIProvider {
     GEMINI("Gemini", "AIza..."),
     OPENAI("GPT (OpenAI)", "sk-..."),
     DEEPSEEK("DeepSeek", "sk-..."),
-    CLAUDE("Claude", "sk-ant-...");
+    CLAUDE("Claude", "sk-ant-..."),
+    OLLAMA("Ollama / Llama", "llama3.1:8b"),
+    QWEN("Ollama / Qwen", "qwen2.5:7b");
 
     private final String displayName;
     private final String keyPlaceholder;
@@ -18,6 +20,9 @@ public enum AIProvider {
 
     public String getDisplayName() { return displayName; }
     public String getKeyPlaceholder() { return keyPlaceholder; }
+
+    /** Provedores locais (Ollama) não precisam de chave — o campo armazena o nome do modelo. */
+    public boolean isLocal() { return this == OLLAMA || this == QWEN; }
 
     /** Conversão tolerante — usada ao ler valores persistidos/legados. Retorna null se desconhecido/ausente. */
     public static AIProvider fromString(String value) {
