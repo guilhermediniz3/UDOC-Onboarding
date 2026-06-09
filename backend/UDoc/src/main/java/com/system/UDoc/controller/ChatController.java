@@ -8,7 +8,6 @@ import com.system.UDoc.service.ChatIAService;
 import com.system.UDoc.service.ChatService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -177,7 +176,7 @@ public class ChatController {
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(chatService.listarConversasAdmin(
                 ismId, status,
-                PageRequest.of(page, size, Sort.by("criadaEm").descending())));
+                PageRequest.of(page, size)));
     }
 
     @GetMapping("/admin/conversas/{id}")
