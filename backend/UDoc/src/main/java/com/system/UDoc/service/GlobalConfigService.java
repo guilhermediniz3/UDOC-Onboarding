@@ -121,6 +121,17 @@ public class GlobalConfigService {
         ));
     }
 
+    /** Remove a chave do banco — equivale a "limpar" o campo. */
+    @Transactional
+    public void deleteKey(String key, String performedBy) {
+        configRepo.findByChave(key).ifPresent(configRepo::delete);
+        auditLogRepo.save(new AuditLog(
+            "CONFIG_KEY_DELETED", key,
+            performedBy != null ? performedBy : "system",
+            "Chave '" + key + "' removida" + (performedBy != null ? " por " + performedBy : "")
+        ));
+    }
+
     /** Mascara para exibição: mostra prefixo e últimos 4 chars */
     public String maskKey(String plainValue) {
         if (plainValue == null || plainValue.isBlank()) return null;

@@ -103,9 +103,10 @@ public class GlobalConfigController {
         String sg   = getString(body, "sendgridKey");
         String ai   = getString(body, "aiKey");
         String mail = getString(body, "mailFrom");
-        if (!sg.contains("...")   && !sg.isBlank())   configService.setStringValue(GlobalConfigService.KEY_SENDGRID_API_KEY, sg, performedBy);
-        if (!ai.contains("...")   && !ai.isBlank())   configService.setStringValue(GlobalConfigService.KEY_AI_API_KEY, ai, performedBy);
-        if (!mail.isBlank())                          configService.setStringValue(GlobalConfigService.KEY_MAIL_FROM, mail, performedBy);
+        // "..." = valor mascarado (não toca). Vazio = usuário limpou o campo (deleta). Caso contrário salva.
+        if (!sg.contains("..."))   { if (sg.isBlank()) configService.deleteKey(GlobalConfigService.KEY_SENDGRID_API_KEY, performedBy); else configService.setStringValue(GlobalConfigService.KEY_SENDGRID_API_KEY, sg, performedBy); }
+        if (!ai.contains("..."))   { if (ai.isBlank()) configService.deleteKey(GlobalConfigService.KEY_AI_API_KEY, performedBy);       else configService.setStringValue(GlobalConfigService.KEY_AI_API_KEY, ai, performedBy); }
+        { if (mail.isBlank()) configService.deleteKey(GlobalConfigService.KEY_MAIL_FROM, performedBy); else configService.setStringValue(GlobalConfigService.KEY_MAIL_FROM, mail, performedBy); }
 
         if (body.containsKey("aiActiveProvider")) {
             String newActiveProvider = getString(body, "aiActiveProvider");
