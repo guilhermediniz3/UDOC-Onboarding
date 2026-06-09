@@ -58,10 +58,11 @@ const MODULE_LABELS: Record<string, string> = {
   CADASTRO_DOCUMENTO: "Cadastro de Documentos (menu)",
   DASHBOARD:          "Dashboard (menu)",
   MATRICULA:          "Matrícula (menu)",
+  RANKING:            "Ranking (Gamificação)",
 };
 
 // Módulos que só têm a ação VIEW relevante (controle de visibilidade de menu)
-const VIEW_ONLY_MODULES = new Set(["DOCUMENTO", "CADASTRO_DOCUMENTO", "DASHBOARD", "MATRICULA"]);
+const VIEW_ONLY_MODULES = new Set(["DOCUMENTO", "CADASTRO_DOCUMENTO", "DASHBOARD", "MATRICULA", "RANKING"]);
 
 const ACTIONS_ORDER = ["VIEW", "CREATE", "EDIT", "DELETE"];
 const GROUPS_ORDER: GroupType[] = ["FUNCIONARIO_INTERNO", "FUNCIONARIO_EXTERNO", "ISM", "GESTOR"];
@@ -79,12 +80,24 @@ function buildModuleMap(perms: PermissionDTO[]): ModuleMap {
 }
 
 // Ações extras (não são CRUD padrão — cada uma tem sua própria descrição/escopo)
-const SPECIAL_ACTIONS = ["ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE", "ENVIAR_CONVITE"];
+const SPECIAL_ACTIONS = [
+  "ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE", "ENVIAR_CONVITE",
+  "EDITAR_ISM_OUTRO", "EDITAR_INTERNO_OUTRO", "EDITAR_EXTERNO", "EDITAR_EXTERNO_OUTRO_ISM",
+  "VER_ISM_OUTRO", "VER_INTERNO_OUTRO", "VER_EXTERNO", "VER_EXTERNO_OUTRO_ISM",
+];
 
 const SPECIAL_ACTION_LABELS: Record<string, string> = {
-  ISM_RESPONSAVEL:   "Alterar ISM responsável de funcionário externo",
-  OUTRO_ISM_MANAGE:  "Gerenciar salas de outro ISM",
-  ENVIAR_CONVITE:    "Enviar link de redefinição de senha (e-mail/WhatsApp)",
+  ISM_RESPONSAVEL:          "Alterar ISM responsável de funcionário externo",
+  OUTRO_ISM_MANAGE:         "Gerenciar salas de outro ISM",
+  ENVIAR_CONVITE:           "Enviar link de redefinição de senha (e-mail/WhatsApp)",
+  EDITAR_ISM_OUTRO:         "Editar outros usuários ISM",
+  EDITAR_INTERNO_OUTRO:     "Editar outros usuários internos",
+  EDITAR_EXTERNO:           "Editar usuários externos",
+  EDITAR_EXTERNO_OUTRO_ISM: "Editar externos (ISM não responsável)",
+  VER_ISM_OUTRO:            "Visualizar outros usuários ISM",
+  VER_INTERNO_OUTRO:        "Visualizar outros usuários internos",
+  VER_EXTERNO:              "Visualizar usuários externos",
+  VER_EXTERNO_OUTRO_ISM:    "Visualizar externos (ISM não responsável)",
 };
 
 // ── Cartão de um grupo (ex: Func. Interno) ────────────────────────────────────
