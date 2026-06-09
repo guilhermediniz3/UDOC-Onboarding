@@ -66,7 +66,7 @@ const EMPTY_USER: UserData = { name: "", email: "", photo: "", role: "ADMIN", ac
 
 const EMPTY_EMAIL: EmailConfigData = {
   host: "",
-  port: 587,
+  port: undefined,
   username: "",
   password: "",
   sslEnabled: false,
@@ -664,7 +664,7 @@ export default function AdminUser() {
                     description="587 (TLS) ou 465 (SSL)"
                     radius="xl" size="md" min={1} max={65535}
                     value={emailConfig.port}
-                    onChange={(v) => setEmailConfig((p) => ({ ...p, port: Number(v) || 587 }))}
+                    onChange={(v) => setEmailConfig((p) => ({ ...p, port: v === "" ? undefined : Number(v) }))}
                     styles={inputStyles} />
                 </Group>
 
