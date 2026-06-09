@@ -16,6 +16,7 @@ export interface ProviderEntry {
   placeholder: string;
   globalOnly?: boolean; // true = aparece apenas nas Configurações Gerais (não no usuário/empresa)
   keyLabel?: string;    // label do campo — padrão "Chave de API"
+  defaultKey?: string;  // valor default quando nada foi configurado (ex: nome do modelo Ollama)
 }
 
 export const AI_PROVIDERS: ProviderEntry[] = [
@@ -26,11 +27,11 @@ export const AI_PROVIDERS: ProviderEntry[] = [
   { value: "CLAUDE",   label: "Claude",          placeholder: "sk-ant-..." },
   {
     value: "OLLAMA", label: "Ollama / Llama", placeholder: "llama3.1:8b",
-    globalOnly: true, keyLabel: "Nome do modelo",
+    globalOnly: true, keyLabel: "Nome do modelo", defaultKey: "llama3.1:8b",
   },
   {
     value: "QWEN", label: "Ollama / Qwen", placeholder: "qwen2.5:7b",
-    globalOnly: true, keyLabel: "Nome do modelo",
+    globalOnly: true, keyLabel: "Nome do modelo", defaultKey: "qwen2.5:7b",
   },
 ];
 
@@ -85,7 +86,7 @@ export default function AIProvidersPanel({
         </Text>
 
         {visibleProviders.map((p) => {
-          const val = providerKeys[p.value] ?? "";
+          const val = providerKeys[p.value] || p.defaultKey || "";
           const isMasked = val.includes("...");
           const isActive = activeProvider === p.value;
           const fieldLabel = p.keyLabel ?? "Chave de API";

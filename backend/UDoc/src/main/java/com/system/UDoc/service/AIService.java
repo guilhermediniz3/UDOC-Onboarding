@@ -147,13 +147,14 @@ public class AIService {
                 && legacyGroqKey != null && !legacyGroqKey.isBlank()) {
             key = legacyGroqKey;
         }
-        if (key == null || key.isBlank()) return Optional.empty();
-
         // Provedores locais (Ollama): o campo "chave" armazena o nome do modelo.
-        // Passamos "ollama" como Bearer auth (ignorado pelo Ollama) e usamos o campo como modelo.
+        // Se não foi configurado, usa o modelo default do enum (ex: llama3.1:8b).
         if (provider.isLocal()) {
-            return Optional.of(new EffectiveConfig(provider, "ollama", key.trim()));
+            String model = (key == null || key.isBlank()) ? provider.getKeyPlaceholder() : key.trim();
+            return Optional.of(new EffectiveConfig(provider, "ollama", model));
         }
+
+        if (key == null || key.isBlank()) return Optional.empty();
 
         return Optional.of(new EffectiveConfig(provider, key, modelFor(provider)));
     }
