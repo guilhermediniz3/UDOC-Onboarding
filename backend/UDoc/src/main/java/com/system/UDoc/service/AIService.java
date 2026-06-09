@@ -69,6 +69,9 @@ public class AIService {
     /** Variante que permite customizar a instrução de sistema (ex: chat de Q&A, que não deve gerar HTML). */
     public AIResponseDTO generate(String systemInstruction, String userPrompt) {
         EffectiveConfig cfg = resolveEffectiveConfig();
+        if (cfg == null) {
+            throw new IllegalStateException("Nenhum provedor de IA configurado. Configure um provedor em Configurações → Integrações.");
+        }
         AIProviderClient client = providerRegistry.get(cfg.provider());
 
         HttpHeaders headers = client.buildHeaders(cfg.apiKey());
@@ -120,7 +123,20 @@ public class AIService {
         Optional<EffectiveConfig> globalCfg = resolveLevel(globalActiveProvider, globalProviderKeys, legacyGlobalKey);
         if (globalCfg.isPresent()) return globalCfg.get();
 
-        return new EffectiveConfig(AIProvider.GROQ, defaultApiKey, defaultGroqModel);
+        // Fallback Groq — só é válido se a chave não estiver vazia
+        if (defaultApiKey != null && !defaultApiKey.isBlank()) {
+            return new EffectiveConfig(AIProvider.GROQ, defaultApiKey, defaultGroqModel);
+        }
+        return null; // nenhum provedor configurado em nenhum nível
+    }
+
+    /** Retorna true se há um provedor de IA válido configurado para o usuário atual. */
+    public boolean hasValidProvider() {
+        try {
+            return resolveEffectiveConfig() != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -167,7 +183,8 @@ public class AIService {
     /** Retorna o displayName do provedor que será usado na próxima chamada (reflete a cascata). */
     public String resolveCurrentProviderDisplayName() {
         try {
-            return resolveEffectiveConfig().provider().getDisplayName();
+            EffectiveConfig cfg = resolveEffectiveConfig();
+            return cfg != null ? cfg.provider().getDisplayName() : "IA";
         } catch (Exception e) {
             return "IA";
         }

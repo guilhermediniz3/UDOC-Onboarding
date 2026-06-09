@@ -41,9 +41,24 @@ if [ ! -f .env ]; then
   read -r
 fi
 
+# ── Verificar token Cloudflare (obrigatório com --ollama) ────────────────────
+if [ "$WITH_OLLAMA" = true ]; then
+  if [ -f .env ] && grep -qE "^CLOUDFLARE_TUNNEL_TOKEN=.+" .env; then
+    echo "✅  Token Cloudflare encontrado."
+  else
+    echo ""
+    echo "⚠️  CLOUDFLARE_TUNNEL_TOKEN não está preenchido no .env."
+    echo "    Crie o túnel em: dash.cloudflare.com → Zero Trust → Networks → Tunnels"
+    echo "    Configure o Public Hostname apontando para: http://ollama:11434"
+    echo "    Cole o token gerado no .env antes de continuar."
+    echo "    Pressione ENTER para continuar mesmo assim ou Ctrl+C para cancelar."
+    read -r
+  fi
+fi
+
 # ── Subir serviços ────────────────────────────────────────────────────────────
 if [ "$WITH_OLLAMA" = true ]; then
-  echo "🚀  Subindo serviços com IA local (postgres + backend + Ollama)..."
+  echo "🚀  Subindo serviços com IA local (postgres + backend + Ollama + Cloudflare Tunnel)..."
   docker compose --profile ollama up -d
 else
   echo "🚀  Subindo serviços (postgres + backend)..."
@@ -96,6 +111,7 @@ echo "║                                                          ║"
 echo "║  Backend:  http://localhost:8081                         ║"
 if [ "$WITH_OLLAMA" = true ]; then
 echo "║  Ollama:   http://localhost:11434                        ║"
+echo "║  Túnel:    veja a URL em dash.cloudflare.com → Tunnels  ║"
 fi
 echo "║                                                          ║"
 echo "║  Para usar IA local:                                     ║"

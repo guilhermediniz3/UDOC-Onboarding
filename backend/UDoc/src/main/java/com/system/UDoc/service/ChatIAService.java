@@ -2,7 +2,10 @@ package com.system.UDoc.service;
 
 import com.system.UDoc.exception.AIQuotaExceededException;
 import com.system.UDoc.repository.CardRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -10,6 +13,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class ChatIAService {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatIAService.class);
 
     private final CardRepository cardRepository;
     private final AIService aiService;
@@ -87,6 +92,9 @@ public class ChatIAService {
             return aiService.generate(effectiveInstruction, contexto.toString()).content();
         } catch (AIQuotaExceededException e) {
             return e.getMessage();
+        } catch (IllegalStateException e) {
+            // Nenhum provedor de IA configurado em nenhum nível
+            return e.getMessage();
         } catch (HttpClientErrorException e) {
             int status = e.getStatusCode().value();
             if (status == 401 || status == 403) {
@@ -96,7 +104,11 @@ public class ChatIAService {
                 return "Sua conta no provedor de IA não possui créditos suficientes (HTTP 402). Adicione créditos ou configure outro provedor em Integrações.";
             }
             return "Erro ao chamar o serviço de IA (HTTP " + status + "). Tente novamente.";
+        } catch (ResourceAccessException e) {
+            log.error("Chat IA: falha de conexão com provedor — {}", e.getMessage());
+            return "Não foi possível conectar ao serviço de IA. Verifique se o provedor está acessível e a chave está correta em Integrações.";
         } catch (Exception e) {
+            log.error("Chat IA: erro inesperado — {}: {}", e.getClass().getSimpleName(), e.getMessage(), e);
             return "Desculpe, estou com dificuldades técnicas no momento. Tente novamente em instantes.";
         }
     }
