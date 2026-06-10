@@ -7,7 +7,7 @@
  * Com octet-stream esse limite não se aplica.
  */
 
-const BASE_URL = "http://localhost:8081";
+import { BASE_URL } from "./api";
 
 export interface VideoRecordingInfo {
   id: number;

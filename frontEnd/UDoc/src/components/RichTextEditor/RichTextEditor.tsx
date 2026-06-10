@@ -186,7 +186,7 @@ export default function RichTextEditor({
     // Verifica cota via fetch direto — NÃO usa axios (evita interceptor 401 → reload)
     try {
       const token = localStorage.getItem("udoc-token") ?? "";
-      const res = await fetch("http://localhost:8081/config/storage", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8081"}/config/storage`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

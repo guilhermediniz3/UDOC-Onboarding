@@ -123,7 +123,7 @@ export function useTrailTimer({
 
       const token = localStorage.getItem("udoc-token");
       // keepalive: garante que o request termina mesmo após a página fechar
-      fetch(`http://localhost:8081/my-trails/${trailId}/time`, {
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8081"}/my-trails/${trailId}/time`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
