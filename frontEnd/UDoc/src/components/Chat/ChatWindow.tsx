@@ -19,6 +19,8 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
   const [conversa, setConversa] = useState<ChatConversa | null>(null);
   const [loading, setLoading] = useState(true);
   const [showISMNPS, setShowISMNPS] = useState(false);
+  const [ismStatus, setIsmStatus] = useState("Offline");
+  const conversaRef = useRef<ChatConversa | null>(null);
   const disconnectRef = useRef<() => void>(() => {});
 
   const isIsm   = user?.role === "ISM";
@@ -27,11 +29,12 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
   useEffect(() => {
     // Todos os perfis carregam/criam conversa para usar o assistente IA
     getMinhaConversa()
-      .then(setConversa)
+      .then((c) => { setConversa(c); conversaRef.current = c; })
       .catch(() => {})
       .finally(() => setLoading(false));
 
     // Conecta WebSocket
+    const isIsmUser = user?.role === "ISM";
     const disconnect = connectChat(
       (msg) => {
         // Encerramento pelo ISM → dispara NPS no cliente
@@ -49,7 +52,15 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
         }
       },
       undefined,
-      user?.id
+      user?.id,
+      // Clientes (não-ISM) recebem updates de status e filtram pelo ISM da conversa
+      isIsmUser ? undefined : (data: { ismId: number; status: string }) => {
+        if (conversaRef.current?.ismId && data.ismId === conversaRef.current.ismId) {
+          setIsmStatus(data.status);
+        }
+      },
+      // ISM publica próprio status Online/Offline ao conectar/desconectar
+      isIsmUser ? user?.id : undefined
     );
     disconnectRef.current = disconnect;
     return () => disconnect();
@@ -155,6 +166,7 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
                 userEmail={user?.email ?? ""}
                 showNPS={showISMNPS}
                 onNPSAvaliar={handleISMNPSAvaliar}
+                ismStatus={ismStatus}
               />
             </Tabs.Panel>
           )}

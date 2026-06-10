@@ -14,7 +14,9 @@ function getToken(): string {
 export function connectChat(
   onMensagem: (msg: any) => void,
   onBadge?: (data: { naoLidas: number }) => void,
-  userId?: number
+  userId?: number,
+  onStatus?: (data: { ismId: number; status: string }) => void,
+  publishOnlineIsmId?: number
 ): () => void {
   const token = getToken();
 
@@ -34,13 +36,31 @@ export function connectChat(
           try { onBadge(JSON.parse(frame.body)); } catch {}
         });
       }
+
+      // Cliente assina atualizações de status do ISM
+      if (onStatus) {
+        client?.subscribe("/topic/ism-status", (frame) => {
+          try { onStatus(JSON.parse(frame.body)); } catch {}
+        });
+      }
+
+      // ISM publica status Online ao conectar (e ao reconectar)
+      if (publishOnlineIsmId) {
+        publicarStatusIsm(publishOnlineIsmId, "Online");
+      }
     },
   });
 
   client.activate();
 
-  // Retorna função de cleanup
-  return () => { client?.deactivate(); client = null; };
+  // ISM publica Offline antes de desconectar
+  return () => {
+    if (publishOnlineIsmId) {
+      publicarStatusIsm(publishOnlineIsmId, "Offline");
+    }
+    client?.deactivate();
+    client = null;
+  };
 }
 
 export function enviarMensagemIsm(payload: {

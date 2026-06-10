@@ -10,6 +10,7 @@ interface Props {
   userEmail: string;
   showNPS: boolean;
   onNPSAvaliar: (nota: number) => void;
+  ismStatus?: string;
 }
 
 const STATUS_CONFIG: Record<string, { cor: string; label: string }> = {
@@ -18,11 +19,10 @@ const STATUS_CONFIG: Record<string, { cor: string; label: string }> = {
   Offline: { cor: "#6b7280", label: "Offline" },
 };
 
-export default function ChatISMClientTab({ conversa, userEmail, showNPS, onNPSAvaliar }: Props) {
+export default function ChatISMClientTab({ conversa, userEmail, showNPS, onNPSAvaliar, ismStatus = "Offline" }: Props) {
   const [msgs, setMsgs] = useState<ChatMensagem[]>(conversa.mensagens);
   const [input, setInput] = useState("");
   const [aguardando, setAguardando] = useState(false);
-  const [ismStatus] = useState("Offline");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs]);
