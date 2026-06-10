@@ -102,7 +102,7 @@ public class SecurityConfig {
         // Sistema usa JWT via Authorization header — não usa cookies, então allowCredentials
         // não é necessário. Sem ele, podemos aceitar qualquer origem com segurança.
         config.setAllowedOriginPatterns(List.of("*"));
-        config.setAllowedCredentials(true);
+        config.setAllowCredentials(true);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
