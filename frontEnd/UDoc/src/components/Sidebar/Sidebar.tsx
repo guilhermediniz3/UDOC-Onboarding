@@ -193,7 +193,6 @@ const NAV_ITEMS: NavItemType[] = [
     Icon: IconTrophy,
     path: "/ranking",
     isActive: (p) => p === "/ranking",
-    adminOnly: true,
   },
   {
     label: "Configurações",
