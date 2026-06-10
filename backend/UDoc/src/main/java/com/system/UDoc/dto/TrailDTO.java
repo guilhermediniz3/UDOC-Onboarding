@@ -2,6 +2,7 @@ package com.system.UDoc.dto;
 
 import com.system.UDoc.entity.Trail;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,7 @@ public class TrailDTO {
     private Integer sortOrder;
     private String visibilidade;
     private List<CardDTO> cards;
+    private String createdAt;
 
     public TrailDTO() {
     }
@@ -30,6 +32,9 @@ public class TrailDTO {
                 .stream()
                 .map(CardDTO::new)
                 .collect(Collectors.toList());
+        this.createdAt = trail.getCreatedAt() != null
+                ? trail.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                : null;
     }
 
     public Long getId() {
@@ -82,4 +87,7 @@ public class TrailDTO {
     public void setCards(List<CardDTO> cards) {
         this.cards = cards;
     }
+
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 }

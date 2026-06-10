@@ -110,6 +110,11 @@ public class TrailController {
         );
     }
 
+    @PostMapping("/{id}/clone")
+    public ResponseEntity<TrailDTO> cloneTrail(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(trailService.cloneTrail(id));
+    }
+
     @PutMapping("/{id1}/swap/{id2}")
     public ResponseEntity<Void> swapSortOrder(
 

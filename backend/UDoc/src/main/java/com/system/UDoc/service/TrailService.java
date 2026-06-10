@@ -153,6 +153,26 @@ public class TrailService {
     }
 
     @Transactional
+    public TrailDTO cloneTrail(Long id) {
+        Trail original = findOrThrow(id);
+
+        int maxOrder = trailRepository.findAll().stream()
+                .mapToInt(t -> t.getSortOrder() != null ? t.getSortOrder() : 0)
+                .max()
+                .orElse(-1);
+
+        Trail clone = new Trail();
+        clone.setName(original.getName() + " — Cópia");
+        clone.setDescription(original.getDescription());
+        clone.setActive(false);
+        clone.setSortOrder(maxOrder + 1);
+        clone.setVisibilidade(original.getVisibilidade());
+        clone.setCards(new ArrayList<>(original.getCards()));
+
+        return new TrailDTO(trailRepository.save(clone));
+    }
+
+    @Transactional
     public void swapSortOrder(Long id1, Long id2) {
 
         Trail trail1 = findOrThrow(id1);
