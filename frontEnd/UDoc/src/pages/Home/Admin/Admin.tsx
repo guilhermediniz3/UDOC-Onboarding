@@ -11,6 +11,7 @@ import {
 } from "react-router-dom";
 
 import {
+  ActionIcon,
   Alert,
   Badge,
   Box,
@@ -167,7 +168,32 @@ export default function Admin() {
         <Stack gap="lg">
           <TextInput label="Título" name="title" value={card.title} onChange={handleChange} placeholder="Digite o título" radius="lg" styles={inputStyles} />
           <TextInput label="Descrição" name="description" value={card.description} onChange={handleChange} placeholder="Digite a descrição" radius="lg" styles={inputStyles} />
-          <TextInput label="Ícone" name="icon" value={card.icon} onChange={handleChange} placeholder="Ex.: FaUser" radius="lg" styles={inputStyles} />
+          <TextInput
+            label={
+              <Group gap={4} align="center">
+                <span>Ícone</span>
+                <Tooltip label="Ver catálogo de ícones do React Icons" withArrow position="right">
+                  <ActionIcon
+                    component="a"
+                    href="https://react-icons.github.io/react-icons/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="xs"
+                    variant="subtle"
+                    color="blue"
+                  >
+                    <IconInfoCircle size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            }
+            name="icon"
+            value={card.icon}
+            onChange={handleChange}
+            placeholder="Ex.: FaUser"
+            radius="lg"
+            styles={inputStyles}
+          />
 
           {/* Card interno */}
           <Group gap="sm" align="center">
