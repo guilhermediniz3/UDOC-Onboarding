@@ -54,8 +54,10 @@ export default function ChatWindow({ onClose, chatIsmHabilitado }: Props) {
       undefined,
       user?.id,
       // Clientes (não-ISM) recebem updates de status e filtram pelo user-id do ISM da conversa
-      isIsmUser ? undefined : (data: { ismId: number; status: string }) => {
-        if (conversaRef.current?.ismAccountUserId && data.ismId === conversaRef.current.ismAccountUserId) {
+      // Number() garante comparação correta mesmo se ismId chegar como string do JSON
+      isIsmUser ? undefined : (data: { ismId: number | string; status: string }) => {
+        if (conversaRef.current?.ismAccountUserId &&
+            Number(data.ismId) === conversaRef.current.ismAccountUserId) {
           setIsmStatus(data.status);
         }
       },

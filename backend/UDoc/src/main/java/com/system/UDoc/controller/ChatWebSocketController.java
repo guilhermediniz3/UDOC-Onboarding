@@ -65,8 +65,8 @@ public class ChatWebSocketController {
 
     /** ISM publica status (Online / Ausente / Offline) */
     @MessageMapping("/chat.status")
-    public void ismStatus(@Payload Map<String, String> payload) {
-        // Broadcast do status para todos que precisam exibir o indicador
+    public void ismStatus(@Payload Map<String, Object> payload) {
+        // Map<String, Object> preserva o tipo numérico de ismId no JSON de saída
         messagingTemplate.convertAndSend("/topic/ism-status", payload);
     }
 
