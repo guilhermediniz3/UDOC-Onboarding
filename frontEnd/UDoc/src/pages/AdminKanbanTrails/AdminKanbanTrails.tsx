@@ -35,11 +35,13 @@ import {
   Tooltip,
 } from "@mantine/core";
 
+import { DatePickerInput, type DatesRangeValue } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import {
   IconBuilding,
+  IconCalendar,
   IconChevronDown,
   IconChevronRight,
   IconEdit,
@@ -365,6 +367,7 @@ export default function AdminKanbanTrails() {
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
   const [filterEmployeeId, setFilterEmployeeId] = useState<number | null>(null);
   const [filterActive, setFilterActive] = useState<"active" | "inactive" | "all">("active");
+  const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
   const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
 
@@ -428,12 +431,25 @@ export default function AdminKanbanTrails() {
     }
   }
 
-  const hasFilter = filterCompanyId != null || filterEmployeeId != null || filterActive !== "all";
+  const isDateFiltered = dateRange[0] != null || dateRange[1] != null;
+  const hasFilter = filterCompanyId != null || filterEmployeeId != null || filterActive !== "all" || isDateFiltered;
 
-  // Trilhas filtradas por status
+  // Trilhas filtradas por status e por data de criação
   const visibleTrails = trails.filter((t) => {
-    if (filterActive === "active")   return t.active === true;
-    if (filterActive === "inactive") return t.active === false;
+    if (filterActive === "active"   && t.active !== true)  return false;
+    if (filterActive === "inactive" && t.active !== false) return false;
+    if (isDateFiltered && t.createdAt) {
+      const d = new Date(t.createdAt);
+      const [from, to] = dateRange;
+      if (from instanceof Date && d < from) return false;
+      if (to instanceof Date) {
+        const toEnd = new Date(to);
+        toEnd.setHours(23, 59, 59, 999);
+        if (d > toEnd) return false;
+      }
+    } else if (isDateFiltered && !t.createdAt) {
+      return false;
+    }
     return true;
   });
 
@@ -760,11 +776,25 @@ export default function AdminKanbanTrails() {
             styles={inputS}
           />
 
+          <DatePickerInput
+            type="range"
+            placeholder="Filtrar por data de criação"
+            value={dateRange}
+            onChange={setDateRange}
+            clearable
+            radius="xl"
+            size="sm"
+            w={240}
+            valueFormat="DD/MM/YYYY"
+            leftSection={<IconCalendar size={14} />}
+            styles={inputS}
+          />
+
           {hasFilter && (
             <Button
               leftSection={<IconX size={14} />}
               variant="subtle" color="gray" radius="xl" size="sm"
-              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); setFilterActive("active"); }}
+              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); setFilterActive("active"); setDateRange([null, null]); }}
             >
               Limpar filtros
             </Button>
