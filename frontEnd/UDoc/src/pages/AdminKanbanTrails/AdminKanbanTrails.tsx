@@ -47,6 +47,7 @@ import {
   IconFileTypePdf,
   IconFilter,
   IconGripVertical,
+  IconInfoCircle,
   IconPlus,
   IconTrash,
   IconUser,
@@ -706,13 +707,21 @@ export default function AdminKanbanTrails() {
             </Text>
           </div>
           <Group gap="md">
-            <Switch
-              label="Remover duplicatas"
-              checked={removeDuplicates}
-              onChange={(e) => setRemoveDuplicates(e.currentTarget.checked)}
-              size="sm" color="violet"
-              styles={{ label: { color: "var(--text-secondary)", cursor: "pointer", fontSize: 13 } }}
-            />
+            <Group gap={6} align="center">
+              <Switch
+                label="Remover duplicatas"
+                checked={removeDuplicates}
+                onChange={(e) => setRemoveDuplicates(e.currentTarget.checked)}
+                size="sm" color="violet"
+                styles={{ label: { color: "var(--text-secondary)", cursor: "pointer", fontSize: 13 } }}
+              />
+              <Tooltip
+                label="Uma empresa pode aparecer mais de uma vez na mesma trilha quando possui múltiplas matrículas. Ativando esta opção, apenas a matrícula mais recente de cada empresa é exibida."
+                withArrow multiline w={280} position="bottom"
+              >
+                <IconInfoCircle size={15} color="var(--text-secondary)" style={{ cursor: "help", opacity: 0.7 }} />
+              </Tooltip>
+            </Group>
             <Button leftSection={<IconPlus size={18} />} radius="xl" size="md"
               variant="gradient" gradient={{ from: "violet", to: "blue" }}
               onClick={() => navigate("/admin/trail")}>
