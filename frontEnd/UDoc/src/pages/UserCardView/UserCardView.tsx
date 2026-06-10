@@ -11,6 +11,8 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
 
 import { getCardViewById } from "../../services/cardService";
 
@@ -37,6 +39,8 @@ export default function UserCardView() {
       Underline,
       Link.configure({ openOnClick: true }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextStyle,
+      Color,
       Callout,
       Badge,
       ResizableImage,
