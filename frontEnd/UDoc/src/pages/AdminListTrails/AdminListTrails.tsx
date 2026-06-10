@@ -16,7 +16,7 @@ import {
   useMantineColorScheme,
 } from "@mantine/core";
 
-import { DatePickerInput } from "@mantine/dates";
+import { DatePickerInput, type DatesRangeValue } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
@@ -54,7 +54,7 @@ export default function AdminListTrails() {
   const [trails, setTrails] = useState<Trail[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState("10");
   const [totalPages, setTotalPages] = useState(1);
