@@ -57,7 +57,7 @@ public class UserController {
     public ResponseEntity<UserDTO> createUser(
             @Valid @RequestBody UserRequestDTO request,
             @AuthenticationPrincipal User currentUser) {
-        validateRoleAndEmployee(request, currentUser);
+        validateRoleAndEmployee(request, currentUser, null);
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
@@ -77,7 +77,8 @@ public class UserController {
             @PathVariable Long id,
             @Valid @RequestBody UserRequestDTO request,
             @AuthenticationPrincipal User currentUser) {
-        validateRoleAndEmployee(request, currentUser);
+        Role existingRole = userRepository.findById(id).map(User::getRole).orElse(null);
+        validateRoleAndEmployee(request, currentUser, existingRole);
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
@@ -88,10 +89,16 @@ public class UserController {
      * Valida as regras de negócio de role × vínculo de funcionário:
      * - ADMIN: só outro admin pode criar/promover; sem vínculo obrigatório
      * - ISM / FUNCIONARIO_EXTERNO: vínculo com funcionário obrigatório
+     *
+     * existingRole: role atual no banco (null em criações). Quando a role não está
+     * mudando (edição sem promoção), o check de "quem pode atribuir" é pulado —
+     * permite que GESTOR edite o próprio perfil sem alterar a role.
      */
-    private void validateRoleAndEmployee(UserRequestDTO request, User currentUser) {
-        // Somente admin pode definir role ADMIN ou GESTOR
-        if ((request.getRole() == Role.ADMIN || request.getRole() == Role.GESTOR) &&
+    private void validateRoleAndEmployee(UserRequestDTO request, User currentUser, Role existingRole) {
+        boolean roleChanging = (existingRole == null || existingRole != request.getRole());
+        // Somente admin pode ATRIBUIR ou PROMOVER para role ADMIN ou GESTOR
+        if (roleChanging &&
+                (request.getRole() == Role.ADMIN || request.getRole() == Role.GESTOR) &&
                 (currentUser == null || currentUser.getRole() != Role.ADMIN)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Apenas administradores podem criar ou promover usuários com perfil Admin ou Gestor.");
