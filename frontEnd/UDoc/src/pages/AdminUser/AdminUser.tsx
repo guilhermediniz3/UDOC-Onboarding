@@ -195,8 +195,12 @@ export default function AdminUser() {
       showMessage("error", "Funcionário Interno não pode ter o perfil Admin.");
       return;
     }
-    // Apenas Admin pode criar/promover Admin ou Gestor
-    if ((userData.role === "ADMIN" || userData.role === "GESTOR") && currentUser?.role !== "ADMIN") {
+    // Apenas Admin pode criar/promover Admin ou Gestor.
+    // Ignora quando o select de Role estava travado (role elevada + viewer não-Admin → não pôde ser alterada).
+    const roleSelectLocked =
+      availableRoles.length <= 1 ||
+      (currentUser?.role !== "ADMIN" && (userData.role === "GESTOR" || userData.role === "ADMIN"));
+    if (!roleSelectLocked && (userData.role === "ADMIN" || userData.role === "GESTOR") && currentUser?.role !== "ADMIN") {
       showMessage("error", "Apenas administradores podem criar usuários com perfil Admin ou Gestor.");
       return;
     }
