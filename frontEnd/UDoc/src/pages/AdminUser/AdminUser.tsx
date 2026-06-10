@@ -88,6 +88,8 @@ export default function AdminUser() {
   const [createPassword, setCreatePassword] = useState("");
   const [createConfirmPassword, setCreateConfirmPassword] = useState("");
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
+  const [externoDropdown, setExternoDropdown] = useState(false);
+  const [internoDropdown, setInternoDropdown] = useState(false);
   const [saving, setSaving]               = useState(false);
   const [sendingInvite, setSendingInvite] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
@@ -549,6 +551,9 @@ export default function AdminUser() {
                 placeholder="Selecione o funcionário externo..."
                 radius="xl" size="md"
                 clearable searchable
+                dropdownOpened={externoDropdown}
+                onDropdownOpen={() => setExternoDropdown(true)}
+                onDropdownClose={() => setExternoDropdown(false)}
                 data={employeeOptions
                   .filter((e) => (e.tipo || "EXTERNO") === "EXTERNO")
                   .map((e) => ({
@@ -577,6 +582,9 @@ export default function AdminUser() {
                 placeholder="Selecione o funcionário interno..."
                 radius="xl" size="md"
                 clearable searchable
+                dropdownOpened={internoDropdown}
+                onDropdownOpen={() => setInternoDropdown(true)}
+                onDropdownClose={() => setInternoDropdown(false)}
                 data={employeeOptions
                   .filter((e) => e.tipo === "INTERNO")
                   .map((e) => ({
