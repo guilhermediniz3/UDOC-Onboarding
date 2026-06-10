@@ -6,6 +6,7 @@ import { BASE_URL } from "./api";
 const WS_URL = `${BASE_URL}/ws`;
 
 let client: Client | null = null;
+let statusHeartbeat: ReturnType<typeof setInterval> | null = null;
 
 function getToken(): string {
   return localStorage.getItem("udoc-token") ?? "";
@@ -44,20 +45,23 @@ export function connectChat(
         });
       }
 
-      // ISM publica status Online ao conectar (e ao reconectar)
+      // ISM publica status Online ao conectar e mantém heartbeat a cada 15s
       if (publishOnlineIsmId) {
         publicarStatusIsm(publishOnlineIsmId, "Online");
+        if (statusHeartbeat) clearInterval(statusHeartbeat);
+        statusHeartbeat = setInterval(() => {
+          publicarStatusIsm(publishOnlineIsmId, "Online");
+        }, 15_000);
       }
     },
   });
 
   client.activate();
 
-  // ISM publica Offline antes de desconectar
+  // ISM publica Offline e limpa heartbeat antes de desconectar
   return () => {
-    if (publishOnlineIsmId) {
-      publicarStatusIsm(publishOnlineIsmId, "Offline");
-    }
+    if (statusHeartbeat) { clearInterval(statusHeartbeat); statusHeartbeat = null; }
+    if (publishOnlineIsmId) publicarStatusIsm(publishOnlineIsmId, "Offline");
     client?.deactivate();
     client = null;
   };
