@@ -7,6 +7,8 @@ import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
+import TextStyle from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
 
 import "./index.css";
 import "./extensions/video.css";
@@ -16,6 +18,7 @@ import {
   Divider,
   Group,
   Paper,
+  Popover,
   ScrollArea,
   Stack,
   Text,
@@ -100,6 +103,14 @@ export default function RichTextEditor({
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [editingBadgePos, setEditingBadgePos] = useState<number | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+
+  const COLOR_PALETTE = [
+    ["#000000", "#374151", "#6b7280", "#9ca3af", "#d1d5db", "#ffffff"],
+    ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899"],
+    ["#dc2626", "#ea580c", "#ca8a04", "#16a34a", "#2563eb", "#7c3aed", "#db2777"],
+    ["#fca5a5", "#fdba74", "#fde68a", "#86efac", "#93c5fd", "#c4b5fd", "#f9a8d4"],
+  ];
 
   /* ── upload de imagem ── */
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -122,6 +133,8 @@ export default function RichTextEditor({
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: "Digite seu conteúdo aqui..." }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextStyle,
+      Color,
       Callout,
       Badge,
       ResizableImage,
@@ -400,6 +413,59 @@ export default function RichTextEditor({
             <ToolbarButton title="Negrito" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")}><FaBold /></ToolbarButton>
             <ToolbarButton title="Itálico" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")}><FaItalic /></ToolbarButton>
             <ToolbarButton title="Sublinhado" onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")}><FaUnderline /></ToolbarButton>
+            <Popover opened={colorPickerOpen} onChange={setColorPickerOpen} position="bottom" withArrow shadow="md" radius="lg">
+              <Popover.Target>
+                <Tooltip label="Cor do texto">
+                  <ActionIcon
+                    variant="subtle"
+                    color="violet"
+                    radius="md"
+                    size="lg"
+                    onClick={() => setColorPickerOpen((o) => !o)}
+                    style={{ flexShrink: 0, minWidth: 38, minHeight: 38 }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                      <span style={{ fontWeight: 800, fontSize: 13, lineHeight: 1, color: editor.getAttributes("textStyle").color ?? "currentColor" }}>A</span>
+                      <div style={{ width: 16, height: 3, borderRadius: 2, background: editor.getAttributes("textStyle").color ?? "#8b5cf6" }} />
+                    </div>
+                  </ActionIcon>
+                </Tooltip>
+              </Popover.Target>
+              <Popover.Dropdown p="sm" style={{ background: dark ? "#1f2937" : "#ffffff", border: dark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb", borderRadius: 12 }}>
+                <Stack gap="xs">
+                  {COLOR_PALETTE.map((row, i) => (
+                    <Group key={i} gap={4} wrap="nowrap">
+                      {row.map((color) => (
+                        <Tooltip key={color} label={color} withArrow>
+                          <div
+                            onClick={() => { editor.chain().focus().setColor(color).run(); setColorPickerOpen(false); }}
+                            style={{
+                              width: 22, height: 22, borderRadius: 4, background: color, cursor: "pointer",
+                              border: editor.getAttributes("textStyle").color === color
+                                ? "2px solid #8b5cf6"
+                                : color === "#ffffff" ? "1px solid #d1d5db" : "2px solid transparent",
+                              transition: "transform 0.1s",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                          />
+                        </Tooltip>
+                      ))}
+                    </Group>
+                  ))}
+                  <div
+                    onClick={() => { editor.chain().focus().unsetColor().run(); setColorPickerOpen(false); }}
+                    style={{
+                      padding: "4px 8px", borderRadius: 6, cursor: "pointer", fontSize: 12, textAlign: "center",
+                      color: dark ? "#9ca3af" : "#6b7280",
+                      border: dark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e5e7eb",
+                    }}
+                  >
+                    Remover cor
+                  </div>
+                </Stack>
+              </Popover.Dropdown>
+            </Popover>
             <Divider orientation="vertical" />
             <ToolbarButton title="Título 1" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })}><span style={{ fontWeight: 800, fontSize: 13 }}>H1</span></ToolbarButton>
             <ToolbarButton title="Título 2" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}><span style={{ fontWeight: 800, fontSize: 13 }}>H2</span></ToolbarButton>
