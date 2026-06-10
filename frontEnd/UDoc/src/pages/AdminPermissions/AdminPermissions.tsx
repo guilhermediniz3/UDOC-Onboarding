@@ -80,24 +80,12 @@ function buildModuleMap(perms: PermissionDTO[]): ModuleMap {
 }
 
 // Ações extras (não são CRUD padrão — cada uma tem sua própria descrição/escopo)
-const SPECIAL_ACTIONS = [
-  "ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE", "ENVIAR_CONVITE",
-  "EDITAR_ISM_OUTRO", "EDITAR_INTERNO_OUTRO", "EDITAR_EXTERNO", "EDITAR_EXTERNO_OUTRO_ISM",
-  "VER_ISM_OUTRO", "VER_INTERNO_OUTRO", "VER_EXTERNO", "VER_EXTERNO_OUTRO_ISM",
-];
+const SPECIAL_ACTIONS = ["ISM_RESPONSAVEL", "OUTRO_ISM_MANAGE", "ENVIAR_CONVITE"];
 
 const SPECIAL_ACTION_LABELS: Record<string, string> = {
-  ISM_RESPONSAVEL:          "Alterar ISM responsável de funcionário externo",
-  OUTRO_ISM_MANAGE:         "Gerenciar salas de outro ISM",
-  ENVIAR_CONVITE:           "Enviar link de redefinição de senha (e-mail/WhatsApp)",
-  EDITAR_ISM_OUTRO:         "Editar outros usuários ISM",
-  EDITAR_INTERNO_OUTRO:     "Editar outros usuários internos",
-  EDITAR_EXTERNO:           "Editar usuários externos",
-  EDITAR_EXTERNO_OUTRO_ISM: "Editar externos (ISM não responsável)",
-  VER_ISM_OUTRO:            "Visualizar outros usuários ISM",
-  VER_INTERNO_OUTRO:        "Visualizar outros usuários internos",
-  VER_EXTERNO:              "Visualizar usuários externos",
-  VER_EXTERNO_OUTRO_ISM:    "Visualizar externos (ISM não responsável)",
+  ISM_RESPONSAVEL:  "Alterar ISM responsável de funcionário externo",
+  OUTRO_ISM_MANAGE: "Gerenciar salas de outro ISM",
+  ENVIAR_CONVITE:   "Enviar link de redefinição de senha (e-mail/WhatsApp)",
 };
 
 // ── Cartão de um grupo (ex: Func. Interno) ────────────────────────────────────
