@@ -442,7 +442,6 @@ export default function AdminKanbanTrails() {
     type Row = {
       trilha: string;
       empresa: string;
-      data: string;
       funcionario: string;
       concluiu: string;
       certificou: string;
@@ -479,15 +478,10 @@ export default function AdminKanbanTrails() {
           ? entry.funcionarios.filter((f) => f.employeeId === filterEmployeeId)
           : entry.funcionarios;
 
-        const dataFmt = entry.dataInicio
-          ? new Date(entry.dataInicio + "T00:00:00").toLocaleDateString("pt-BR")
-          : "—";
-
         if (employees.length === 0) {
           rows.push({
             trilha: trail.name,
             empresa: entry.companyName,
-            data: dataFmt,
             funcionario: "—",
             concluiu: "—",
             certificou: "—",
@@ -497,7 +491,6 @@ export default function AdminKanbanTrails() {
             rows.push({
               trilha: trail.name,
               empresa: entry.companyName,
-              data: dataFmt,
               funcionario: f.employeeName,
               concluiu: f.completedTrail ? "Sim" : "Não",
               certificou: f.certifiedTrail ? "Sim" : "Não",
@@ -518,39 +511,39 @@ export default function AdminKanbanTrails() {
       // ── Linhas de cabeçalho com informações do relatório ──────────────
       const sheetData: (string | null)[][] = [];
 
-      sheetData.push(["UDoc — Kanban de Trilhas", null, null, null, null, null]);
-      sheetData.push(["Data:", new Date().toLocaleDateString("pt-BR"), null, null, null, null]);
+      sheetData.push(["UDoc — Kanban de Trilhas", null, null, null, null]);
+      sheetData.push(["Data:", new Date().toLocaleDateString("pt-BR"), null, null, null]);
 
       if (filterCompanyId != null) {
         sheetData.push([
           "Empresa filtrada:",
           companyOptions.find((c) => c.id === filterCompanyId)?.name || "",
-          null, null, null, null,
+          null, null, null,
         ]);
       }
       if (filterEmployeeId != null) {
         sheetData.push([
           "Funcionário filtrado:",
           employeeOptions.find((e) => e.id === filterEmployeeId)?.name || "",
-          null, null, null, null,
+          null, null, null,
         ]);
       }
       if (removeDuplicates) {
-        sheetData.push(["Modo:", "Sem duplicatas", null, null, null, null]);
+        sheetData.push(["Modo:", "Sem duplicatas", null, null, null]);
       }
 
       sheetData.push([]); // linha em branco
 
       // ── Cabeçalho da tabela ───────────────────────────────────────────
-      const headers = ["Trilha", "Empresa", "Data", "Funcionário", "Concluiu", "Certificou"];
+      const headers = ["Trilha", "Empresa", "Funcionário", "Concluiu", "Certificou"];
       sheetData.push(headers);
 
       // ── Linhas de dados ───────────────────────────────────────────────
       if (rows.length === 0) {
-        sheetData.push(["Nenhum dado para os filtros aplicados", null, null, null, null, null]);
+        sheetData.push(["Nenhum dado para os filtros aplicados", null, null, null, null]);
       } else {
         for (const r of rows) {
-          sheetData.push([r.trilha, r.empresa, r.data, r.funcionario, r.concluiu, r.certificou]);
+          sheetData.push([r.trilha, r.empresa, r.funcionario, r.concluiu, r.certificou]);
         }
       }
 
@@ -590,7 +583,7 @@ export default function AdminKanbanTrails() {
         .map(
           (r, i) => `
           <tr style="background:${i % 2 === 0 ? "#f5f3ff" : "#ffffff"}">
-            <td>${r.trilha}</td><td>${r.empresa}</td><td>${r.data}</td>
+            <td>${r.trilha}</td><td>${r.empresa}</td>
             <td>${r.funcionario}</td>
             <td style="text-align:center">${r.concluiu}</td>
             <td style="text-align:center">${r.certificou}</td>
@@ -611,14 +604,13 @@ export default function AdminKanbanTrails() {
               <tr style="background:#7c3aed;color:white">
                 <th style="padding:8px;text-align:left">Trilha</th>
                 <th style="padding:8px;text-align:left">Empresa</th>
-                <th style="padding:8px;text-align:left">Data</th>
                 <th style="padding:8px;text-align:left">Funcionário</th>
                 <th style="padding:8px;text-align:center">Concluiu</th>
                 <th style="padding:8px;text-align:center">Certificou</th>
               </tr>
             </thead>
             <tbody style="border:1px solid #e2e8f0">
-              ${tableRows || "<tr><td colspan='6' style='text-align:center;padding:20px;color:#94a3b8'>Nenhum dado encontrado para os filtros aplicados</td></tr>"}
+              ${tableRows || "<tr><td colspan='5' style='text-align:center;padding:20px;color:#94a3b8'>Nenhum dado encontrado para os filtros aplicados</td></tr>"}
             </tbody>
           </table>
           <p style="font-size:10px;color:#94a3b8;margin-top:16px;text-align:right">Gerado pelo UDoc</p>
