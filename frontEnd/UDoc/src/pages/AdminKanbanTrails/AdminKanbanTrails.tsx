@@ -443,10 +443,9 @@ export default function AdminKanbanTrails() {
       trilha: string;
       empresa: string;
       data: string;
-      empresaAprovada: string;
       funcionario: string;
-      nota: string;
-      funcAprovado: string;
+      concluiu: string;
+      certificou: string;
     };
 
     const rows: Row[] = [];
