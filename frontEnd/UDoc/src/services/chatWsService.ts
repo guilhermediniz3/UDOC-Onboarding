@@ -1,7 +1,7 @@
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
-const WS_URL = "http://localhost:8081/ws";
+const WS_URL = `${import.meta.env.VITE_API_URL || "http://localhost:8081"}/ws`;
 
 let client: Client | null = null;
 
