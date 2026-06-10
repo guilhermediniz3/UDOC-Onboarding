@@ -551,7 +551,7 @@ export default function AdminUser() {
                     value: String(e.id),
                     label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
                   }))}
-                value={linkedTipo === "EXTERNO" && userData.employeeId ? String(userData.employeeId) : null}
+                value={linkedTipo === "EXTERNO" && userData.employeeId && linkedEmployee !== null ? String(userData.employeeId) : null}
                 onChange={(v) => {
                   const empId = v ? Number(v) : undefined;
                   setUserData((p) => ({
@@ -579,7 +579,7 @@ export default function AdminUser() {
                     value: String(e.id),
                     label: `${e.name}${e.companyName ? ` — ${e.companyName}` : ""}`,
                   }))}
-                value={linkedTipo === "INTERNO" && userData.employeeId ? String(userData.employeeId) : null}
+                value={linkedTipo === "INTERNO" && userData.employeeId && linkedEmployee !== null ? String(userData.employeeId) : null}
                 onChange={(v) => {
                   const empId = v ? Number(v) : undefined;
                   setUserData((p) => ({
