@@ -12,13 +12,17 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
 
+import { DatePickerInput } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import {
+  IconCalendar,
+  IconCopy,
   IconEdit,
   IconPlus,
   IconSearch,
@@ -34,6 +38,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import {
+  cloneTrail,
   deleteTrail,
   getTrails,
 } from "../../services/trailService";
@@ -49,6 +54,7 @@ export default function AdminListTrails() {
   const [trails, setTrails] = useState<Trail[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState("10");
   const [totalPages, setTotalPages] = useState(1);
@@ -56,25 +62,44 @@ export default function AdminListTrails() {
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [cloning, setCloningId] = useState<number | null>(null);
+
+  const isDateFiltered = dateRange[0] != null || dateRange[1] != null;
 
   async function loadTrails() {
-    const active =
-      activeFilter === null ? null : activeFilter === "true";
+    const active = activeFilter === null ? null : activeFilter === "true";
 
     const response = await getTrails({
-      page: page - 1,
-      size: Number(size),
+      page: isDateFiltered ? 0 : page - 1,
+      size: isDateFiltered ? 1000 : Number(size),
       search,
       active,
     });
 
-    setTrails(response.content);
-    setTotalPages(response.totalPages);
+    let content = response.content;
+
+    if (isDateFiltered) {
+      const [from, to] = dateRange;
+      content = content.filter((t) => {
+        if (!t.createdAt) return false;
+        const d = new Date(t.createdAt);
+        if (from && d < from) return false;
+        if (to) {
+          const toEnd = new Date(to);
+          toEnd.setHours(23, 59, 59, 999);
+          if (d > toEnd) return false;
+        }
+        return true;
+      });
+    }
+
+    setTrails(content);
+    setTotalPages(isDateFiltered ? 1 : response.totalPages);
   }
 
   useEffect(() => {
     loadTrails();
-  }, [search, activeFilter, page, size]);
+  }, [search, activeFilter, page, size, dateRange]);
 
   async function handleDelete() {
     if (!selectedId) return;
@@ -94,6 +119,37 @@ export default function AdminListTrails() {
       setDeleteError(msg);
     }
   }
+
+  async function handleClone(id: number) {
+    setCloningId(id);
+    try {
+      const cloned = await cloneTrail(id);
+      notifications.show({
+        title: "Trilha clonada",
+        message: `"${cloned.name}" criada como inativa. Clique em editar para configurá-la.`,
+        color: "violet",
+        autoClose: 4000,
+      });
+      loadTrails();
+    } catch {
+      notifications.show({
+        title: "Erro ao clonar",
+        message: "Não foi possível clonar a trilha.",
+        color: "red",
+        autoClose: 3000,
+      });
+    } finally {
+      setCloningId(null);
+    }
+  }
+
+  const inputStyles = {
+    input: {
+      background: "var(--input-bg)",
+      border: "1px solid var(--border-color)",
+      color: "var(--text-primary)",
+    },
+  };
 
   return (
 
@@ -174,7 +230,7 @@ export default function AdminListTrails() {
         }}
       >
 
-        <Group mb="20px">
+        <Group mb="20px" wrap="wrap">
 
           <TextInput
             placeholder="Buscar trilha..."
@@ -183,13 +239,7 @@ export default function AdminListTrails() {
             onChange={(e) => setSearch(e.currentTarget.value)}
             radius="xl"
             size="md"
-            styles={{
-              input: {
-                background: "var(--input-bg)",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-              },
-            }}
+            styles={inputStyles}
           />
 
           <Select
@@ -203,14 +253,27 @@ export default function AdminListTrails() {
               { label: "Ativas", value: "true" },
               { label: "Inativas", value: "false" },
             ]}
-            styles={{
-              input: {
-                background: "var(--input-bg)",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-              },
-            }}
+            styles={inputStyles}
           />
+
+          <DatePickerInput
+            type="range"
+            placeholder="Filtrar por data de criação"
+            value={dateRange}
+            onChange={setDateRange}
+            clearable
+            radius="xl"
+            size="md"
+            valueFormat="DD/MM/YYYY"
+            leftSection={<IconCalendar size={16} />}
+            styles={inputStyles}
+          />
+
+          {isDateFiltered && (
+            <Badge color="violet" variant="light" radius="xl" size="lg">
+              {trails.length} trilha{trails.length !== 1 ? "s" : ""} no período
+            </Badge>
+          )}
 
         </Group>
 
@@ -261,28 +324,45 @@ export default function AdminListTrails() {
                 <Table.Td>
                   <Group gap="xs">
 
-                    <ActionIcon
-                      radius="xl"
-                      size="lg"
-                      color="blue"
-                      variant={dark ? "light" : "filled"}
-                      onClick={() => navigate(`/admin/trail/${trail.id}`)}
-                    >
-                      <IconEdit size={18} />
-                    </ActionIcon>
+                    <Tooltip label="Editar trilha" withArrow>
+                      <ActionIcon
+                        radius="xl"
+                        size="lg"
+                        color="blue"
+                        variant={dark ? "light" : "filled"}
+                        onClick={() => navigate(`/admin/trail/${trail.id}`)}
+                      >
+                        <IconEdit size={18} />
+                      </ActionIcon>
+                    </Tooltip>
 
-                    <ActionIcon
-                      radius="xl"
-                      size="lg"
-                      color="red"
-                      variant={dark ? "light" : "filled"}
-                      onClick={() => {
-                        setSelectedId(trail.id!);
-                        open();
-                      }}
-                    >
-                      <IconTrash size={18} />
-                    </ActionIcon>
+                    <Tooltip label="Clonar trilha" withArrow>
+                      <ActionIcon
+                        radius="xl"
+                        size="lg"
+                        color="violet"
+                        variant={dark ? "light" : "filled"}
+                        loading={cloning === trail.id}
+                        onClick={() => handleClone(trail.id!)}
+                      >
+                        <IconCopy size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+
+                    <Tooltip label="Remover trilha" withArrow>
+                      <ActionIcon
+                        radius="xl"
+                        size="lg"
+                        color="red"
+                        variant={dark ? "light" : "filled"}
+                        onClick={() => {
+                          setSelectedId(trail.id!);
+                          open();
+                        }}
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
 
                   </Group>
                 </Table.Td>
@@ -293,34 +373,30 @@ export default function AdminListTrails() {
 
         </Table>
 
-        <Group justify="space-between" mt="30px">
+        {!isDateFiltered && (
+          <Group justify="space-between" mt="30px">
 
-          <Pagination
-            value={page}
-            onChange={setPage}
-            total={totalPages}
-            radius="xl"
-          />
+            <Pagination
+              value={page}
+              onChange={setPage}
+              total={totalPages}
+              radius="xl"
+            />
 
-          <Select
-            value={size}
-            onChange={(value) => {
-              setSize(value || "10");
-              setPage(1);
-            }}
-            data={["10", "20", "50", "100"]}
-            w={120}
-            radius="xl"
-            styles={{
-              input: {
-                background: "var(--input-bg)",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-              },
-            }}
-          />
+            <Select
+              value={size}
+              onChange={(value) => {
+                setSize(value || "10");
+                setPage(1);
+              }}
+              data={["10", "20", "50", "100"]}
+              w={120}
+              radius="xl"
+              styles={inputStyles}
+            />
 
-        </Group>
+          </Group>
+        )}
 
       </Paper>
 

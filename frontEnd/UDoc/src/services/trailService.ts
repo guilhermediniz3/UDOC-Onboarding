@@ -67,3 +67,8 @@ export async function swapTrailOrder(
 ): Promise<void> {
   await api.put(`/trails/${id1}/swap/${id2}`);
 }
+
+export async function cloneTrail(id: number): Promise<Trail> {
+  const response = await api.post<Trail>(`/trails/${id}/clone`);
+  return response.data;
+}

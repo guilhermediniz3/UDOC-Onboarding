@@ -5,4 +5,5 @@ export interface Trail {
   active: boolean;
   sortOrder: number;
   visibilidade?: "INTERNA" | "EXTERNA" | "AMBAS";
+  createdAt?: string;
 }
