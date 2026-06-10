@@ -16,7 +16,6 @@ import {
   useMantineColorScheme,
 } from "@mantine/core";
 
-import { DatePickerInput, type DatesRangeValue } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
@@ -54,7 +53,8 @@ export default function AdminListTrails() {
   const [trails, setTrails] = useState<Trail[]>([]);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [size, setSize] = useState("10");
   const [totalPages, setTotalPages] = useState(1);
@@ -64,7 +64,7 @@ export default function AdminListTrails() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [cloning, setCloningId] = useState<number | null>(null);
 
-  const isDateFiltered = dateRange[0] != null || dateRange[1] != null;
+  const isDateFiltered = dateFrom !== "" || dateTo !== "";
 
   async function loadTrails() {
     const active = activeFilter === null ? null : activeFilter === "true";
@@ -79,16 +79,11 @@ export default function AdminListTrails() {
     let content = response.content;
 
     if (isDateFiltered) {
-      const [from, to] = dateRange;
       content = content.filter((t) => {
-        if (!t.createdAt) return false;
-        const d = new Date(t.createdAt);
-        if (from && d < from) return false;
-        if (to) {
-          const toEnd = new Date(to);
-          toEnd.setHours(23, 59, 59, 999);
-          if (d > toEnd) return false;
-        }
+        const d = t.createdAt ? t.createdAt.slice(0, 10) : "";
+        if (!d) return false;
+        if (dateFrom && d < dateFrom) return false;
+        if (dateTo   && d > dateTo)   return false;
         return true;
       });
     }
@@ -99,7 +94,7 @@ export default function AdminListTrails() {
 
   useEffect(() => {
     loadTrails();
-  }, [search, activeFilter, page, size, dateRange]);
+  }, [search, activeFilter, page, size, dateFrom, dateTo]);
 
   async function handleDelete() {
     if (!selectedId) return;
@@ -256,18 +251,24 @@ export default function AdminListTrails() {
             styles={inputStyles}
           />
 
-          <DatePickerInput
-            type="range"
-            placeholder="Filtrar por data de criação"
-            value={dateRange}
-            onChange={setDateRange}
-            clearable
-            radius="xl"
-            size="md"
-            valueFormat="DD/MM/YYYY"
-            leftSection={<IconCalendar size={16} />}
-            styles={inputStyles}
-          />
+          <Group gap={6} align="center">
+            <IconCalendar size={16} color="var(--text-secondary)" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.currentTarget.value)}
+              title="Data inicial"
+              style={{ padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
+            />
+            <Text fz="sm" c="var(--text-secondary)">até</Text>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.currentTarget.value)}
+              title="Data final"
+              style={{ padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
+            />
+          </Group>
 
           {isDateFiltered && (
             <Badge color="violet" variant="light" radius="xl" size="lg">

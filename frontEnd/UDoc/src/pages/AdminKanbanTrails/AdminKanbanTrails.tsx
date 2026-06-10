@@ -35,7 +35,6 @@ import {
   Tooltip,
 } from "@mantine/core";
 
-import { DatePickerInput, type DatesRangeValue } from "@mantine/dates";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
@@ -367,7 +366,8 @@ export default function AdminKanbanTrails() {
   const [filterCompanyId, setFilterCompanyId] = useState<number | null>(null);
   const [filterEmployeeId, setFilterEmployeeId] = useState<number | null>(null);
   const [filterActive, setFilterActive] = useState<"active" | "inactive" | "all">("active");
-  const [dateRange, setDateRange] = useState<DatesRangeValue>([null, null]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
 
@@ -431,24 +431,18 @@ export default function AdminKanbanTrails() {
     }
   }
 
-  const isDateFiltered = dateRange[0] != null || dateRange[1] != null;
+  const isDateFiltered = dateFrom !== "" || dateTo !== "";
   const hasFilter = filterCompanyId != null || filterEmployeeId != null || filterActive !== "all" || isDateFiltered;
 
   // Trilhas filtradas por status e por data de criação
   const visibleTrails = trails.filter((t) => {
     if (filterActive === "active"   && t.active !== true)  return false;
     if (filterActive === "inactive" && t.active !== false) return false;
-    if (isDateFiltered && t.createdAt) {
-      const d = new Date(t.createdAt);
-      const [from, to] = dateRange;
-      if (from instanceof Date && d < from) return false;
-      if (to instanceof Date) {
-        const toEnd = new Date(to);
-        toEnd.setHours(23, 59, 59, 999);
-        if (d > toEnd) return false;
-      }
-    } else if (isDateFiltered && !t.createdAt) {
-      return false;
+    if (isDateFiltered) {
+      const d = t.createdAt ? t.createdAt.slice(0, 10) : "";
+      if (!d) return false;
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo   && d > dateTo)   return false;
     }
     return true;
   });
@@ -776,25 +770,30 @@ export default function AdminKanbanTrails() {
             styles={inputS}
           />
 
-          <DatePickerInput
-            type="range"
-            placeholder="Filtrar por data de criação"
-            value={dateRange}
-            onChange={setDateRange}
-            clearable
-            radius="xl"
-            size="sm"
-            w={240}
-            valueFormat="DD/MM/YYYY"
-            leftSection={<IconCalendar size={14} />}
-            styles={inputS}
-          />
+          <Group gap={6} align="center">
+            <IconCalendar size={14} color="var(--text-secondary)" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.currentTarget.value)}
+              title="Data inicial"
+              style={{ padding: "5px 12px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
+            />
+            <Text fz="xs" c="var(--text-secondary)">até</Text>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.currentTarget.value)}
+              title="Data final"
+              style={{ padding: "5px 12px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
+            />
+          </Group>
 
           {hasFilter && (
             <Button
               leftSection={<IconX size={14} />}
               variant="subtle" color="gray" radius="xl" size="sm"
-              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); setFilterActive("active"); setDateRange([null, null]); }}
+              onClick={() => { setFilterCompanyId(null); setFilterEmployeeId(null); setFilterActive("active"); setDateFrom(""); setDateTo(""); }}
             >
               Limpar filtros
             </Button>
