@@ -345,25 +345,37 @@ export default function AdminUser() {
 
   // ── Regras de role × vínculo ─────────────────────────────────────────────
   const linkedEmployee = employeeOptions.find((e) => e.id === userData.employeeId) ?? null;
-  const linkedTipo     = linkedEmployee?.tipo ?? null; // "EXTERNO" | "INTERNO" | null
+  // userData.employeeTipo chega imediatamente via getUserById; linkedEmployee?.tipo só fica disponível
+  // depois que getEmployees carrega — usar employeeTipo como fonte primária evita race condition.
+  const linkedTipo = (userData.employeeTipo ?? linkedEmployee?.tipo) ?? null; // "EXTERNO" | "INTERNO" | null
 
   const availableRoles = (() => {
     if (linkedTipo === "EXTERNO") return [
       { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
     ];
     if (linkedTipo === "INTERNO") {
-      const roles = [
+      const roles: { value: string; label: string }[] = [
         { value: "ISM",                 label: "ISM (Instrutor)" },
         { value: "FUNCIONARIO_EXTERNO", label: "Funcionário" },
       ];
-      // Apenas Admin pode definir/promover para Gestor
+      // Apenas Admin pode atribuir/promover para Gestor
       if (currentUser?.role === "ADMIN") roles.push({ value: "GESTOR", label: "Gestor" });
+      // Garante que o role atual apareça mesmo quando viewer não é Admin (ex: Gestor vendo próprio perfil)
+      if (userData.role === "GESTOR" && !roles.some(r => r.value === "GESTOR")) {
+        roles.push({ value: "GESTOR", label: "Gestor" });
+      }
       return roles;
     }
     // Sem vínculo: apenas Admin pode definir role Admin/Gestor
-    return currentUser?.role === "ADMIN"
-      ? [{ value: "ADMIN", label: "Admin" }, { value: "GESTOR", label: "Gestor" }]
-      : [];
+    if (currentUser?.role === "ADMIN") {
+      return [{ value: "ADMIN", label: "Admin" }, { value: "GESTOR", label: "Gestor" }];
+    }
+    // Não-Admin sem vínculo: exibe o role atual (somente leitura)
+    if (userData.role === "ADMIN" || userData.role === "GESTOR") {
+      const labelMap: Record<string, string> = { GESTOR: "Gestor", ADMIN: "Admin" };
+      return [{ value: userData.role, label: labelMap[userData.role] }];
+    }
+    return [];
   })();
 
   // Descrição contextual do campo Role
@@ -591,7 +603,11 @@ export default function AdminUser() {
                 value={userData.role}
                 onChange={(v) => v && setUserData((p) => ({ ...p, role: v }))}
                 data={availableRoles}
-                disabled={availableRoles.length <= 1}
+                disabled={
+                  availableRoles.length <= 1 ||
+                  // Não-Admin não pode alterar roles elevadas (GESTOR/ADMIN)
+                  (currentUser?.role !== "ADMIN" && (userData.role === "GESTOR" || userData.role === "ADMIN"))
+                }
                 styles={inputStyles}
               />
 
