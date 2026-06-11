@@ -47,10 +47,11 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
     { toggle: toggleMobile },
   ] = useDisclosure(false);
 
-  const [
-    collapsed,
-    { toggle: toggleCollapsed },
-  ] = useDisclosure(false);
+  const [collapsed, setCollapsed] = useLocalStorage<boolean>({
+    key: "sidebar-collapsed",
+    defaultValue: true,
+  });
+  const toggleCollapsed = () => setCollapsed((prev) => !prev);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -66,7 +67,7 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
     <AppShell
       header={{ height: 82 }}
       navbar={{
-        width: collapsed
+        width: (collapsed ?? true)
           ? { base: 240, sm: 70 }
           : 240,
         breakpoint: "sm",
@@ -96,7 +97,7 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
         }}
       >
         <Sidebar
-          collapsed={collapsed}
+          collapsed={collapsed ?? true}
           onToggle={toggleCollapsed}
         />
       </AppShell.Navbar>
