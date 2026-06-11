@@ -58,6 +58,8 @@ interface NavItemType {
   isActive: (pathname: string) => boolean;
   children?: NavChild[];
   adminOnly?: boolean;
+  /** Se definido, o item só aparece para os roles listados (ignora adminOnly). */
+  visibleFor?: string[];
 }
 
 const NAV_ITEMS: NavItemType[] = [
@@ -221,7 +223,7 @@ const NAV_ITEMS: NavItemType[] = [
     Icon: IconMessage2Question,
     path: "/admin/chat-insights",
     isActive: (p) => p.startsWith("/admin/chat-insights"),
-    adminOnly: true,
+    visibleFor: ["ADMIN", "GESTOR", "ISM"],
   },
 ];
 
@@ -294,6 +296,9 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </Group>
 
         {NAV_ITEMS.filter((item) => {
+          if (item.visibleFor) {
+            return item.visibleFor.includes(user?.role ?? "");
+          }
           if (item.adminOnly && user?.role !== "ADMIN" && user?.role !== "GESTOR") return false;
           // Oculta item se permissão VIEW foi revogada para este grupo
           const mod = MODULE_FOR_ITEM[item.label];

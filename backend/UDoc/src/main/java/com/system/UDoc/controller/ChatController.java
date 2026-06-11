@@ -205,7 +205,7 @@ public class ChatController {
     // ── Analytics de dúvidas ──────────────────────────────────────────────────
 
     @GetMapping("/admin/analytics/topicos")
-    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR','ISM')")
     public ResponseEntity<List<ChatTopicoDTO>> getTopicos(
             @RequestParam(required = false) String de,
             @RequestParam(required = false) String ate) {
@@ -213,20 +213,20 @@ public class ChatController {
     }
 
     @GetMapping("/admin/analytics/pendentes")
-    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR','ISM')")
     public ResponseEntity<Map<String, Long>> getPendentes() {
         return ResponseEntity.ok(Map.of("pendentes", chatAnalyticsService.contarPendentes()));
     }
 
     @PostMapping("/admin/analytics/classificar")
-    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR','ISM')")
     public ResponseEntity<Map<String, Long>> classificar(
             @RequestParam(defaultValue = "50") int limite) {
         return ResponseEntity.ok(chatAnalyticsService.classificarMensagensNaoClassificadas(limite));
     }
 
     @PostMapping("/admin/analytics/sugerir-card")
-    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR','ISM')")
     public ResponseEntity<CardSugestaoDTO> sugerirCard(
             @RequestParam String tema,
             @RequestParam(defaultValue = "1") long total) {

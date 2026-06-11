@@ -9,8 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -77,19 +76,18 @@ public class ChatAnalyticsService {
 
     /** Retorna tópicos rankeados por recorrência, com filtro opcional de período. */
     public List<ChatTopicoDTO> getTopicosRankeados(String de, String ate) {
-        LocalDateTime from = de != null && !de.isBlank()
-                ? LocalDate.parse(de).atStartOfDay()
-                : null;
-        LocalDateTime to = ate != null && !ate.isBlank()
-                ? LocalDate.parse(ate).atTime(23, 59, 59)
-                : null;
+        // Passa null ou ISO datetime — a native query usa CAST(:de AS TIMESTAMP) para resolver tipo no PostgreSQL
+        String from = (de != null && !de.isBlank()) ? de + "T00:00:00" : null;
+        String to   = (ate != null && !ate.isBlank()) ? ate + "T23:59:59" : null;
 
-        List<Object[]> rows = mensagemRepo.findTopicosRankeados(ChatMensagem.Tipo.CLIENTE, from, to);
+        List<Object[]> rows = mensagemRepo.findTopicosRankeados(from, to);
         return rows.stream()
                 .map(r -> new ChatTopicoDTO(
                         (String) r[0],
                         ((Number) r[1]).longValue(),
-                        r[2] != null ? ((LocalDateTime) r[2]).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null
+                        r[2] != null
+                                ? ((Timestamp) r[2]).toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                                : null
                 ))
                 .collect(Collectors.toList());
     }
