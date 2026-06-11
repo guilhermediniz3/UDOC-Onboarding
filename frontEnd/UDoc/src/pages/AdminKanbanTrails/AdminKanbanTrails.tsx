@@ -18,12 +18,10 @@ import { CSS } from "@dnd-kit/utilities";
 
 import {
   ActionIcon,
-  Alert,
   Badge,
   Button,
   Collapse,
   Group,
-  Modal,
   Paper,
   ScrollArea,
   SegmentedControl,
@@ -35,7 +33,6 @@ import {
   Tooltip,
 } from "@mantine/core";
 
-import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 
 import {
@@ -50,7 +47,6 @@ import {
   IconGripVertical,
   IconInfoCircle,
   IconPlus,
-  IconTrash,
   IconUser,
   IconX,
 } from "@tabler/icons-react";
@@ -65,7 +61,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-  deleteTrail,
   getTrails,
   swapTrailOrder,
 } from "../../services/trailService";
@@ -209,7 +204,6 @@ interface TrailCardProps {
   filterCompanyId: number | null;
   filterEmployeeId: number | null;
   onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
 }
 
 function TrailKanbanCard({
@@ -218,7 +212,6 @@ function TrailKanbanCard({
   filterCompanyId,
   filterEmployeeId,
   onEdit,
-  onDelete,
 }: TrailCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: trail.id!,
@@ -302,20 +295,12 @@ function TrailKanbanCard({
             #{trail.sortOrder}
           </Badge>
         </Group>
-        <Group gap={4} wrap="nowrap">
-          <Tooltip label="Editar" withArrow>
-            <ActionIcon size="sm" radius="xl" color="blue" variant="light"
-              onClick={() => onEdit(trail.id!)}>
-              <IconEdit size={14} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label="Remover" withArrow>
-            <ActionIcon size="sm" radius="xl" color="red" variant="light"
-              onClick={() => onDelete(trail.id!)}>
-              <IconTrash size={14} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
+        <Tooltip label="Editar trilha" withArrow>
+          <ActionIcon size="sm" radius="xl" color="blue" variant="light"
+            onClick={() => onEdit(trail.id!)}>
+            <IconEdit size={14} />
+          </ActionIcon>
+        </Tooltip>
       </Group>
 
       {/* Nome */}
@@ -371,9 +356,6 @@ export default function AdminKanbanTrails() {
   const [companyOptions, setCompanyOptions] = useState<Company[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
 
-  const [opened, { open, close }] = useDisclosure(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -408,27 +390,6 @@ export default function AdminKanbanTrails() {
     try { await swapTrailOrder(id1, id2); }
     catch { await loadTrails(); }
     finally { setSwapping(false); }
-  }
-
-  async function handleDelete() {
-    if (!selectedId) return;
-    setDeleteError(null);
-    try {
-      await deleteTrail(selectedId);
-      close();
-      loadTrails();
-      // Toast apenas para sucesso — ação concluída, não requer atenção do usuário
-      notifications.show({
-        title: "Trilha removida",
-        message: "A trilha foi excluída com sucesso.",
-        color: "green",
-        autoClose: 3000,
-      });
-    } catch (err: any) {
-      // Erro de validação → inline no modal, usuário precisa ler e decidir o que fazer
-      const msg = err?.response?.data?.message || "Erro ao excluir a trilha.";
-      setDeleteError(msg);
-    }
   }
 
   const isDateFiltered = dateFrom !== "" || dateTo !== "";
@@ -658,35 +619,6 @@ export default function AdminKanbanTrails() {
   return (
     <Stack p="30px" gap="20px" bg="var(--app-bg)" mih="100vh">
 
-      <Modal
-        opened={opened}
-        onClose={() => { close(); setDeleteError(null); }}
-        centered radius="xl"
-        title="Remover trilha"
-        styles={{ header: { background: "var(--card-bg)" }, body: { background: "var(--card-bg)" }, content: { background: "var(--card-bg)" } }}
-      >
-        <Stack gap="md">
-          {/* Erro inline — validação que bloqueia a ação, usuário precisa entender antes de decidir */}
-          {deleteError ? (
-            <Alert color="red" radius="xl" variant="light" icon={<IconX size={16} />}>
-              {deleteError}
-            </Alert>
-          ) : (
-            <Text c="var(--text-secondary)">
-              Deseja remover esta trilha permanentemente? Esta ação não pode ser desfeita.
-            </Text>
-          )}
-          <Group justify="flex-end">
-            <Button variant="default" radius="xl" onClick={() => { close(); setDeleteError(null); }}>
-              {deleteError ? "Fechar" : "Cancelar"}
-            </Button>
-            {!deleteError && (
-              <Button color="red" radius="xl" onClick={handleDelete}>Remover</Button>
-            )}
-          </Group>
-        </Stack>
-      </Modal>
-
       {/* Header */}
       <Paper p="30px" radius="24px"
         style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)", boxShadow: "0 10px 30px var(--shadow-color)" }}>
@@ -859,7 +791,6 @@ export default function AdminKanbanTrails() {
                       filterCompanyId={filterCompanyId}
                       filterEmployeeId={filterEmployeeId}
                       onEdit={(id) => navigate(`/admin/trail/${id}`)}
-                      onDelete={(id) => { setSelectedId(id); open(); }}
                     />
                   ))}
                 </Group>
