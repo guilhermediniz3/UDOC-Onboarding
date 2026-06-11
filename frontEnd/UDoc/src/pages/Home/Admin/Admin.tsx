@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import {
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -64,11 +65,18 @@ const EMPTY_CARD: Card = {
 
 export default function Admin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
 
-  const [card, setCard] = useState<Card>(EMPTY_CARD);
+  const [card, setCard] = useState<Card>(() => {
+    const prefill = (location.state as any)?.prefill;
+    if (prefill && !id) {
+      return { ...EMPTY_CARD, title: prefill.title ?? "", content: prefill.content ?? "" };
+    }
+    return EMPTY_CARD;
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");

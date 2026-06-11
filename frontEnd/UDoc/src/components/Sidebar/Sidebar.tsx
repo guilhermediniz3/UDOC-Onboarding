@@ -23,6 +23,7 @@ import {
   IconLayoutKanban,
   IconListDetails,
   IconLogout,
+  IconMessage2Question,
   IconRoute,
   IconSchool,
   IconKey,
@@ -213,6 +214,13 @@ const NAV_ITEMS: NavItemType[] = [
     Icon: IconShieldCheck,
     path: "/admin/auditoria",
     isActive: (p) => p.startsWith("/admin/auditoria"),
+    adminOnly: true,
+  },
+  {
+    label: "Dúvidas do Chat",
+    Icon: IconMessage2Question,
+    path: "/admin/chat-insights",
+    isActive: (p) => p.startsWith("/admin/chat-insights"),
     adminOnly: true,
   },
 ];

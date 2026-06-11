@@ -29,6 +29,10 @@ public class ChatMensagem {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataHora = LocalDateTime.now();
 
+    /** Tema classificado pela IA (preenchido pelo serviço de analytics, nunca pelo fluxo normal de chat) */
+    @Column(length = 300)
+    private String tema;
+
     public ChatMensagem() {}
 
     public Long getId() { return id; }
@@ -37,4 +41,5 @@ public class ChatMensagem {
     public Tipo getTipo() { return tipo; } public void setTipo(Tipo v) { this.tipo = v; }
     public Boolean getLida() { return lida; } public void setLida(Boolean v) { this.lida = v; }
     public LocalDateTime getDataHora() { return dataHora; }
+    public String getTema() { return tema; } public void setTema(String v) { this.tema = v; }
 }

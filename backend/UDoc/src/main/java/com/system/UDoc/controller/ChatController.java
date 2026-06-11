@@ -1,9 +1,12 @@
 package com.system.UDoc.controller;
 
+import com.system.UDoc.dto.CardSugestaoDTO;
 import com.system.UDoc.dto.ChatConversaDTO;
+import com.system.UDoc.dto.ChatTopicoDTO;
 import com.system.UDoc.entity.ChatAvaliacao;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.repository.EmployeeRepository;
+import com.system.UDoc.service.ChatAnalyticsService;
 import com.system.UDoc.service.ChatIAService;
 import com.system.UDoc.service.ChatService;
 import org.springframework.data.domain.Page;
@@ -22,13 +25,16 @@ public class ChatController {
 
     private final ChatService chatService;
     private final ChatIAService chatIAService;
+    private final ChatAnalyticsService chatAnalyticsService;
     private final EmployeeRepository employeeRepository;
 
     public ChatController(ChatService chatService, ChatIAService chatIAService,
+                          ChatAnalyticsService chatAnalyticsService,
                           EmployeeRepository employeeRepository) {
-        this.chatService        = chatService;
-        this.chatIAService      = chatIAService;
-        this.employeeRepository = employeeRepository;
+        this.chatService           = chatService;
+        this.chatIAService         = chatIAService;
+        this.chatAnalyticsService  = chatAnalyticsService;
+        this.employeeRepository    = employeeRepository;
     }
 
     // ── Configuração global ───────────────────────────────────────────────────
@@ -194,5 +200,36 @@ public class ChatController {
         return ResponseEntity.ok(Map.of(
             "avaliacoes", chatService.getDashboard(startDate, endDate)
         ));
+    }
+
+    // ── Analytics de dúvidas ──────────────────────────────────────────────────
+
+    @GetMapping("/admin/analytics/topicos")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    public ResponseEntity<List<ChatTopicoDTO>> getTopicos(
+            @RequestParam(required = false) String de,
+            @RequestParam(required = false) String ate) {
+        return ResponseEntity.ok(chatAnalyticsService.getTopicosRankeados(de, ate));
+    }
+
+    @GetMapping("/admin/analytics/pendentes")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    public ResponseEntity<Map<String, Long>> getPendentes() {
+        return ResponseEntity.ok(Map.of("pendentes", chatAnalyticsService.contarPendentes()));
+    }
+
+    @PostMapping("/admin/analytics/classificar")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    public ResponseEntity<Map<String, Long>> classificar(
+            @RequestParam(defaultValue = "50") int limite) {
+        return ResponseEntity.ok(chatAnalyticsService.classificarMensagensNaoClassificadas(limite));
+    }
+
+    @PostMapping("/admin/analytics/sugerir-card")
+    @PreAuthorize("hasAnyAuthority('ADMIN','GESTOR')")
+    public ResponseEntity<CardSugestaoDTO> sugerirCard(
+            @RequestParam String tema,
+            @RequestParam(defaultValue = "1") long total) {
+        return ResponseEntity.ok(chatAnalyticsService.gerarSugestaoCard(tema, total));
     }
 }

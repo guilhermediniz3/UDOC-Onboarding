@@ -31,6 +31,7 @@ import Forbidden from "../pages/Forbidden/Forbidden";
 import Ranking from "../pages/Ranking/Ranking";
 import AdminPermissions from "../pages/AdminPermissions/AdminPermissions";
 import Catalogo from "../pages/Catalogo/Catalogo";
+import AdminChatInsights from "../pages/AdminChatInsights/AdminChatInsights";
 
 function AppRoutes() {
   return (
@@ -110,6 +111,9 @@ function AppRoutes() {
 
       {/* AUDITORIA — admin only (guard client-side + @PreAuthorize backend) */}
       <Route path="/admin/auditoria" element={<Auditoria />} />
+
+      {/* CHAT INSIGHTS — admin/gestor only */}
+      <Route path="/admin/chat-insights" element={<AdminChatInsights />} />
 
       {/* 403 — Acesso negado */}
       <Route path="/403" element={<Forbidden />} />

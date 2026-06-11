@@ -128,3 +128,49 @@ export async function getAdminConversa(id: number): Promise<ChatConversa> {
   const r = await api.get<ChatConversa>(`/chat/admin/conversas/${id}`);
   return r.data;
 }
+
+// ── Analytics de dúvidas ──────────────────────────────────────────────────────
+
+export interface ChatTopico {
+  tema: string;
+  total: number;
+  ultimaOcorrencia: string | null;
+}
+
+export interface CardSugestao {
+  tema: string;
+  conteudoHtml: string;
+  provedor: string;
+}
+
+export interface ClassificarResult {
+  processadas: number;
+  classificadas: number;
+  pendentes: number;
+}
+
+export async function getTopicosChat(de?: string, ate?: string): Promise<ChatTopico[]> {
+  const r = await api.get<ChatTopico[]>("/chat/admin/analytics/topicos", {
+    params: { de, ate },
+  });
+  return r.data;
+}
+
+export async function getPendentesChat(): Promise<number> {
+  const r = await api.get<{ pendentes: number }>("/chat/admin/analytics/pendentes");
+  return r.data.pendentes;
+}
+
+export async function classificarChat(limite = 50): Promise<ClassificarResult> {
+  const r = await api.post<ClassificarResult>("/chat/admin/analytics/classificar", null, {
+    params: { limite },
+  });
+  return r.data;
+}
+
+export async function sugerirCardChat(tema: string, total: number): Promise<CardSugestao> {
+  const r = await api.post<CardSugestao>("/chat/admin/analytics/sugerir-card", null, {
+    params: { tema, total },
+  });
+  return r.data;
+}
