@@ -44,7 +44,7 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
 
   const [
     mobileOpened,
-    { toggle: toggleMobile },
+    { toggle: toggleMobile, close: closeMobile },
   ] = useDisclosure(false);
 
   const [collapsed, setCollapsed] = useLocalStorage<boolean>({
@@ -99,6 +99,7 @@ function AppContent({ colorScheme, toggleTheme }: AppContentProps) {
         <Sidebar
           collapsed={collapsed ?? true}
           onToggle={toggleCollapsed}
+          onMobileClose={closeMobile}
         />
       </AppShell.Navbar>
 

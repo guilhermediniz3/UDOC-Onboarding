@@ -234,9 +234,10 @@ const NAV_ITEMS: NavItemType[] = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  onMobileClose?: () => void;
 }
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarProps) {
 
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -318,7 +319,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   size={40} radius="md"
                   variant={itemIsActive ? "light" : "subtle"}
                   color={itemIsActive ? "violet" : "gray"}
-                  onClick={() => navigate(targetPath)}
+                  onClick={() => { navigate(targetPath); onMobileClose?.(); }}
                   mx="auto"
                 >
                   <item.Icon size={20} />
@@ -342,7 +343,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 label={item.label}
                 leftSection={<item.Icon size={18} />}
                 active={itemIsActive}
-                defaultOpened={itemIsActive}
+                defaultOpened={false}
                 className="sidebar-navlink"
               >
                 {visibleChildren.map((child) => (
@@ -351,7 +352,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     label={child.label}
                     leftSection={<child.Icon size={16} />}
                     active={child.isActive(pathname)}
-                    onClick={() => navigate(child.path)}
+                    onClick={() => { navigate(child.path); onMobileClose?.(); }}
                     className="sidebar-navlink sidebar-child"
                   />
                 ))}
@@ -365,7 +366,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               label={item.label}
               leftSection={<item.Icon size={18} />}
               active={itemIsActive}
-              onClick={() => item.path && navigate(item.path)}
+              onClick={() => { if (item.path) { navigate(item.path); onMobileClose?.(); } }}
               className="sidebar-navlink"
             />
           );

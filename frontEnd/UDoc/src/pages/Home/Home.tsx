@@ -92,7 +92,7 @@ export default function Home() {
           }}
         />
 
-        <Group justify="space-between" align="center" gap="xl">
+        <Group justify="space-between" align="center" gap="xl" wrap="wrap">
           <Stack gap={6}>
             <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
               <div
@@ -120,7 +120,7 @@ export default function Home() {
             </div>
           </Stack>
 
-          <div style={{ width: 340 }}>
+          <div style={{ width: "min(340px, 100%)", flexShrink: 1 }}>
             <Search value={search} onChange={handleSearchChange} />
           </div>
         </Group>
