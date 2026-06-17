@@ -160,25 +160,6 @@ Mesmo domínio para front e /api evita CORS; domínio separado exige `CORS_ORIGI
 
 ---
 
-# Setup para novos devs
-
-## Obrigatório
-```
-JDK 21          → https://adoptium.net  (Temurin 21 LTS)
-Maven 3.9+      → https://maven.apache.org/download.cgi
-Node.js 20+     → https://nodejs.org (versão LTS)
-Docker Desktop  → https://docs.docker.com/get-docker
-Git             → https://git-scm.com
-```
-
-## IDEs recomendadas
-- **IntelliJ IDEA** (Community/Ultimate) → backend Java
-- **VS Code** → frontend TypeScript
-  - Extensões úteis: ESLint, Prettier, Volar (ou ES7 React Snippets)
-
-## Opcional mas útil
-- **DBeaver / pgAdmin** → GUI para o PostgreSQL
-- **Postman / Insomnia** → testar endpoints da API REST
 
 ## Primeiros comandos após clonar
 Backend:
