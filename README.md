@@ -95,7 +95,7 @@ Front e `/api` no mesmo domínio evitam CORS; domínio separado exige `CORS_ORIG
 
 ## 4. Primeiro acesso
 
-> **PREENCHER:** como entrar pela primeira vez com o banco recém-criado.
+> **Primeiro acesso:** como entrar pela primeira vez com o banco recém-criado.
 > Ex.: usuário admin seedado (login/senha padrão), endpoint de cadastro aberto,
 > ou comando/script para criar o primeiro usuário. Sem isso o sistema sobe mas
 > ninguém consegue logar.
