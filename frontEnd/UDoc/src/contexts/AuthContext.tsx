@@ -60,7 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    if (token && isTokenExpired(token)) {
+    if (!token || !user) return;
+    if (isTokenExpired(token)) {
       logout();
     }
   }, []);

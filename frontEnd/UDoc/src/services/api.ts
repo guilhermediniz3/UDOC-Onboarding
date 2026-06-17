@@ -25,16 +25,18 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const token = localStorage.getItem("udoc-token");
+      const message: string =
+        error.response?.data?.message ?? "";
 
-      // Só desloga se o token realmente expirou ou não existe
-      // Evita logout por erros pontuais de endpoints que retornam 401
-      if (!token || isTokenExpired(token)) {
+      // O backend retorna 401 com essa mensagem APENAS quando o JWT está
+      // ausente ou inválido (authenticationEntryPoint). Erros de permissão
+      // vêm como 403. Ao detectar esse cenário, forçamos novo login para
+      // que o usuário obtenha um token fresco e válido.
+      if (message === "Token ausente ou inválido") {
         localStorage.removeItem("udoc-token");
         localStorage.removeItem("udoc-user");
         window.location.reload();
       }
-      // Se o token ainda é válido, apenas rejeita a promise sem deslogar
     }
     return Promise.reject(error);
   }
