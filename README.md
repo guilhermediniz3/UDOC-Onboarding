@@ -1,6 +1,23 @@
-# UDoc — Deploy
+# UDoc
 
-## Backend
+> **PREENCHER — descrição (rascunho inferido pela stack, ajuste para o real):**
+> O UDoc é uma plataforma interna de documentação e onboarding. Reúne editor de
+> texto rico (TipTap) para criação colaborativa de documentos, quadros Kanban,
+> chat em tempo real (WebSocket/STOMP), dashboards (Recharts) e exportação de
+> documentos para PDF/Excel. Backend em Spring Boot + PostgreSQL, frontend React.
+
+**Estrutura do repositório** (ajuste se for diferente):
+```
+UDOC-Onboarding/
+├── backend/UDoc/      → Spring Boot + docker-compose.yml + .env.example
+└── frontEnd/UDoc/     → React + Vite
+```
+
+---
+
+# Deploy
+
+## 1. Backend
 
 ```bash
 git clone https://github.com/guilhermediniz3/UDOC-Onboarding.git
@@ -18,9 +35,9 @@ ENCRYPTION_KEY=            # openssl rand -hex 16  (32 chars exatos, obrigatóri
 CORS_ORIGIN=https://udoc.suaempresa.com
 APP_FRONTEND_URL=https://udoc.suaempresa.com
 APP_BACKEND_URL=https://udoc.suaempresa.com/api
-SENDGRID_API_KEY=          # opcional
+SENDGRID_API_KEY=          # opcional — sem isso, e-mails não são enviados
 MAIL_FROM_ADDRESS=         # opcional
-AI_KEY=                    # opcional (Groq)
+AI_KEY=                    # opcional (Groq) — sem isso, recursos de IA ficam off
 ```
 
 ```bash
@@ -29,9 +46,11 @@ docker compose --profile ollama up -d         # opcional, IA local (16GB+ RAM)
 curl localhost:8081/api/health                # ou /actuator/health
 ```
 
-`ddl-auto`: `update` no 1º deploy, depois `validate`. Não publicar 8081/5432.
+- `ddl-auto`: `update` no 1º deploy (cria as tabelas), depois `validate`.
+- Não publicar 8081/5432 para a internet.
+- API documentada (SpringDoc): `http://localhost:8081/swagger-ui.html` — confirme se está sob `/api`.
 
-## Frontend
+## 2. Frontend
 
 ```bash
 cd UDOC-Onboarding/frontEnd/UDoc
@@ -39,7 +58,13 @@ echo "VITE_API_URL=https://udoc.suaempresa.com/api" > .env.production   # build-
 npm install && npm run build                                            # -> dist/
 ```
 
-## Nginx
+Publicar o `dist/` (mesma máquina do back, servido pelo Nginx):
+```bash
+sudo mkdir -p /var/www/udoc
+sudo cp -r dist /var/www/udoc/dist
+```
+
+## 3. Nginx (front + proxy /api + HTTPS)
 
 ```nginx
 server {
@@ -66,7 +91,14 @@ server { listen 80; server_name udoc.suaempresa.com; return 301 https://$host$re
 certbot --nginx -d udoc.suaempresa.com
 ```
 
-Mesmo domínio para front e /api evita CORS; domínio separado exige `CORS_ORIGIN` idêntico à URL do front.
+Front e `/api` no mesmo domínio evitam CORS; domínio separado exige `CORS_ORIGIN` idêntico à URL do front.
+
+## 4. Primeiro acesso
+
+> **PREENCHER:** como entrar pela primeira vez com o banco recém-criado.
+> Ex.: usuário admin seedado (login/senha padrão), endpoint de cadastro aberto,
+> ou comando/script para criar o primeiro usuário. Sem isso o sistema sobe mas
+> ninguém consegue logar.
 
 ---
 
@@ -160,6 +192,25 @@ Mesmo domínio para front e /api evita CORS; domínio separado exige `CORS_ORIGI
 
 ---
 
+# Setup 
+
+## Obrigatório
+```
+JDK 21          → https://adoptium.net  (Temurin 21 LTS)
+Maven 3.9+      → https://maven.apache.org/download.cgi
+Node.js 20+     → https://nodejs.org (versão LTS)
+Docker Desktop  → https://docs.docker.com/get-docker
+Git             → https://git-scm.com
+```
+
+## IDEs recomendadas
+- **IntelliJ IDEA** (Community/Ultimate) → backend Java
+- **VS Code** → frontend TypeScript
+  - Extensões úteis: ESLint, Prettier, Volar (ou ES7 React Snippets)
+
+## Opcional mas útil
+- **DBeaver / pgAdmin** → GUI para o PostgreSQL
+- **Postman / Insomnia** → testar endpoints da API REST
 
 ## Primeiros comandos após clonar
 Backend:
