@@ -1,6 +1,6 @@
 # UDoc
 
-> **PREENCHER — descrição (rascunho inferido pela stack, ajuste para o real):**
+
 > O UDoc é uma plataforma interna de documentação e onboarding. Reúne editor de
 > texto rico (TipTap) para criação colaborativa de documentos, quadros Kanban,
 > chat em tempo real (WebSocket/STOMP), dashboards (Recharts) e exportação de
