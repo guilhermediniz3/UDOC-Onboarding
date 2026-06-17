@@ -8,7 +8,7 @@ const POLL_INTERVAL_MS = 20_000; // 20 segundos
 
 interface Props { userEmail: string; userId: number; }
 
-export default function ChatISMQueue({ userEmail, userId }: Props) {
+export default function ChatISMQueue({ userEmail: _userEmail, userId: _userId }: Props) {
   const [conversas, setConversas]     = useState<ChatConversa[]>([]);
   const [selecionada, setSelecionada] = useState<ChatConversa | null>(null);
   const [input, setInput]             = useState("");

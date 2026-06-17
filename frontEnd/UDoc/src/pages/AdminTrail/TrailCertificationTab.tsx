@@ -19,7 +19,6 @@ import {
   IconCheck,
   IconPlus,
   IconRobot,
-  IconStar,
   IconTrash,
   IconX,
 } from "@tabler/icons-react";

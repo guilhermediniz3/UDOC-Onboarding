@@ -1,6 +1,6 @@
 import {
   Accordion, Alert, Badge, Checkbox, Divider, Group,
-  Loader, Paper, Stack, Text, Title, Tooltip, Button, SimpleGrid,
+  Loader, Paper, Stack, Text, Title, Button, SimpleGrid,
 } from "@mantine/core";
 import {
   IconAlertTriangle, IconCheck, IconLock, IconSettings2, IconX,
@@ -103,7 +103,7 @@ function GroupCard({
 
   const visibleActions = VIEW_ONLY_MODULES.has(module) ? ["VIEW"] : ACTIONS_ORDER;
   // Separa permissões padrão de especiais
-  const standardPerms = visibleActions.map(a => actions[a]).filter(Boolean);
+  const _standardPerms = visibleActions.map(a => actions[a]).filter(Boolean);
   const specialPerms  = SPECIAL_ACTIONS.map(a => actions[a]).filter(Boolean);
 
   return (

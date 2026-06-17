@@ -1,5 +1,5 @@
 import {
-  ActionIcon, Badge, Box, Button, Divider, Group, Indicator,
+  ActionIcon, Box, Button, Divider, Group, Indicator,
   Popover, ScrollArea, Stack, Text,
 } from "@mantine/core";
 import {

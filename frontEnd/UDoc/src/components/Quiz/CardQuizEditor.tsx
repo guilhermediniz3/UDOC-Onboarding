@@ -7,7 +7,6 @@ import {
   Alert,
   Badge,
   Button,
-  Divider,
   Group,
   NumberInput,
   Paper,
@@ -32,7 +31,7 @@ import {
 
 interface Props { cardId: number; }
 
-const EMPTY = (cardId: number): CardQuestion => ({
+const EMPTY = (_cardId: number): CardQuestion => ({
   enunciado: "", tipo: "vf", opcoes: [], respostaCorreta: "", pontos: 1,
 });
 

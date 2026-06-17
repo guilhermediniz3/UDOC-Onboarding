@@ -1,5 +1,5 @@
 import {
-  ActionIcon, Avatar, Badge, Group, Loader, Pagination,
+  ActionIcon, Badge, Group, Loader, Pagination,
   ScrollArea, Select, Stack, Text, TextInput, Tooltip,
 } from "@mantine/core";
 import { IconArrowLeft, IconEye, IconSearch, IconX } from "@tabler/icons-react";
@@ -25,7 +25,7 @@ const TIPO_COLOR: Record<string, string> = {
   CLIENTE: "#fff", ISM: "#fff", IA: "#fff", SISTEMA: "#16a34a",
 };
 
-function MsgBubble({ m, clienteNome, ismNome }: { m: MensagemDetalhe; clienteNome: string; ismNome?: string }) {
+function MsgBubble({ m, clienteNome: _clienteNome, ismNome }: { m: MensagemDetalhe; clienteNome: string; ismNome?: string }) {
   const isCliente = m.tipo === "CLIENTE";
   const isSistema = m.tipo === "SISTEMA";
   return (

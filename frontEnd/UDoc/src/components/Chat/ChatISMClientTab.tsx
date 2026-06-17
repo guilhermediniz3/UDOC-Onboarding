@@ -1,8 +1,8 @@
-import { ActionIcon, Badge, Group, ScrollArea, Stack, Text, Textarea } from "@mantine/core";
+import { ActionIcon, Group, ScrollArea, Stack, Text, Textarea } from "@mantine/core";
 import { IconSend } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import type { ChatConversa, ChatMensagem } from "../../services/chatApiService";
-import { avaliarChat, enviarMensagemCliente, marcarLidasCliente } from "../../services/chatApiService";
+import { enviarMensagemCliente, marcarLidasCliente } from "../../services/chatApiService";
 import ChatNPS from "./ChatNPS";
 
 interface Props {
@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<string, { cor: string; label: string }> = {
   Offline: { cor: "#6b7280", label: "Offline" },
 };
 
-export default function ChatISMClientTab({ conversa, userEmail, showNPS, onNPSAvaliar, ismStatus = "Offline" }: Props) {
+export default function ChatISMClientTab({ conversa, userEmail: _userEmail, showNPS, onNPSAvaliar, ismStatus = "Offline" }: Props) {
   const [msgs, setMsgs] = useState<ChatMensagem[]>(conversa.mensagens);
   const [input, setInput] = useState("");
   const [aguardando, setAguardando] = useState(false);

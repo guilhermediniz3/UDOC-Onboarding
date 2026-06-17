@@ -160,7 +160,7 @@ function TopCardsList({
             const s2 = Number(card.score2 || 0);
             const s3 = Number(card.score3 || 0);
             const s4 = Number(card.score4 || 0);
-            const totalNps = s1 + s2 + s3 + s4;
+            const _totalNps = s1 + s2 + s3 + s4;
 
             return (
               <div key={card.id} style={{

@@ -1,7 +1,7 @@
 import { Avatar, Badge, Group, Loader, Paper, Select, Stack, Text, TextInput } from "@mantine/core";
 import {
   IconMoodConfuzed, IconMoodNeutral, IconMoodSad,
-  IconMoodSmile, IconMoodSmileBeam,
+  IconMoodSmile,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import type { NpsChatIsm } from "../../services/auditoriaService";

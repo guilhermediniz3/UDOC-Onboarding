@@ -54,7 +54,6 @@ import {
   updateCard,
 } from "../../../services/cardService";
 
-// ✅ slug adicionado para satisfazer o tipo Card
 const EMPTY_CARD: Card = {
   title: "",
   description: "",

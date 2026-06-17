@@ -1,7 +1,7 @@
 import { Button, Group, Stack, Text } from "@mantine/core";
 import {
   IconMoodSad, IconMoodConfuzed, IconMoodNeutral,
-  IconMoodSmile, IconMoodSmileBeam,
+  IconMoodSmile,
 } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -18,8 +18,8 @@ interface Props {
   onAvaliar: (nota: number) => void;
 }
 
-export default function ChatNPS({ tipo, conversaId, onAvaliar }: Props) {
-  const [selecionado, setSelecionado] = useState<number | null>(null);
+export default function ChatNPS({ tipo, conversaId: _conversaId, onAvaliar }: Props) {
+  const [, setSelecionado] = useState<number | null>(null);
   const [enviado, setEnviado] = useState(false);
 
   function handleSelect(score: number) {

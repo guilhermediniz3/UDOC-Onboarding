@@ -206,7 +206,6 @@ export default function MinhaTrihaViewer() {
 
         // Carrega dados do funcionário externo vinculado ao usuário (empresa e ISM para certificado)
         try {
-          const { getEmployeeById } = await import("../../services/employeeService");
           const { getTrainingRooms } = await import("../../services/trainingRoomService");
           // Busca salas da trilha para pegar ISM
           const rooms = await getTrainingRooms({ size: 100, active: true });

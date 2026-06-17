@@ -1,6 +1,6 @@
 import {
   ActionIcon, Badge, Button, Group, Loader, Paper,
-  SimpleGrid, Stack, Text, TextInput, Title, Tooltip,
+  SimpleGrid, Stack, Text, TextInput, Title,
 } from "@mantine/core";
 import {
   IconBook2, IconCheck, IconClock,

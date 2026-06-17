@@ -100,7 +100,7 @@ function TagTextarea({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [atPos, setAtPos] = useState(0);          // índice do @ no texto
+  const [_atPos, setAtPos] = useState(0);          // índice do @ no texto
   const [filter, setFilter] = useState("");        // texto digitado após @
 
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {

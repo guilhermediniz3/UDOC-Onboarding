@@ -4,7 +4,6 @@
  */
 import {
   ActionIcon,
-  Alert,
   Button,
   Group,
   Paper,
@@ -17,7 +16,6 @@ import {
 
 import {
   IconCheck,
-  IconMoodHappy,
   IconMoodNeutral,
   IconMoodSad,
   IconMoodSmile,
