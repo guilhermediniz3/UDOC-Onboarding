@@ -1,4 +1,4 @@
-# Deploy UDoc
+# UDoc — Deploy
 
 ## Backend
 
@@ -67,3 +67,126 @@ certbot --nginx -d udoc.suaempresa.com
 ```
 
 Mesmo domínio para front e /api evita CORS; domínio separado exige `CORS_ORIGIN` idêntico à URL do front.
+
+---
+
+# Stack Tecnológica
+
+## Linguagens
+| Linguagem  | Versão            |
+|------------|-------------------|
+| Java       | 21 (LTS)          |
+| TypeScript | 5.8.3             |
+| SQL        | PostgreSQL dialect|
+
+## Backend
+| Tecnologia          | Versão    | Função                              |
+|---------------------|-----------|-------------------------------------|
+| Spring Boot         | 3.5.14    | Framework principal                 |
+| Spring Web          | via Boot  | API REST                            |
+| Spring Data JPA     | via Boot  | ORM / acesso ao banco               |
+| Spring Security     | via Boot  | Autenticação e autorização          |
+| Spring Validation   | via Boot  | Validação de DTOs                   |
+| Spring Mail         | via Boot  | Envio de e-mails                    |
+| Spring WebSocket    | via Boot  | Chat em tempo real (STOMP)          |
+| Spring AOP          | via Boot  | Interceptação para auditoria        |
+| JJWT                | 0.12.6    | Geração e validação de tokens JWT   |
+| SpringDoc OpenAPI   | 2.8.9     | Documentação Swagger automática     |
+| Maven               | 3.9+      | Build e gerenciamento de dependências |
+
+## Banco de Dados
+| Tecnologia | Versão          | Função                          |
+|------------|-----------------|---------------------------------|
+| PostgreSQL | 16              | Banco relacional principal      |
+| Hibernate  | via Spring Boot | ORM (mapeamento objeto-relacional) |
+
+## Frontend — Core
+| Tecnologia       | Versão  | Função              |
+|------------------|---------|---------------------|
+| React            | 18.3.1  | Framework de UI     |
+| Vite             | 5.4.19  | Build tool e dev server |
+| React Router DOM | 6.30.1  | Roteamento SPA      |
+| Axios            | 1.16.0  | Requisições HTTP    |
+
+## Frontend — UI
+| Tecnologia            | Versão | Função                                   |
+|-----------------------|--------|------------------------------------------|
+| Mantine Core          | 8.3.6  | Componentes de UI (AppShell, Table, Modal, etc.) |
+| Mantine Hooks         | 8.3.6  | useDisclosure, useLocalStorage, useMediaQuery, etc. |
+| Mantine Dates         | 8.3.6  | Calendário e inputs de data              |
+| Mantine Notifications | 8.3.6  | Toasts e notificações                    |
+| Tabler Icons React    | 3.35.0 | Biblioteca de ícones SVG                 |
+| React Icons           | 5.6.0  | Ícones complementares                    |
+
+## Frontend — Editor de Texto Rico (TipTap)
+| Pacote                                  | Versão  | Função                              |
+|-----------------------------------------|---------|-------------------------------------|
+| @tiptap/react                           | 3.23.4  | Core do editor                      |
+| @tiptap/starter-kit                     | 3.23.4  | Extensões básicas (bold, italic, listas, etc.) |
+| @tiptap/extension-image                 | 3.23.4  | Inserção de imagens                 |
+| @tiptap/extension-link                  | 3.23.4  | Links clicáveis                     |
+| @tiptap/extension-code-block-lowlight   | 3.23.4  | Blocos de código com syntax highlight |
+| @tiptap/extension-youtube               | 3.23.4  | Embed de vídeos YouTube             |
+| @tiptap/extension-text-align            | 3.23.4  | Alinhamento de texto                |
+| @tiptap/extension-underline             | 3.23.4  | Sublinhado                          |
+| @tiptap/extension-color                 | 3.26.0  | Cor de texto                        |
+| @tiptap/extension-text-style            | 3.26.0  | Estilos inline                      |
+| @tiptap/extension-placeholder           | 3.23.4  | Placeholder no editor               |
+| @tiptap/extension-horizontal-rule       | 3.23.4  | Linha horizontal                    |
+| tiptap-extension-resizable-image        | 2.1.0   | Imagens redimensionáveis            |
+| lowlight                                | 3.3.0   | Syntax highlighting nos blocos de código |
+
+## Frontend — Funcionalidades específicas
+| Tecnologia        | Versão  | Função                            |
+|-------------------|---------|-----------------------------------|
+| @stomp/stompjs    | 7.3.0   | WebSocket/STOMP (chat em tempo real) |
+| sockjs-client     | 1.6.1   | Fallback WebSocket                |
+| Recharts          | 3.8.1   | Gráficos e dashboards             |
+| @dnd-kit/core     | 6.3.1   | Drag-and-drop                     |
+| @dnd-kit/sortable | 10.0.0  | Listas ordenáveis (Kanban)        |
+| dayjs             | 1.11.21 | Manipulação de datas              |
+| html2pdf.js       | 0.14.0  | Exportação de documentos para PDF |
+| xlsx              | 0.18.5  | Exportação para Excel             |
+| react-colorful    | 5.7.0   | Seletor de cor                    |
+| markerjs2         | 2.32.7  | Anotação sobre imagens            |
+| tui-image-editor  | 3.15.3  | Editor de imagens                 |
+
+## Infraestrutura
+| Tecnologia     | Versão  | Função                              |
+|----------------|---------|-------------------------------------|
+| Docker         | 24+     | Containerização                     |
+| Docker Compose | V2      | Orquestração local (backend + banco)|
+| Git            | qualquer| Versionamento                       |
+
+---
+
+# Setup para novos devs
+
+## Obrigatório
+```
+JDK 21          → https://adoptium.net  (Temurin 21 LTS)
+Maven 3.9+      → https://maven.apache.org/download.cgi
+Node.js 20+     → https://nodejs.org (versão LTS)
+Docker Desktop  → https://docs.docker.com/get-docker
+Git             → https://git-scm.com
+```
+
+## IDEs recomendadas
+- **IntelliJ IDEA** (Community/Ultimate) → backend Java
+- **VS Code** → frontend TypeScript
+  - Extensões úteis: ESLint, Prettier, Volar (ou ES7 React Snippets)
+
+## Opcional mas útil
+- **DBeaver / pgAdmin** → GUI para o PostgreSQL
+- **Postman / Insomnia** → testar endpoints da API REST
+
+## Primeiros comandos após clonar
+Backend:
+```bash
+docker compose up -d        # sobe banco + backend
+```
+Frontend:
+```bash
+npm install
+npm run dev                 # http://localhost:5173
+```
