@@ -16,25 +16,30 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
         value = """
             SELECT * FROM company
             WHERE (:search IS NULL
-                   OR name                          ILIKE CONCAT('%', :search, '%')
-                   OR cnpj                          ILIKE CONCAT('%', :search, '%')
-                   OR email                         ILIKE CONCAT('%', :search, '%')
-                   OR CAST(headquarters AS TEXT)    ILIKE CONCAT('%', :search, '%'))
+                   OR name                                        ILIKE CONCAT('%', :search, '%')
+                   OR cnpj                                        ILIKE CONCAT('%', :search, '%')
+                   OR email                                       ILIKE CONCAT('%', :search, '%')
+                   OR CAST(headquarters AS TEXT)                  ILIKE CONCAT('%', :search, '%')
+                   OR (:searchDigits IS NOT NULL
+                       AND REGEXP_REPLACE(cnpj, '[^0-9]', '', 'g') LIKE CONCAT('%', :searchDigits, '%')))
               AND (:active IS NULL OR active = :active)
             ORDER BY name ASC
         """,
         countQuery = """
             SELECT COUNT(*) FROM company
             WHERE (:search IS NULL
-                   OR name                          ILIKE CONCAT('%', :search, '%')
-                   OR cnpj                          ILIKE CONCAT('%', :search, '%')
-                   OR email                         ILIKE CONCAT('%', :search, '%')
-                   OR CAST(headquarters AS TEXT)    ILIKE CONCAT('%', :search, '%'))
+                   OR name                                        ILIKE CONCAT('%', :search, '%')
+                   OR cnpj                                        ILIKE CONCAT('%', :search, '%')
+                   OR email                                       ILIKE CONCAT('%', :search, '%')
+                   OR CAST(headquarters AS TEXT)                  ILIKE CONCAT('%', :search, '%')
+                   OR (:searchDigits IS NOT NULL
+                       AND REGEXP_REPLACE(cnpj, '[^0-9]', '', 'g') LIKE CONCAT('%', :searchDigits, '%')))
               AND (:active IS NULL OR active = :active)
         """,
         nativeQuery = true
     )
     Page<Company> search(@Param("search") String search,
+                         @Param("searchDigits") String searchDigits,
                          @Param("active") Boolean active,
                          Pageable pageable);
 }

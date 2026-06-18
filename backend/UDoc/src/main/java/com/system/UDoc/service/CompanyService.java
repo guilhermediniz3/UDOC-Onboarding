@@ -27,11 +27,17 @@ public class CompanyService {
 
     @Transactional(readOnly = true)
     public Page<CompanyDTO> getAllCompanies(String search, Boolean active, Pageable pageable) {
-        return companyRepository.search(normalize(search), active, pageable).map(CompanyDTO::new);
+        return companyRepository.search(normalize(search), normalizeDigits(search), active, pageable).map(CompanyDTO::new);
     }
 
     private String normalize(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private String normalizeDigits(String s) {
+        if (s == null || s.isBlank()) return null;
+        String digits = s.replaceAll("[^0-9]", "");
+        return digits.isEmpty() ? null : digits;
     }
 
     @Transactional(readOnly = true)
