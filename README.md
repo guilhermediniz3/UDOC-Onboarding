@@ -70,7 +70,7 @@ UDOC-Onboarding/
 ## 🎯 Objetivo
 **Documentar, padronizar, mensurar e universalizar o conhecimento de clientes internos e externos.**
 Termômetro corporativo que diagnostica gaps de conhecimento, permite correlacionar churn x conhecimento, monitora engajamento e acompanha a jornada de aprendizado em tempo real.
-Plataforma de onboarding e treinamento com:
+Plataforma de onboarding e treinamento (LMS) com :
 - IA integrada
 - Gamificação
 - Conteúdo em trilhas
