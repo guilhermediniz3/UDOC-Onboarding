@@ -14,6 +14,7 @@ UDOC-Onboarding/
 ```
 
 🧠 Backend (Spring Boot)
+
 🔐 Auth & Segurança
 JWT com roles
 Troca obrigatória de senha no primeiro acesso
