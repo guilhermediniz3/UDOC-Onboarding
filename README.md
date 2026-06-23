@@ -61,7 +61,6 @@ UDOC-Onboarding/
 ## 🎨 Frontend (React + Mantine)
 - UI AppShell com sidebar retrátil | Dark / Light mode | Responsivo
 - 🎭 Editor (Tiptap) | Badges | Callouts | Imagens redimensionáveis | Vídeos | Código com highlight
-- 📱 +20 páginas admin + usuário
 - 💬 Chat global flutuante (tempo real)
 - 📋 Kanban de trilhas (drag-and-drop)
 - 🎫 Certificados customizáveis
