@@ -19,6 +19,7 @@ UDOC-Onboarding/
 JWT com roles
 Troca obrigatória de senha no primeiro acesso
 Permissões granulares por módulo e ação
+
 🏢 Organização
 Empresas
 CRUD
@@ -32,6 +33,7 @@ Usuários
 CRUD
 Convite por e-mail
 Reset de senha obrigatório
+
 📚 Conteúdo
 Cards / Documentos
 CRUD
@@ -44,13 +46,16 @@ Kanban
 Vínculo com cards
 Clone
 Certificação
+
 🏫 Treinamentos
 Salas: CRUD + calendário + gravações
 Matrículas: catálogo + progresso
+
 💬 Comunicação
 Chat em tempo real (WebSocket / STOMP)
 ISM ↔ cliente + IA + NPS
 Notificações em tempo real (contador de não lidas)
+
 🤖 IA Multi-provedor
 
 Suporte:
@@ -66,35 +71,44 @@ Usos:
 Suporte
 Análise de dúvidas
 Sugestão de conteúdo
+
 📊 Inteligência
 Classificação de dúvidas via IA
 Ranking de tópicos
 Sugestão de cards
+
 🎮 Gamificação
 XP por ações
 Ranking de usuários
 Progressão por engajamento
+
 🧪 Avaliação
 Quiz por card (pontuação)
 NPS (cards, trilhas, atendimento)
+
 🧾 Auditoria
 Log de ações do sistema
+
 🎨 Frontend (React + Mantine)
+
 🧩 UI
 AppShell com sidebar retrátil
 Dark / Light mode
 Responsivo
+
 ✍️ Editor (Tiptap)
 Badges
 Callouts
 Imagens redimensionáveis
 Vídeos
 Código com highlight
+
 📄 Funcionalidades
 +20 páginas admin + usuário
 Chat global flutuante (tempo real)
 Kanban de trilhas (drag-and-drop)
 Certificados customizáveis
+
 ⚙️ Objetivo
 
 Plataforma de onboarding e treinamento com:
