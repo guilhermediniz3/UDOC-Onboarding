@@ -94,9 +94,9 @@ export default function Admin() {
       try {
         const response = await getCardById(Number(id));
         setCard(response);
-      } catch (error) {
-        console.error(error);
-        showMessage("error", "Erro ao carregar card.");
+      } catch (error: unknown) {
+        const msg = (error as any)?.response?.data?.message;
+        showMessage("error", msg || "Erro ao carregar card.");
       }
     }
     loadCard();
@@ -117,9 +117,9 @@ export default function Admin() {
       setCard(updatedCard);
       await updateCard(updatedCard);
       showMessage("success", checked ? "Card ativado com sucesso." : "Card inativado com sucesso.");
-    } catch (error) {
-      console.error(error);
-      showMessage("error", "Erro ao alterar status.");
+    } catch (error: unknown) {
+      const msg = (error as any)?.response?.data?.message;
+      showMessage("error", msg || "Erro ao alterar status.");
     }
   }
 
@@ -138,9 +138,9 @@ export default function Admin() {
       if (!isEdit && savedCard.id) {
         navigate(`/admin/card/${savedCard.id}`);
       }
-    } catch (error) {
-      console.error(error);
-      showMessage("error", "Erro ao salvar.");
+    } catch (error: unknown) {
+      const msg = (error as any)?.response?.data?.message;
+      showMessage("error", msg || "Erro ao salvar.");
     } finally {
       setSaving(false);
     }
@@ -152,9 +152,9 @@ export default function Admin() {
       await deleteCard(card.id);
       showMessage("success", "Card removido com sucesso.");
       setTimeout(() => navigate("/admin/cards"), 800);
-    } catch (error) {
-      console.error(error);
-      showMessage("error", "Erro ao remover card.");
+    } catch (error: unknown) {
+      const msg = (error as any)?.response?.data?.message;
+      showMessage("error", msg || "Erro ao remover card.");
     }
   }
 

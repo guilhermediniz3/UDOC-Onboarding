@@ -1,4 +1,5 @@
 import axios from "axios";
+import { notifications } from "@mantine/notifications";
 
 export const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
@@ -24,20 +25,39 @@ function isTokenExpired(token: string): boolean {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+
+    if (status === 401) {
       const message: string =
         error.response?.data?.message ?? "";
 
-      // O backend retorna 401 com essa mensagem APENAS quando o JWT está
-      // ausente ou inválido (authenticationEntryPoint). Erros de permissão
-      // vêm como 403. Ao detectar esse cenário, forçamos novo login para
-      // que o usuário obtenha um token fresco e válido.
       if (message === "Token ausente ou inválido") {
         localStorage.removeItem("udoc-token");
         localStorage.removeItem("udoc-user");
         window.location.reload();
       }
     }
+
+    if (status === 403) {
+      const friendlyMessage =
+        "Você não tem permissão para realizar esta ação.";
+
+      // Reescreve a mensagem no objeto de erro para que catch blocks
+      // que leem error.response.data.message exibam texto amigável
+      if (error.response?.data) {
+        error.response.data.message = friendlyMessage;
+      }
+
+      // Notificação global — aparece em qualquer tela, mesmo que o
+      // componente não trate o erro individualmente
+      notifications.show({
+        title: "Sem permissão",
+        message: friendlyMessage,
+        color: "orange",
+        autoClose: 5000,
+      });
+    }
+
     return Promise.reject(error);
   }
 );
