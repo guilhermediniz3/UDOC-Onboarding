@@ -14,32 +14,67 @@ UDOC-Onboarding/
 ```
 
 ---
-Backend (Spring Boot)
-Autenticação — JWT com roles, força troca de senha no primeiro acesso
-Empresas — CRUD, logo, código de matriz, busca com/sem máscara de CNPJ
-Funcionários — vínculo com empresa, tipos INTERNO/EXTERNO
-Usuários — CRUD, convite por e-mail, força troca de senha
-Cards/Documentos — CRUD, clone, visualização pública, exportação PDF
-Trilhas — CRUD, kanban, vínculo com cards, clone, certificação
-Salas de Treinamento — CRUD, calendário, gravações de vídeo
-Matrículas — catálogo, progresso por trilha
-Chat — atendimento ISM↔cliente via WebSocket (STOMP), IA, NPS
-Analytics de Dúvidas — classificação por IA, ranking de tópicos, sugestão de card
-Notificações — real-time via WebSocket, contador de não lidas
-IA Multi-provedor — GROQ, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen — 3 níveis (usuário → empresa → global)
-Permissões — controle granular por módulo e ação por grupo de perfil
-Auditoria — log de ações no sistema
-NPS — avaliação de cards, trilhas e atendimento
-Quiz — perguntas por card com pontuação
-XP e Ranking — gamificação por interações
-Frontend (React + Mantine)
-AppShell com sidebar retrátil (collapse/expand), responsiva, dark/light mode
-Editor rico (Tiptap) — badges, callouts, imagens redimensionáveis, vídeos, código com highlight
-20+ páginas admin + páginas do usuário final
-Chat em tempo real com balão flutuante global
-Certificados com template personalizável
-Kanban de trilhas com drag-and-drop
-É um LMS/plataforma de onboarding 
+🧠 Backend (Spring Boot)
+🔐 Auth & Segurança
+JWT com roles
+Troca obrigatória de senha no primeiro acesso
+Permissões granulares por módulo e ação
+🏢 Organização
+Empresas: CRUD, logo, código de matriz, busca por CNPJ (com/sem máscara)
+Funcionários: vínculo com empresa (INTERNO / EXTERNO)
+Usuários: CRUD, convite por e-mail, reset de senha obrigatório
+📚 Conteúdo
+Cards/Documentos: CRUD, clone, público, exportação PDF
+Trilhas: CRUD, kanban, vínculo com cards, clone, certificação
+🏫 Treinamentos
+Salas: CRUD, calendário, gravações
+Matrículas: catálogo e progresso por trilha
+💬 Comunicação
+Chat em tempo real (WebSocket/STOMP) entre ISM ↔ cliente + IA + NPS
+Notificações em tempo real com contador de não lidas
+🤖 IA Multi-provedor
+
+Suporte a: Groq, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen
+
+Níveis: usuário, empresa, global
+Usos: suporte, análise de dúvidas, sugestão de conteúdo
+📊 Inteligência & Analytics
+Classificação de dúvidas via IA
+Ranking de tópicos
+Sugestão de cards
+🎮 Gamificação
+XP por ações
+Ranking de usuários
+Progressão por engajamento
+🧪 Avaliação
+Quiz por card (pontuação)
+NPS para cards, trilhas e atendimento
+🧾 Auditoria
+Log de ações do sistema
+🎨 Frontend (React + Mantine)
+🧩 UI & Estrutura
+AppShell com sidebar retrátil
+Dark / Light mode
+Responsivo
+✍️ Editor (Tiptap)
+Badges, callouts
+Imagens redimensionáveis
+Vídeos
+Código com highlight
+📄 Funcionalidades
++20 páginas admin + área do usuário
+Chat global flutuante (tempo real)
+Kanban de trilhas (drag-and-drop)
+Certificados com templates customizáveis
+⚙️ Objetivo
+
+Plataforma de onboarding e treinamento com:
+
+IA integrada
+Gamificação
+Conteúdo estruturado em trilhas
+Comunicação em tempo real
+Escalabilidade corporativa
 
 # Deploy
 
