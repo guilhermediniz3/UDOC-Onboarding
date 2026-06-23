@@ -13,112 +13,69 @@ UDOC-Onboarding/
 └── frontEnd/UDoc/     → React + Vite
 ```
 
-🧠 Backend (Spring Boot)
+## 🎯 Backend (Spring Boot)
 
-🔐 Auth & Segurança
-JWT com roles
-Troca obrigatória de senha no primeiro acesso
-Permissões granulares por módulo e ação
+### 🔐 Autenticação & Segurança
+- JWT com roles obrigatória de senha no primeiro acesso
+- Permissões granulares por módulo e ação
 
-🏢 Organização
-Empresas
-CRUD
-Logo
-Código de matriz
-Busca por CNPJ (com/sem máscara)
-Funcionários
-Vínculo com empresa
-Tipos: INTERNO / EXTERNO
-Usuários
-CRUD
-Convite por e-mail
-Reset de senha obrigatório
+### 🏢 Organização Empresarial
+- CRUD Logo | Código de matriz | Busca por CNPJ (com/sem máscara)
+- Funcionários com vínculo à empresa
+- Tipos: INTERNO / EXTERNO
+- Usuários CRUD | Convite por e-mail | Reset de senha obrigatório
 
-📚 Conteúdo
-Cards / Documentos
-CRUD
-Clone
-Público
-Exportação PDF
-Trilhas
-CRUD
-Kanban
-Vínculo com cards
-Clone
-Certificação
+### 📄 Conteúdo
+- Cards / Documentos CRUD
+- Clone Público | Exportação PDF
+- Trilhas CRUD | Kanban
+- Vínculo com cards | Clone | Certificação
 
-🏫 Treinamentos
-Salas: CRUD + calendário + gravações
-Matrículas: catálogo + progresso
+### 📚 Treinamentos Vendas
+- CRUD Catálogo | Calendário | Gravações
+- Matrículas | Catálogo + progresso
 
-💬 Comunicação
-Chat em tempo real (WebSocket / STOMP)
-ISM ↔ cliente + IA + NPS
-Notificações em tempo real (contador de não lidas)
+### 💬 Comunicação
+- Chat em tempo real (WebSocket / STOMP)
+- ISM → cliente + IA + NPS
+- Notificações em tempo real (contador de não lidas)
 
-🤖 IA Multi-provedor
+### 🤖 IA Multi-provedor
+**Suporte:** Groq, Gemini, OpenAI, DeepSeek, Claude, Ollama, Owen
 
-Suporte:
+---
 
-Groq, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen
+## 📊 Níveis de Acesso
+- **Usuário** / **Empresa** / **Global**
 
-Níveis:
+## 💡 Usos
+- Suporte Análise de dúvidas
+- Sugestão de conteúdo
+- 🧠 Inteligência Classificação de dúvidas via IA | Ranking de tópicos | Sugestão de cards
+- 🎮 Gamificação XP por ações | Ranking de usuários | Progressão por engajamento
+- 🎯 Avaliação Quiz por card (pontuação) | NPS (cards, trilhas, atendimento)
+- 📋 Auditoria Log de ações do sistema
 
-Usuário / Empresa / Global
+---
 
-Usos:
+## 🎨 Frontend (React + Mantine)
+- UI AppShell com sidebar retrátil | Dark / Light mode | Responsivo
+- 🎭 Editor (Tiptap) | Badges | Callouts | Imagens redimensionáveis | Vídeos | Código com highlight
+- 📱 +20 páginas admin + usuário
+- 💬 Chat global flutuante (tempo real)
+- 📋 Kanban de trilhas (drag-and-drop)
+- 🎫 Certificados customizáveis
 
-Suporte
-Análise de dúvidas
-Sugestão de conteúdo
+---
 
-📊 Inteligência
-Classificação de dúvidas via IA
-Ranking de tópicos
-Sugestão de cards
-
-🎮 Gamificação
-XP por ações
-Ranking de usuários
-Progressão por engajamento
-
-🧪 Avaliação
-Quiz por card (pontuação)
-NPS (cards, trilhas, atendimento)
-
-🧾 Auditoria
-Log de ações do sistema
-
-🎨 Frontend (React + Mantine)
-
-🧩 UI
-AppShell com sidebar retrátil
-Dark / Light mode
-Responsivo
-
-✍️ Editor (Tiptap)
-Badges
-Callouts
-Imagens redimensionáveis
-Vídeos
-Código com highlight
-
-📄 Funcionalidades
-+20 páginas admin + usuário
-Chat global flutuante (tempo real)
-Kanban de trilhas (drag-and-drop)
-Certificados customizáveis
-
-⚙️ Objetivo
+## 🎯 Objetivo
 
 Plataforma de onboarding e treinamento com:
-
-IA integrada
-Gamificação
-Conteúdo em trilhas
-Comunicação em tempo real
-Escalabilidade corporativa
-
+- IA integrada
+- Gamificação
+- Conteúdo em trilhas
+- Comunicação em tempo real
+- Escalabilidade corporativa
 # Deploy
 
 ## 1. Backend
