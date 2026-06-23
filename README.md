@@ -14,6 +14,32 @@ UDOC-Onboarding/
 ```
 
 ---
+Backend (Spring Boot)
+Autenticação — JWT com roles, força troca de senha no primeiro acesso
+Empresas — CRUD, logo, código de matriz, busca com/sem máscara de CNPJ
+Funcionários — vínculo com empresa, tipos INTERNO/EXTERNO
+Usuários — CRUD, convite por e-mail, força troca de senha
+Cards/Documentos — CRUD, clone, visualização pública, exportação PDF
+Trilhas — CRUD, kanban, vínculo com cards, clone, certificação
+Salas de Treinamento — CRUD, calendário, gravações de vídeo
+Matrículas — catálogo, progresso por trilha
+Chat — atendimento ISM↔cliente via WebSocket (STOMP), IA, NPS
+Analytics de Dúvidas — classificação por IA, ranking de tópicos, sugestão de card
+Notificações — real-time via WebSocket, contador de não lidas
+IA Multi-provedor — GROQ, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen — 3 níveis (usuário → empresa → global)
+Permissões — controle granular por módulo e ação por grupo de perfil
+Auditoria — log de ações no sistema
+NPS — avaliação de cards, trilhas e atendimento
+Quiz — perguntas por card com pontuação
+XP e Ranking — gamificação por interações
+Frontend (React + Mantine)
+AppShell com sidebar retrátil (collapse/expand), responsiva, dark/light mode
+Editor rico (Tiptap) — badges, callouts, imagens redimensionáveis, vídeos, código com highlight
+20+ páginas admin + páginas do usuário final
+Chat em tempo real com balão flutuante global
+Certificados com template personalizável
+Kanban de trilhas com drag-and-drop
+É um LMS/plataforma de onboarding 
 
 # Deploy
 
