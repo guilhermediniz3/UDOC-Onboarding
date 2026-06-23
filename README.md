@@ -68,7 +68,7 @@ UDOC-Onboarding/
 ---
 
 ## 🎯 Objetivo
-
+**Documentar, padronizar, mensurar e universalizar o conhecimento de clientes internos e externos.**
 Plataforma de onboarding e treinamento com:
 - IA integrada
 - Gamificação
