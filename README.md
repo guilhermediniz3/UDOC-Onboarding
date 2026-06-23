@@ -13,32 +13,59 @@ UDOC-Onboarding/
 └── frontEnd/UDoc/     → React + Vite
 ```
 
----
 🧠 Backend (Spring Boot)
 🔐 Auth & Segurança
 JWT com roles
 Troca obrigatória de senha no primeiro acesso
 Permissões granulares por módulo e ação
 🏢 Organização
-Empresas: CRUD, logo, código de matriz, busca por CNPJ (com/sem máscara)
-Funcionários: vínculo com empresa (INTERNO / EXTERNO)
-Usuários: CRUD, convite por e-mail, reset de senha obrigatório
+Empresas
+CRUD
+Logo
+Código de matriz
+Busca por CNPJ (com/sem máscara)
+Funcionários
+Vínculo com empresa
+Tipos: INTERNO / EXTERNO
+Usuários
+CRUD
+Convite por e-mail
+Reset de senha obrigatório
 📚 Conteúdo
-Cards/Documentos: CRUD, clone, público, exportação PDF
-Trilhas: CRUD, kanban, vínculo com cards, clone, certificação
+Cards / Documentos
+CRUD
+Clone
+Público
+Exportação PDF
+Trilhas
+CRUD
+Kanban
+Vínculo com cards
+Clone
+Certificação
 🏫 Treinamentos
-Salas: CRUD, calendário, gravações
-Matrículas: catálogo e progresso por trilha
+Salas: CRUD + calendário + gravações
+Matrículas: catálogo + progresso
 💬 Comunicação
-Chat em tempo real (WebSocket/STOMP) entre ISM ↔ cliente + IA + NPS
-Notificações em tempo real com contador de não lidas
+Chat em tempo real (WebSocket / STOMP)
+ISM ↔ cliente + IA + NPS
+Notificações em tempo real (contador de não lidas)
 🤖 IA Multi-provedor
 
-Suporte a: Groq, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen
+Suporte:
 
-Níveis: usuário, empresa, global
-Usos: suporte, análise de dúvidas, sugestão de conteúdo
-📊 Inteligência & Analytics
+Groq, Gemini, OpenAI, DeepSeek, Claude, Ollama, Qwen
+
+Níveis:
+
+Usuário / Empresa / Global
+
+Usos:
+
+Suporte
+Análise de dúvidas
+Sugestão de conteúdo
+📊 Inteligência
 Classificação de dúvidas via IA
 Ranking de tópicos
 Sugestão de cards
@@ -48,31 +75,32 @@ Ranking de usuários
 Progressão por engajamento
 🧪 Avaliação
 Quiz por card (pontuação)
-NPS para cards, trilhas e atendimento
+NPS (cards, trilhas, atendimento)
 🧾 Auditoria
 Log de ações do sistema
 🎨 Frontend (React + Mantine)
-🧩 UI & Estrutura
+🧩 UI
 AppShell com sidebar retrátil
 Dark / Light mode
 Responsivo
 ✍️ Editor (Tiptap)
-Badges, callouts
+Badges
+Callouts
 Imagens redimensionáveis
 Vídeos
 Código com highlight
 📄 Funcionalidades
-+20 páginas admin + área do usuário
++20 páginas admin + usuário
 Chat global flutuante (tempo real)
 Kanban de trilhas (drag-and-drop)
-Certificados com templates customizáveis
+Certificados customizáveis
 ⚙️ Objetivo
 
 Plataforma de onboarding e treinamento com:
 
 IA integrada
 Gamificação
-Conteúdo estruturado em trilhas
+Conteúdo em trilhas
 Comunicação em tempo real
 Escalabilidade corporativa
 
