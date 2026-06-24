@@ -71,13 +71,22 @@ export default function UserCardView() {
 
     const html2pdf = (await import("html2pdf.js")).default;
 
-    // html2canvas usa fundo branco por padrão; no tema escuro o texto claro
-    // fica ilegível sobre esse branco. Usamos o fundo real da página (mesma
-    // cor do --app-bg) para que o contraste capturado seja igual ao que o
-    // usuário vê na tela, sem alterar nenhum estilo visual.
-    const isDarkScheme =
-      document.documentElement.getAttribute("data-mantine-color-scheme") === "dark";
-    const canvasBackground = isDarkScheme ? "#020617" : "#ffffff";
+    // ─── 0. Força tema claro para a captura ───────────────────────────────
+    // PDFs devem ser sempre legíveis (texto escuro em fundo branco).
+    // Trocamos temporariamente o atributo de cor no <html> para que todos os
+    // seletores CSS do modo escuro deixem de se aplicar durante a captura;
+    // restauramos imediatamente após o save().
+    const htmlEl = document.documentElement;
+    const prevScheme = htmlEl.getAttribute("data-mantine-color-scheme");
+    const wasDark = prevScheme === "dark";
+
+    if (wasDark) {
+      htmlEl.setAttribute("data-mantine-color-scheme", "light");
+      // Aguarda dois frames para os estilos computados serem recalculados
+      await new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r()))
+      );
+    }
 
     // ─── 1. Substitui cada iframe de vídeo por um link clicável ───────────────
     type VideoReplacement = {
@@ -141,21 +150,37 @@ export default function UserCardView() {
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: canvasBackground,
+          backgroundColor: "#ffffff",
         },
         jsPDF: {
           unit: "mm",
           format: "a4",
           orientation: "portrait",
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(({ pagebreak: {
+          mode: ["css", "legacy"],
+          avoid: [
+            "p", "li",
+            "h1", "h2", "h3", "h4", "h5", "h6",
+            "blockquote", "pre",
+            ".udoc-callout",
+            ".udoc-resizable-image-wrapper",
+            ".udoc-resizable-video-wrapper",
+          ],
+        } }) as any),
       })
       .from(element)
       .save();
 
-    // ─── 3. Restaura os iframes originais ───────────────────────────────────
+    // ─── 3. Restaura iframes e tema ──────────────────────────────────────────
     replacements.forEach(({ container, original, placeholder }) => {
       container.replaceChild(original, placeholder);
     });
+
+    if (wasDark) {
+      htmlEl.setAttribute("data-mantine-color-scheme", "dark");
+    }
   }
 
   if (!editor) {

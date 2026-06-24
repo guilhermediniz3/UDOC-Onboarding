@@ -426,6 +426,34 @@
    PRINT / EXPORTAÇÃO PDF
    ============================================================================= */
 
+/* Evita que html2pdf corte parágrafos, títulos e blocos no meio da página */
+.user-card-content p,
+.user-card-content li,
+.user-card-content h1,
+.user-card-content h2,
+.user-card-content h3,
+.user-card-content h4,
+.user-card-content h5,
+.user-card-content h6,
+.user-card-content blockquote,
+.user-card-content pre,
+.user-card-content .udoc-callout,
+.user-card-content .udoc-resizable-image-wrapper {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Garante que títulos não fiquem isolados no final de uma página */
+.user-card-content h1,
+.user-card-content h2,
+.user-card-content h3,
+.user-card-content h4,
+.user-card-content h5,
+.user-card-content h6 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 @media print {
   body > *:not(.user-card-view),
   .no-print {
