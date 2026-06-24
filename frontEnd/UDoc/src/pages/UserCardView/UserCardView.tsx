@@ -88,7 +88,25 @@ export default function UserCardView() {
       );
     }
 
-    // ─── 1. Injeta texto nos badges para html2canvas ─────────────────────────
+    // ─── 1. Oculta controles de edição via JS ────────────────────────────────
+    // O CSS já os oculta, mas a troca de tema pode causar re-render dos
+    // NodeViews e torná-los brevemente visíveis no momento da captura.
+    // Ocultar via style garante que o html2canvas nunca os capture.
+    const UI_SELECTORS = [
+      ".udoc-image-alignment-toolbar",
+      ".image-resizer-handle",
+      ".udoc-video-floating-menu",
+      ".video-resizer-handle",
+      ".udoc-callout-alignment-toolbar",
+    ].join(",");
+
+    const hiddenUiEls: HTMLElement[] = [];
+    element.querySelectorAll<HTMLElement>(UI_SELECTORS).forEach((el) => {
+      el.style.setProperty("display", "none", "important");
+      hiddenUiEls.push(el);
+    });
+
+    // ─── 2. Injeta texto nos badges para html2canvas ─────────────────────────
     // html2canvas não renderiza pseudo-elementos CSS (::before/::after).
     // O texto do badge fica em data-text e é exibido via ::before no uso normal.
     // Para o PDF: definimos textContent diretamente no elemento (sem span filho)
@@ -104,7 +122,7 @@ export default function UserCardView() {
       badgeInjections.push(badge);
     });
 
-    // ─── 2. Substitui cada iframe de vídeo por um link clicável ───────────────
+    // ─── 3. Substitui cada iframe de vídeo por um link clicável ───────────────
     type VideoReplacement = {
       container: HTMLElement;
       original: HTMLElement;
@@ -189,7 +207,9 @@ export default function UserCardView() {
       .from(element)
       .save();
 
-    // ─── 4. Restaura badges, iframes e tema ──────────────────────────────────
+    // ─── 5. Restaura controles de UI, badges, iframes e tema ─────────────────
+    hiddenUiEls.forEach((el) => el.style.removeProperty("display"));
+
     badgeInjections.forEach((badge) => {
       badge.textContent = null;
       badge.classList.remove("udoc-badge--pdf");
