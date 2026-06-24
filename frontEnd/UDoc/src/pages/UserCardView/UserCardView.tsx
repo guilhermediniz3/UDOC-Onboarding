@@ -88,7 +88,26 @@ export default function UserCardView() {
       );
     }
 
-    // ─── 1. Substitui cada iframe de vídeo por um link clicável ───────────────
+    // ─── 1. Injeta texto nos badges para html2canvas ─────────────────────────
+    // html2canvas não renderiza pseudo-elementos CSS (::before/::after).
+    // O texto do badge fica em data-text e é exibido via ::before no uso normal.
+    // Para o PDF: adicionamos um <span> filho temporário com o mesmo texto e
+    // suprimimos o ::before via classe, restaurando tudo após o save().
+    type BadgeInjection = { badge: HTMLElement; span: HTMLElement };
+    const badgeInjections: BadgeInjection[] = [];
+
+    element.querySelectorAll<HTMLElement>(".udoc-badge").forEach((badge) => {
+      const text = badge.getAttribute("data-text") ?? "";
+      if (!text) return;
+      const span = document.createElement("span");
+      span.textContent = text;
+      span.style.cssText = "display:contents;pointer-events:none;";
+      badge.classList.add("udoc-badge--pdf");
+      badge.appendChild(span);
+      badgeInjections.push({ badge, span });
+    });
+
+    // ─── 2. Substitui cada iframe de vídeo por um link clicável ───────────────
     type VideoReplacement = {
       container: HTMLElement;
       original: HTMLElement;
@@ -173,7 +192,12 @@ export default function UserCardView() {
       .from(element)
       .save();
 
-    // ─── 3. Restaura iframes e tema ──────────────────────────────────────────
+    // ─── 4. Restaura badges, iframes e tema ──────────────────────────────────
+    badgeInjections.forEach(({ badge, span }) => {
+      badge.classList.remove("udoc-badge--pdf");
+      badge.removeChild(span);
+    });
+
     replacements.forEach(({ container, original, placeholder }) => {
       container.replaceChild(original, placeholder);
     });

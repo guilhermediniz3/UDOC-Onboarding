@@ -212,6 +212,12 @@
   content: attr(data-text) !important;
 }
 
+/* Durante a captura do PDF, o ::before é suprimido e um <span> filho
+   temporário assume o texto (html2canvas não renderiza pseudo-elementos). */
+.user-card-content .udoc-badge--pdf::before {
+  content: none !important;
+}
+
 /* =============================================================================
    CALLOUT
    ============================================================================= */
