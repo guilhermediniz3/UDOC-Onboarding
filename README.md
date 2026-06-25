@@ -264,14 +264,7 @@ Docker Desktop  → https://docs.docker.com/get-docker
 Git             → https://git-scm.com
 ```
 
-## IDEs recomendadas
-- **IntelliJ IDEA** (Community/Ultimate) → backend Java
-- **VS Code** → frontend TypeScript
-  - Extensões úteis: ESLint, Prettier, Volar (ou ES7 React Snippets)
 
-## Opcional mas útil
-- **DBeaver / pgAdmin** → GUI para o PostgreSQL
-- **Postman / Insomnia** → testar endpoints da API REST
 
 ## Primeiros comandos após clonar
 Backend:
