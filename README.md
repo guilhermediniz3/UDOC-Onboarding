@@ -252,27 +252,3 @@ Front e `/api` no mesmo domínio evitam CORS; domínio separado exige `CORS_ORIG
 | Git            | qualquer| Versionamento                       |
 
 ---
-
-# Setup 
-
-## Obrigatório
-```
-JDK 21          → https://adoptium.net  (Temurin 21 LTS)
-Maven 3.9+      → https://maven.apache.org/download.cgi
-Node.js 20+     → https://nodejs.org (versão LTS)
-Docker Desktop  → https://docs.docker.com/get-docker
-Git             → https://git-scm.com
-```
-
-
-
-## Primeiros comandos após clonar
-Backend:
-```bash
-docker compose up -d        # sobe banco + backend
-```
-Frontend:
-```bash
-npm install
-npm run dev                 # http://localhost:5173
-```
