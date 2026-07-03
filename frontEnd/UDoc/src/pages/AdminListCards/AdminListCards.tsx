@@ -224,13 +224,13 @@ export default function AdminListCards() {
               fw={700}
               fz={36}
             >
-              Administração de Cards
+              Administração de Manuais
             </Text>
 
             <Text
               c="var(--text-secondary)"
             >
-              Gerencie os cards do sistema
+              Gerencie os manuais do sistema
             </Text>
 
           </div>
