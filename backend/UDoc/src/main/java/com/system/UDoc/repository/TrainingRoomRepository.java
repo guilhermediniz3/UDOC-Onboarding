@@ -8,8 +8,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TrainingRoomRepository extends JpaRepository<TrainingRoom, Long> {
+
+    /** Carrega sala com todas as relações necessárias para geração de RAT */
+    @Query("""
+        SELECT r FROM TrainingRoom r
+        LEFT JOIN FETCH r.company
+        LEFT JOIN FETCH r.ism
+        LEFT JOIN FETCH r.trail
+        LEFT JOIN FETCH r.invitedEmployees
+        WHERE r.id = :id
+    """)
+    Optional<TrainingRoom> findByIdWithContext(@Param("id") Long id);
 
     @Query("SELECT COUNT(r) FROM TrainingRoom r WHERE r.trail.id = :trailId")
     long countByTrailId(@Param("trailId") Long trailId);

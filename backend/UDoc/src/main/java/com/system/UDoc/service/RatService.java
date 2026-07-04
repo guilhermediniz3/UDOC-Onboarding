@@ -127,7 +127,7 @@ public class RatService {
 
     @Transactional
     public String gerarComIA(GerarRatRequestDTO req, User autor) {
-        TrainingRoom room = trainingRoomRepository.findById(req.trainingRoomId())
+        TrainingRoom room = trainingRoomRepository.findByIdWithContext(req.trainingRoomId())
                 .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
 
         List<TrainingSession> sessions = trainingSessionRepository
