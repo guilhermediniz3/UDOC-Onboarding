@@ -26,10 +26,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
+    const url    = error.config?.url ?? "?";
 
     if (status === 401) {
       const message: string =
         error.response?.data?.message ?? "";
+
+      console.warn(`[api] 401 em ${url} | mensagem: "${message}" | token presente: ${!!localStorage.getItem("udoc-token")}`);
 
       if (message === "Token ausente ou inválido") {
         localStorage.removeItem("udoc-token");
