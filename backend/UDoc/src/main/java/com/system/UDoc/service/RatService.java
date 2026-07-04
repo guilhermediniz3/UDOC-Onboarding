@@ -130,86 +130,81 @@ public class RatService {
         TrainingRoom room = trainingRoomRepository.findByIdWithContext(req.trainingRoomId())
                 .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
 
-        List<TrainingSession> sessions = trainingSessionRepository
-                .findByTrainingRoomIdOrderByDayNumberAsc(req.trainingRoomId());
+        // Carrega transcrição — usada para data, duração e conteúdo
+        List<TranscricaoTrecho> trechos = transcricaoRepository
+                .findByTrainingRoomIdOrderByTimestampAsc(req.trainingRoomId());
 
-        // Monta bloco de contexto com dados reais da sala
+        // Extrai data e duração dos timestamps da transcrição
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
-        StringBuilder ctx = new StringBuilder();
-        ctx.append("=== INFORMAÇÕES DA SALA DE TREINAMENTO ===\n");
-        ctx.append("Título da sala: ").append(room.getTitle()).append("\n");
-
-        if (room.getDescription() != null && !room.getDescription().isBlank()) {
-            ctx.append("Descrição: ").append(room.getDescription()).append("\n");
-        }
-        if (room.getCompany() != null) {
-            ctx.append("Empresa/Cliente: ").append(room.getCompany().getName()).append("\n");
-        }
-        if (room.getIsm() != null) {
-            ctx.append("ISM/Analista Responsável: ").append(room.getIsm().getName()).append("\n");
-        }
-        if (room.getTrail() != null) {
-            ctx.append("Trilha vinculada: ").append(room.getTrail().getName()).append("\n");
-        }
-        if (!room.getInvitedEmployees().isEmpty()) {
-            String participantes = room.getInvitedEmployees().stream()
-                    .map(Employee::getName)
-                    .collect(Collectors.joining(", "));
-            ctx.append("Participantes (funcionários convidados): ").append(participantes).append("\n");
-        }
-        ctx.append("ISM presente na sessão: ").append(autor.getName()).append("\n");
-
-        if (!sessions.isEmpty()) {
-            ctx.append("\nDias de treinamento:\n");
-            for (TrainingSession s : sessions) {
-                ctx.append("  Dia ").append(s.getDayNumber())
-                        .append(": ").append(s.getDate().format(dateFmt))
-                        .append(" das ").append(s.getStartTime().format(timeFmt))
-                        .append(" às ").append(s.getEndTime().format(timeFmt))
-                        .append("\n");
+        String dataStr = "Não especificada";
+        String duracaoStr = "Não especificada";
+        if (!trechos.isEmpty()) {
+            LocalDateTime inicio = trechos.get(0).getTimestamp();
+            LocalDateTime fim = trechos.get(trechos.size() - 1).getTimestamp();
+            dataStr = inicio.toLocalDate().format(dateFmt)
+                    + " às " + inicio.toLocalTime().format(timeFmt);
+            long minutos = java.time.Duration.between(inicio, fim).toMinutes();
+            duracaoStr = minutos > 0 ? minutos + " minuto(s)" : "menos de 1 minuto";
+        } else {
+            // Fallback: usa a primeira sessão agendada se não houver transcrição
+            List<TrainingSession> sessions = trainingSessionRepository
+                    .findByTrainingRoomIdOrderByDayNumberAsc(req.trainingRoomId());
+            if (!sessions.isEmpty()) {
+                dataStr = sessions.get(0).getDate().format(dateFmt);
             }
         }
 
-        ctx.append("\n=== TRANSCRIÇÃO DA SESSÃO ===\n");
+        // ── Seção 1 gerada pelo Java — formatação garantida, sem depender da IA ──
+        String secao1 = "<h2>1. Identificação do Atendimento</h2>\n"
+                + "<p><strong>Empresa/Cliente:</strong></p>\n"
+                + "<p>" + (room.getCompany() != null ? room.getCompany().getName() : "Não especificada") + "</p>\n"
+                + "<p><strong>ISM/Analista Responsável:</strong></p>\n"
+                + "<p>" + (room.getIsm() != null ? room.getIsm().getName() : "Não especificado") + "</p>\n"
+                + "<p><strong>Data:</strong></p>\n"
+                + "<p>" + dataStr + "</p>\n"
+                + "<p><strong>Duração estimada do atendimento:</strong></p>\n"
+                + "<p>" + duracaoStr + "</p>\n";
 
-        String transcricaoTexto = transcricaoRepository
-                .findByTrainingRoomIdOrderByTimestampAsc(req.trainingRoomId())
-                .stream()
+        // ── Contexto enviado à IA para as seções 2–8 ──
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("=== INFORMAÇÕES DA SALA ===\n");
+        ctx.append("Título: ").append(room.getTitle()).append("\n");
+        if (room.getDescription() != null && !room.getDescription().isBlank()) {
+            ctx.append("Descrição: ").append(room.getDescription()).append("\n");
+        }
+        if (room.getCompany() != null) ctx.append("Empresa: ").append(room.getCompany().getName()).append("\n");
+        if (room.getIsm() != null)     ctx.append("ISM: ").append(room.getIsm().getName()).append("\n");
+        if (room.getTrail() != null)   ctx.append("Trilha: ").append(room.getTrail().getName()).append("\n");
+        if (!room.getInvitedEmployees().isEmpty()) {
+            ctx.append("Convidados: ").append(
+                    room.getInvitedEmployees().stream().map(Employee::getName).collect(Collectors.joining(", "))
+            ).append("\n");
+        }
+        ctx.append("ISM presente: ").append(autor.getName()).append("\n");
+        ctx.append("Data da sessão: ").append(dataStr).append("\n");
+
+        String transcricaoTexto = trechos.stream()
                 .map(t -> "[" + t.getTimestamp().toLocalTime().toString().substring(0, 8) + "] " + t.getTexto())
                 .collect(Collectors.joining("\n"));
-
         if (transcricaoTexto.isBlank()) {
-            transcricaoTexto = "(Nenhuma transcrição disponível para esta sala)";
+            transcricaoTexto = "(Nenhuma transcrição disponível)";
         }
-
-        String userPrompt = ctx.toString() + transcricaoTexto;
+        ctx.append("\n=== TRANSCRIÇÃO DA SESSÃO ===\n").append(transcricaoTexto);
 
         String systemPrompt = """
                 Você é um especialista em documentação de atendimento técnico corporativo (Customer Success / ISM).
-                Com base nas informações e transcrição fornecidas, gere um Relatório de Atendimento Técnico (RAT) profissional em HTML semântico.
+                Com base na transcrição e contexto fornecidos, gere as seções 2 a 8 de um RAT em HTML semântico.
                 Use somente as tags: <h2>, <p>, <ul>, <li>, <strong>.
-                Linguagem formal, objetiva e voltada ao universo de CS/suporte técnico.
+                Linguagem formal e objetiva. NÃO gere a seção 1 — ela já foi produzida pelo sistema.
 
-                REGRA DE FORMATAÇÃO OBRIGATÓRIA — aplique em TODOS os campos:
-                Cada rótulo deve estar em um <p><strong>Rótulo:</strong></p> próprio,
-                e o valor correspondente em um <p> separado logo abaixo. NUNCA coloque
-                rótulo e valor na mesma linha.
+                REGRA DE FORMATAÇÃO — aplique em todos os campos com rótulo:
+                <p><strong>Rótulo:</strong></p>
+                <p>Valor do campo na linha seguinte</p>
 
-                Exemplo correto:
-                <p><strong>Empresa/Cliente:</strong></p>
-                <p>Nome da empresa</p>
-
-                Estrutura obrigatória:
-
-                <h2>1. Identificação do Atendimento</h2>
-                <p><strong>Empresa/Cliente:</strong></p><p>...</p>
-                <p><strong>ISM/Analista Responsável:</strong></p><p>...</p>
-                <p><strong>Data:</strong></p><p>...</p>
-                <p><strong>Duração estimada do atendimento:</strong></p><p>...</p>
+                Seções a gerar:
 
                 <h2>2. Participantes</h2>
-                <p><strong>Participantes identificados:</strong></p>
                 <ul><li>Nome — papel (cliente, ISM, equipe interna)</li></ul>
 
                 <h2>3. Objetivo do Atendimento</h2>
@@ -220,7 +215,7 @@ public class RatService {
                 <ul><li>Cada tópico técnico ou funcional discutido</li></ul>
 
                 <h2>5. Dúvidas Levantadas</h2>
-                <ul><li>Dúvidas e questionamentos levantados pelo cliente</li></ul>
+                <ul><li>Dúvidas levantadas pelo cliente</li></ul>
 
                 <h2>6. Pendências</h2>
                 <ul><li>Itens em aberto ou aguardando retorno</li></ul>
@@ -229,9 +224,9 @@ public class RatService {
                 <ul><li>Ação — Responsável — Prazo estimado</li></ul>
 
                 <h2>8. Observações Técnicas</h2>
-                <p>Informações complementares relevantes para o time de CS/ISM</p>
+                <p>Informações complementares para o time de CS/ISM</p>
 
-                Responda APENAS com o HTML das seções, sem bloco de código, sem DOCTYPE, sem explicações extras.
+                Responda APENAS com o HTML das seções 2 a 8, sem bloco de código, sem DOCTYPE, sem explicações.
                 """;
 
         auditLogRepository.save(new AuditLog(
@@ -240,6 +235,7 @@ public class RatService {
                 autor.getEmail(),
                 "RAT gerado via IA"));
 
-        return aiService.generate(systemPrompt, userPrompt).content();
+        String secoes2a8 = aiService.generate(systemPrompt, ctx.toString()).content();
+        return secao1 + secoes2a8;
     }
 }
