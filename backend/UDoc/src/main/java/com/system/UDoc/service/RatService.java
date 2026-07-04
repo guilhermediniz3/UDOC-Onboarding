@@ -58,10 +58,19 @@ public class RatService {
             Long autorId,
             LocalDate dataInicio,
             LocalDate dataFim,
+            int timezoneOffset,
             Pageable pageable) {
 
-        LocalDateTime inicio = dataInicio != null ? dataInicio.atStartOfDay() : null;
-        LocalDateTime fim    = dataFim    != null ? dataFim.atTime(23, 59, 59) : null;
+        // timezoneOffset: minutos de Date.getTimezoneOffset() (positivo = atrás do UTC: UTC-3 → 180)
+        java.time.ZoneOffset clientOffset = java.time.ZoneOffset.ofTotalSeconds(-timezoneOffset * 60);
+        LocalDateTime inicio = dataInicio != null
+                ? dataInicio.atStartOfDay().atOffset(clientOffset)
+                        .withOffsetSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime()
+                : null;
+        LocalDateTime fim = dataFim != null
+                ? dataFim.atTime(23, 59, 59).atOffset(clientOffset)
+                        .withOffsetSameInstant(java.time.ZoneOffset.UTC).toLocalDateTime()
+                : null;
 
         Specification<Rat> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

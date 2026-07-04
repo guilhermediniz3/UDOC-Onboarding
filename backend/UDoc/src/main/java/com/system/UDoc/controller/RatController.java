@@ -43,8 +43,9 @@ public class RatController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(required = false, defaultValue = "0") int timezoneOffset,
             Pageable pageable) {
-        return ResponseEntity.ok(ratService.listar(ismId, companyId, autorId, dataInicio, dataFim, pageable));
+        return ResponseEntity.ok(ratService.listar(ismId, companyId, autorId, dataInicio, dataFim, timezoneOffset, pageable));
     }
 
     @GetMapping("/{id}")

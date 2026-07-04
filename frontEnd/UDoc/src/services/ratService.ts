@@ -10,6 +10,7 @@ interface GetRatsParams {
   autorId?: number | null;
   dataInicio?: string;
   dataFim?: string;
+  timezoneOffset?: number;
 }
 
 interface RatRequest {
@@ -27,6 +28,7 @@ export async function getRats(params: GetRatsParams = {}): Promise<PaginationRes
       ismId: params.ismId ?? undefined,
       companyId: params.companyId ?? undefined,
       autorId: params.autorId ?? undefined,
+      timezoneOffset: new Date().getTimezoneOffset(),
     },
   });
   return r.data;
