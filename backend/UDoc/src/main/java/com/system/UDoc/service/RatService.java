@@ -141,8 +141,12 @@ public class RatService {
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
 
-        LocalDateTime inicio = trechos.get(0).getTimestamp();
-        LocalDateTime fim    = trechos.get(trechos.size() - 1).getTimestamp();
+        // Timestamps salvos em UTC — converte para horário de Brasília (America/Sao_Paulo)
+        java.time.ZoneId zonaBrasil = java.time.ZoneId.of("America/Sao_Paulo");
+        LocalDateTime inicio = trechos.get(0).getTimestamp()
+                .atZone(java.time.ZoneOffset.UTC).withZoneSameInstant(zonaBrasil).toLocalDateTime();
+        LocalDateTime fim    = trechos.get(trechos.size() - 1).getTimestamp()
+                .atZone(java.time.ZoneOffset.UTC).withZoneSameInstant(zonaBrasil).toLocalDateTime();
 
         String dataStr    = inicio.toLocalDate().format(dateFmt);
         String horarioStr = inicio.toLocalTime().format(timeFmt) + " às " + fim.toLocalTime().format(timeFmt);
