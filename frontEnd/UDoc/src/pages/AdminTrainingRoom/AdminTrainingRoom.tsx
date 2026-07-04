@@ -205,6 +205,7 @@ export default function AdminTrainingRoom() {
 
   /* ── aba RAT ── */
   const [ratTitulo, setRatTitulo] = useState("");
+  const [ratTituloError, setRatTituloError] = useState("");
   const [ratConteudo, setRatConteudo] = useState("");
   // chave incremental: força re-mount do RichTextEditor quando a IA gera conteúdo
   const [ratEditorKey, setRatEditorKey] = useState(0);
@@ -213,6 +214,7 @@ export default function AdminTrainingRoom() {
   const [gerandoRat, setGerandoRat] = useState(false);
   const [transcricaoRat, setTranscricaoRat] = useState<TranscricaoTrecho[]>([]);
   const [carregandoTranscricao, setCarregandoTranscricao] = useState(false);
+  const ratTituloRef = useRef<HTMLInputElement>(null);
 
   /* ── agendamento ── */
   const [totalDays, setTotalDays] = useState<number>(0);
@@ -428,16 +430,27 @@ export default function AdminTrainingRoom() {
 
   async function handleSalvarRat() {
     if (!id) return;
-    if (!ratTitulo.trim()) { showRatMsg("error", "Informe o título do RAT."); return; }
-    if (!ratConteudo.trim()) { showRatMsg("error", "O conteúdo do RAT está vazio."); return; }
+    const titulo = (ratTitulo ?? "").trim();
+    const conteudo = (ratConteudo ?? "").trim();
+    if (!titulo) {
+      setRatTituloError("Informe o título do RAT.");
+      ratTituloRef.current?.focus();
+      ratTituloRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!conteudo || conteudo === "<p></p>") {
+      showRatMsg("error", "O conteúdo do RAT está vazio. Gere com IA ou escreva manualmente.");
+      return;
+    }
+    setRatTituloError("");
     setSalvandoRat(true);
     try {
       await createRat({
         trainingRoomId: Number(id),
         companyId: room.companyId ?? null,
         ismId: room.ismId ?? null,
-        titulo: ratTitulo,
-        conteudo: ratConteudo,
+        titulo,
+        conteudo,
       });
       showRatMsg("success", "RAT salvo com sucesso em Meus RATs!");
       setRatTitulo("");
@@ -1401,11 +1414,13 @@ export default function AdminTrainingRoom() {
 
                 <Stack gap="16px">
                   <TextInput
+                    ref={ratTituloRef}
                     label="Título do RAT"
                     placeholder="Ex: RAT — Treinamento onboarding — Empresa ABC"
                     radius="xl" size="md"
                     value={ratTitulo}
-                    onChange={(e) => setRatTitulo(e.currentTarget.value)}
+                    error={ratTituloError}
+                    onChange={(e) => { setRatTitulo(e.currentTarget.value); setRatTituloError(""); }}
                     styles={inputStyles}
                   />
 
