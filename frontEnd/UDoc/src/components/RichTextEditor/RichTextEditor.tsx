@@ -83,11 +83,13 @@ declare module "@tiptap/core" {
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  hideVideo?: boolean;
 }
 
 export default function RichTextEditor({
   value,
   onChange,
+  hideVideo = false,
 }: RichTextEditorProps) {
   const { colorScheme } = useMantineColorScheme();
   const dark = colorScheme === "dark";
@@ -485,10 +487,11 @@ export default function RichTextEditor({
                 </ToolbarButton>
               </span>
             </Tooltip>
-            <ToolbarButton title="Vídeo" onClick={() => openDialog("video")}><FaVideo /></ToolbarButton>
-            {/* Botão de gravação — alterna entre gravar e parar+upload */}
+            {!hideVideo && (
+              <ToolbarButton title="Vídeo" onClick={() => openDialog("video")}><FaVideo /></ToolbarButton>
+            )}
             {/* Botão de gravação */}
-            {!isRecording ? (
+            {!hideVideo && (!isRecording ? (
               <Tooltip label={uploadingRec ? "Enviando gravação..." : "Gravar tela e inserir no card"} withArrow>
                 <span>
                   <ToolbarButton title="Gravar" onClick={handleStartRecording} disabled={uploadingRec}>
@@ -504,7 +507,7 @@ export default function RichTextEditor({
                   </ToolbarButton>
                 </span>
               </Tooltip>
-            )}
+            ))}
             <Divider orientation="vertical" />
             <ToolbarButton title="Info" onClick={() => insertCallout("info")}><FaInfoCircle /></ToolbarButton>
             <ToolbarButton title="Warning" onClick={() => insertCallout("warning")}><FaExclamationTriangle /></ToolbarButton>

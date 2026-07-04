@@ -27,12 +27,18 @@ import {
   IconCalendar,
   IconCheck,
   IconCopy,
+  IconDownload,
+  IconFileText,
   IconInfoCircle,
   IconLink,
   IconMail,
+  IconMicrophone,
+  IconMicrophoneOff,
+  IconPlayerPause,
   IconPlayerPlay,
   IconPlayerStop,
   IconPlayerRecord,
+  IconRobot,
   IconTrash,
   IconVideo,
   IconX,
@@ -81,6 +87,11 @@ import { useAuth } from "../../contexts/AuthContext";
 import type { TrainingRoom } from "../../types/TrainingRoom";
 import type { Company } from "../../types/Company";
 import type { ISM } from "../../types/ISM";
+import type { TranscricaoTrecho } from "../../types/TranscricaoTrecho";
+
+import { salvarTrecho, listarTranscricaoPorSala } from "../../services/transcricaoService";
+import { createRat, gerarRatComIA } from "../../services/ratService";
+import RichTextEditor from "../../components/RichTextEditor/RichTextEditor";
 
 /* ── video helpers ── */
 
@@ -181,6 +192,24 @@ export default function AdminTrainingRoom() {
   const mediaRecRef   = useRef<MediaRecorder | null>(null);
   const recTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /* ── transcrição de voz ── */
+  const [transcricaoEstado, setTranscricaoEstado] = useState<"idle" | "recording" | "paused">("idle");
+  const [transcricaoSuportada] = useState(() =>
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
+  );
+  const reconRef = useRef<any>(null);
+  const [transcricaoTrechos, setTranscricaoTrechos] = useState<TranscricaoTrecho[]>([]);
+
+  /* ── aba RAT ── */
+  const [ratTitulo, setRatTitulo] = useState("");
+  const [ratConteudo, setRatConteudo] = useState("");
+  const [ratMsg, setRatMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [salvandoRat, setSalvandoRat] = useState(false);
+  const [gerandoRat, setGerandoRat] = useState(false);
+  const [transcricaoRat, setTranscricaoRat] = useState<TranscricaoTrecho[]>([]);
+  const [carregandoTranscricao, setCarregandoTranscricao] = useState(false);
+
   /* ── agendamento ── */
   const [totalDays, setTotalDays] = useState<number>(0);
   const [days, setDays] = useState<DayRow[]>([]);
@@ -191,6 +220,10 @@ export default function AdminTrainingRoom() {
 
   function showMessage(type: "success" | "error", text: string) {
     setMessageType(type); setMessage(text); setTimeout(() => setMessage(""), 4000);
+  }
+
+  function showRatMsg(type: "success" | "error", text: string) {
+    setRatMsg({ type, text }); setTimeout(() => setRatMsg(null), 4000);
   }
 
   function showScheduleMsg(type: "success" | "error", text: string) {
@@ -282,6 +315,123 @@ export default function AdminTrainingRoom() {
 
       return next;
     });
+  }
+
+  /* ── transcrição ── */
+  function iniciarTranscricao() {
+    if (!id || !transcricaoSuportada) return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SpeechRec();
+    rec.lang = "pt-BR";
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          const texto = event.results[i][0].transcript.trim();
+          if (texto) {
+            salvarTrecho(Number(id), texto)
+              .then((t) => setTranscricaoTrechos((prev) => [...prev, t]))
+              .catch(() => {});
+          }
+        }
+      }
+    };
+    rec.onend = () => {
+      if (transcricaoEstado === "recording") {
+        try { rec.start(); } catch (_) {}
+      }
+    };
+    reconRef.current = rec;
+    rec.start();
+    setTranscricaoEstado("recording");
+  }
+
+  function pausarTranscricao() {
+    if (reconRef.current) { try { reconRef.current.stop(); } catch (_) {} }
+    setTranscricaoEstado("paused");
+  }
+
+  function retormarTranscricao() {
+    if (!reconRef.current) return;
+    try { reconRef.current.start(); } catch (_) {}
+    setTranscricaoEstado("recording");
+  }
+
+  function encerrarTranscricao() {
+    if (reconRef.current) { try { reconRef.current.abort(); } catch (_) {} reconRef.current = null; }
+    setTranscricaoEstado("idle");
+  }
+
+  async function carregarTranscricaoRat() {
+    if (!id) return;
+    setCarregandoTranscricao(true);
+    try {
+      const list = await listarTranscricaoPorSala(Number(id));
+      setTranscricaoRat(list);
+    } catch { /* silencioso */ }
+    finally { setCarregandoTranscricao(false); }
+  }
+
+  async function handleBaixarTranscricaoPdf() {
+    if (!transcricaoRat.length) return;
+    const html2pdf = (await import("html2pdf.js")).default;
+    const el = document.createElement("div");
+    el.style.fontFamily = "Arial, sans-serif";
+    el.style.padding = "20px";
+    el.innerHTML = `
+      <h2 style="margin-bottom:4px">${room.title}</h2>
+      <p style="color:#666;margin-bottom:16px">Transcrição bruta — ${new Date().toLocaleDateString("pt-BR")}</p>
+      ${transcricaoRat.map((t) => `
+        <div style="margin-bottom:12px">
+          <span style="font-size:11px;color:#888;font-weight:600">[${new Date(t.timestamp).toLocaleTimeString("pt-BR")}]</span>
+          <p style="margin:2px 0 0 0">${t.texto}</p>
+        </div>
+      `).join("")}
+    `;
+    html2pdf().set({
+      margin: [15, 15, 15, 15],
+      filename: `transcricao-${id}-${Date.now()}.pdf`,
+      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    }).from(el).save();
+  }
+
+  async function handleGerarRatIA() {
+    if (!id) return;
+    setGerandoRat(true);
+    try {
+      const html = await gerarRatComIA(Number(id));
+      setRatConteudo(html);
+      showRatMsg("success", "RAT gerado com sucesso! Revise e salve.");
+    } catch {
+      showRatMsg("error", "Erro ao gerar RAT. Verifique se há transcrição disponível.");
+    } finally {
+      setGerandoRat(false);
+    }
+  }
+
+  async function handleSalvarRat() {
+    if (!id) return;
+    if (!ratTitulo.trim()) { showRatMsg("error", "Informe o título do RAT."); return; }
+    if (!ratConteudo.trim()) { showRatMsg("error", "O conteúdo do RAT está vazio."); return; }
+    setSalvandoRat(true);
+    try {
+      await createRat({
+        trainingRoomId: Number(id),
+        companyId: room.companyId ?? null,
+        ismId: room.ismId ?? null,
+        titulo: ratTitulo,
+        conteudo: ratConteudo,
+      });
+      showRatMsg("success", "RAT salvo com sucesso em Meus RATs!");
+      setRatTitulo("");
+      setRatConteudo("");
+    } catch (err: any) {
+      showRatMsg("error", err?.response?.data?.message || "Erro ao salvar o RAT.");
+    } finally {
+      setSalvandoRat(false);
+    }
   }
 
   /* ── salvar detalhes ── */
@@ -589,6 +739,14 @@ export default function AdminTrainingRoom() {
             <Tabs.Tab value="detalhes" leftSection={<IconInfoCircle size={16} />}>Detalhes</Tabs.Tab>
             <Tabs.Tab value="agendamento" leftSection={<IconCalendar size={16} />}>Agendamento</Tabs.Tab>
             <Tabs.Tab value="treinamento" leftSection={<IconVideo size={16} />}>Treinamento</Tabs.Tab>
+            <Tabs.Tab
+              value="rat"
+              leftSection={<IconFileText size={16} />}
+              disabled={isNew}
+              onClick={carregarTranscricaoRat}
+            >
+              RAT
+            </Tabs.Tab>
           </Tabs.List>
 
           {/* ── ABA DETALHES ── */}
@@ -953,6 +1111,103 @@ export default function AdminTrainingRoom() {
                 )}
               </Paper>
 
+              {/* Captura de voz */}
+              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                <Group justify="space-between" align="center" mb="md">
+                  <div>
+                    <Text fw={700} c="var(--text-primary)" fz="md">Transcrição da sessão</Text>
+                    <Text fz="xs" c="var(--text-secondary)">
+                      Transcreve a fala do microfone em tempo real via Web Speech API (Chrome/Edge).
+                    </Text>
+                  </div>
+                  {transcricaoEstado === "recording" && (
+                    <Badge color="red" variant="dot" size="lg" radius="xl">
+                      Transcrição ativa
+                    </Badge>
+                  )}
+                </Group>
+
+                {!transcricaoSuportada ? (
+                  <Alert color="orange" radius="xl" variant="light" icon={<IconMicrophoneOff size={16} />}>
+                    Seu navegador não suporta a Web Speech API. Use Chrome ou Edge para transcrição de voz.
+                  </Alert>
+                ) : isNew ? (
+                  <Text fz="xs" c="var(--text-secondary)">Salve a sala primeiro para habilitar a transcrição.</Text>
+                ) : (
+                  <Stack gap="sm">
+                    <Group gap="sm">
+                      {transcricaoEstado === "idle" && (
+                        <Button
+                          leftSection={<IconMicrophone size={16} />}
+                          radius="xl" size="sm" color="green" variant="light"
+                          onClick={iniciarTranscricao}
+                        >
+                          Iniciar
+                        </Button>
+                      )}
+                      {transcricaoEstado === "recording" && (
+                        <>
+                          <Button
+                            leftSection={<IconPlayerPause size={16} />}
+                            radius="xl" size="sm" color="orange" variant="light"
+                            onClick={pausarTranscricao}
+                          >
+                            Pausar
+                          </Button>
+                          <Button
+                            leftSection={<IconPlayerStop size={16} />}
+                            radius="xl" size="sm" color="red" variant="light"
+                            onClick={encerrarTranscricao}
+                          >
+                            Encerrar
+                          </Button>
+                        </>
+                      )}
+                      {transcricaoEstado === "paused" && (
+                        <>
+                          <Button
+                            leftSection={<IconPlayerPlay size={16} />}
+                            radius="xl" size="sm" color="green" variant="light"
+                            onClick={retormarTranscricao}
+                          >
+                            Retomar
+                          </Button>
+                          <Button
+                            leftSection={<IconPlayerStop size={16} />}
+                            radius="xl" size="sm" color="red" variant="light"
+                            onClick={encerrarTranscricao}
+                          >
+                            Encerrar
+                          </Button>
+                        </>
+                      )}
+                    </Group>
+
+                    {transcricaoTrechos.length > 0 && (
+                      <Stack gap="4px" mt="xs"
+                        style={{
+                          maxHeight: 200,
+                          overflowY: "auto",
+                          padding: "12px",
+                          borderRadius: 10,
+                          background: "var(--card-bg)",
+                          border: "1px solid var(--border-color)",
+                        }}
+                      >
+                        {transcricaoTrechos.map((t) => (
+                          <Group key={t.id} gap="xs" align="flex-start" wrap="nowrap">
+                            <Text fz="10px" c="var(--text-secondary)" style={{ flexShrink: 0, marginTop: 2 }}>
+                              {new Date(t.timestamp).toLocaleTimeString("pt-BR")}
+                            </Text>
+                            <Text fz="sm" c="var(--text-primary)">{t.texto}</Text>
+                          </Group>
+                        ))}
+                      </Stack>
+                    )}
+                  </Stack>
+                )}
+              </Paper>
+
               {/* Embed de vídeo */}
               <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
                 <Text fw={700} c="var(--text-primary)" fz="md" mb="md">Vídeo gravado</Text>
@@ -1061,6 +1316,127 @@ export default function AdminTrainingRoom() {
                   Salvar Alterações
                 </Button>
               </Group>
+
+            </Stack>
+          </Tabs.Panel>
+
+          {/* ── ABA RAT ── */}
+          <Tabs.Panel value="rat">
+            <Stack gap="24px">
+
+              {ratMsg && (
+                <Alert
+                  color={ratMsg.type === "success" ? "green" : "red"}
+                  icon={ratMsg.type === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
+                  radius="xl"
+                >
+                  {ratMsg.text}
+                </Alert>
+              )}
+
+              {/* Transcrição da sessão */}
+              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                <Group justify="space-between" align="center" mb="md">
+                  <div>
+                    <Text fw={700} c="var(--text-primary)" fz="md">Transcrição da sessão</Text>
+                    <Text fz="xs" c="var(--text-secondary)">Trechos capturados em ordem cronológica</Text>
+                  </div>
+                  <Group gap="sm">
+                    <Button
+                      size="xs" radius="xl" variant="light" color="violet"
+                      leftSection={<IconDownload size={14} />}
+                      loading={carregandoTranscricao}
+                      onClick={carregarTranscricaoRat}
+                    >
+                      Atualizar
+                    </Button>
+                    {transcricaoRat.length > 0 && (
+                      <Button
+                        size="xs" radius="xl" variant="light" color="red"
+                        leftSection={<IconDownload size={14} />}
+                        onClick={handleBaixarTranscricaoPdf}
+                      >
+                        Baixar PDF
+                      </Button>
+                    )}
+                  </Group>
+                </Group>
+
+                {transcricaoRat.length === 0 ? (
+                  <Text fz="sm" c="var(--text-secondary)">
+                    Nenhuma transcrição disponível para esta sala. Inicie a captura na aba Treinamento.
+                  </Text>
+                ) : (
+                  <Stack gap="4px"
+                    style={{
+                      maxHeight: 280,
+                      overflowY: "auto",
+                      padding: "12px",
+                      borderRadius: 10,
+                      background: "var(--card-bg)",
+                      border: "1px solid var(--border-color)",
+                    }}
+                  >
+                    {transcricaoRat.map((t) => (
+                      <Group key={t.id} gap="xs" align="flex-start" wrap="nowrap">
+                        <Text fz="10px" c="var(--text-secondary)" style={{ flexShrink: 0, marginTop: 3 }}>
+                          {new Date(t.timestamp).toLocaleTimeString("pt-BR")}
+                        </Text>
+                        <Text fz="sm" c="var(--text-primary)">{t.texto}</Text>
+                      </Group>
+                    ))}
+                  </Stack>
+                )}
+              </Paper>
+
+              {/* Geração do RAT */}
+              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                <Text fw={700} c="var(--text-primary)" fz="md" mb="md">Documento RAT</Text>
+
+                <Stack gap="16px">
+                  <TextInput
+                    label="Título do RAT"
+                    placeholder="Ex: RAT — Treinamento onboarding — Empresa ABC"
+                    radius="xl" size="md"
+                    value={ratTitulo}
+                    onChange={(e) => setRatTitulo(e.currentTarget.value)}
+                    styles={inputStyles}
+                  />
+
+                  <Group gap="sm">
+                    <Button
+                      leftSection={<IconRobot size={16} />}
+                      radius="xl" size="sm" variant="gradient"
+                      gradient={{ from: "violet", to: "indigo" }}
+                      loading={gerandoRat}
+                      onClick={handleGerarRatIA}
+                    >
+                      Gerar RAT com IA
+                    </Button>
+                    <Text fz="xs" c="var(--text-secondary)">
+                      ou escreva / edite manualmente no editor abaixo
+                    </Text>
+                  </Group>
+
+                  <RichTextEditor
+                    value={ratConteudo}
+                    onChange={setRatConteudo}
+                    hideVideo
+                  />
+
+                  <Group justify="flex-end">
+                    <Button
+                      leftSection={<IconCheck size={16} />}
+                      radius="xl" size="md" variant="gradient"
+                      gradient={{ from: "violet", to: "blue" }}
+                      loading={salvandoRat}
+                      onClick={handleSalvarRat}
+                    >
+                      Salvar RAT
+                    </Button>
+                  </Group>
+                </Stack>
+              </Paper>
 
             </Stack>
           </Tabs.Panel>

@@ -32,6 +32,7 @@ import Ranking from "../pages/Ranking/Ranking";
 import AdminPermissions from "../pages/AdminPermissions/AdminPermissions";
 import Catalogo from "../pages/Catalogo/Catalogo";
 import AdminChatInsights from "../pages/AdminChatInsights/AdminChatInsights";
+import AdminListRats from "../pages/AdminListRats/AdminListRats";
 
 function AppRoutes() {
   return (
@@ -114,6 +115,9 @@ function AppRoutes() {
 
       {/* CHAT INSIGHTS — admin/gestor only */}
       <Route path="/admin/chat-insights" element={<AdminChatInsights />} />
+
+      {/* MEUS RATs */}
+      <Route path="/admin/rats" element={<AdminListRats />} />
 
       {/* 403 — Acesso negado */}
       <Route path="/403" element={<Forbidden />} />

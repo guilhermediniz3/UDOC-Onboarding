@@ -151,7 +151,8 @@ const NAV_ITEMS: NavItemType[] = [
     collapsedPath: "/admin/training-rooms",
     isActive: (p) =>
       p.startsWith("/admin/training-room") ||
-      p === "/admin/training-calendar",
+      p === "/admin/training-calendar" ||
+      p === "/admin/rats",
     children: [
       {
         label: "Salas",
@@ -164,6 +165,12 @@ const NAV_ITEMS: NavItemType[] = [
         path: "/admin/training-calendar",
         Icon: IconLayoutKanban,
         isActive: (p) => p === "/admin/training-calendar",
+      },
+      {
+        label: "Meus RATs",
+        path: "/admin/rats",
+        Icon: IconFileText,
+        isActive: (p) => p === "/admin/rats",
       },
     ],
   },
@@ -265,6 +272,7 @@ export default function Sidebar({ collapsed, onToggle, onMobileClose }: SidebarP
     // Sala de Treinamento (filhos)
     "Salas":                  "SALA",
     "Calendário":             "SALA",
+    "Meus RATs":              "SALA",
 
     // Itens autônomos
     "Matrícula":              "MATRICULA",
