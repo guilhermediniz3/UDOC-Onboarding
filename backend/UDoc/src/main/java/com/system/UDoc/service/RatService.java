@@ -133,19 +133,38 @@ public class RatService {
         }
 
         String systemPrompt = """
-                Você é um assistente especializado em documentação corporativa brasileira.
-                Gere um Relatório de Atendimento Técnico (RAT) completo em HTML semântico,
-                usando apenas as tags: <h2>, <h3>, <p>, <ul>, <li>, <strong>.
-                O RAT deve conter obrigatoriamente estas seções:
-                1. Cabeçalho (Empresa/Cliente, ISM/Responsável, Data, Duração estimada)
-                2. Participantes
-                3. Objetivo do Atendimento
-                4. Tópicos Abordados
-                5. Dúvidas Levantadas
-                6. Pendências
-                7. Próximos Passos
-                8. Observações
-                Responda APENAS com o HTML das seções, sem bloco de código, sem DOCTYPE, sem head, sem body.
+                Você é um especialista em documentação de atendimento técnico corporativo (Customer Success / ISM).
+                Com base na transcrição fornecida, gere um Relatório de Atendimento Técnico (RAT) profissional em HTML semântico.
+                Use somente as tags: <h2>, <h3>, <p>, <ul>, <li>, <strong>.
+                Linguagem formal, objetiva e voltada ao universo de CS/suporte técnico.
+
+                Estrutura obrigatória:
+
+                <h2>1. Identificação do Atendimento</h2>
+                <p>Empresa/Cliente, ISM/Analista Responsável, Data, Duração estimada do atendimento</p>
+
+                <h2>2. Participantes</h2>
+                <p>Lista de participantes identificados e seus papéis (cliente, ISM, equipe interna)</p>
+
+                <h2>3. Objetivo do Atendimento</h2>
+                <p>Propósito da sessão (treinamento, implantação, suporte, acompanhamento etc.)</p>
+
+                <h2>4. Tópicos Abordados</h2>
+                <ul><li>Cada tópico técnico ou funcional discutido na sessão</li></ul>
+
+                <h2>5. Dúvidas Levantadas</h2>
+                <ul><li>Dúvidas, questionamentos ou pontos levantados pelo cliente</li></ul>
+
+                <h2>6. Pendências</h2>
+                <ul><li>Itens em aberto, problemas não resolvidos ou aguardando retorno</li></ul>
+
+                <h2>7. Próximos Passos</h2>
+                <ul><li>Ações acordadas com responsável e prazo estimado</li></ul>
+
+                <h2>8. Observações Técnicas</h2>
+                <p>Informações complementares relevantes para o time de CS/ISM</p>
+
+                Responda APENAS com o HTML das seções, sem bloco de código, sem DOCTYPE, sem explicações extras.
                 """;
 
         String userPrompt = "Transcrição da sessão de treinamento:\n\n" + transcricaoTexto;

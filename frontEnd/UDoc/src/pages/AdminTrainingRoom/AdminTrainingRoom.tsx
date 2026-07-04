@@ -194,6 +194,8 @@ export default function AdminTrainingRoom() {
 
   /* ── transcrição de voz ── */
   const [transcricaoEstado, setTranscricaoEstado] = useState<"idle" | "recording" | "paused">("idle");
+  // ref para uso dentro do callback onend da SpeechRecognition (evita closure stale)
+  const transcricaoEstadoRef = useRef<"idle" | "recording" | "paused">("idle");
   const [transcricaoSuportada] = useState(() =>
     typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
@@ -204,6 +206,8 @@ export default function AdminTrainingRoom() {
   /* ── aba RAT ── */
   const [ratTitulo, setRatTitulo] = useState("");
   const [ratConteudo, setRatConteudo] = useState("");
+  // chave incremental: força re-mount do RichTextEditor quando a IA gera conteúdo
+  const [ratEditorKey, setRatEditorKey] = useState(0);
   const [ratMsg, setRatMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [salvandoRat, setSalvandoRat] = useState(false);
   const [gerandoRat, setGerandoRat] = useState(false);
@@ -318,6 +322,11 @@ export default function AdminTrainingRoom() {
   }
 
   /* ── transcrição ── */
+  function setEstado(e: "idle" | "recording" | "paused") {
+    transcricaoEstadoRef.current = e;
+    setTranscricaoEstado(e);
+  }
+
   function iniciarTranscricao() {
     if (!id || !transcricaoSuportada) return;
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -337,30 +346,31 @@ export default function AdminTrainingRoom() {
         }
       }
     };
+    // usa ref para verificar estado atual sem closure stale
     rec.onend = () => {
-      if (transcricaoEstado === "recording") {
+      if (transcricaoEstadoRef.current === "recording") {
         try { rec.start(); } catch (_) {}
       }
     };
     reconRef.current = rec;
     rec.start();
-    setTranscricaoEstado("recording");
+    setEstado("recording");
   }
 
   function pausarTranscricao() {
     if (reconRef.current) { try { reconRef.current.stop(); } catch (_) {} }
-    setTranscricaoEstado("paused");
+    setEstado("paused");
   }
 
   function retormarTranscricao() {
     if (!reconRef.current) return;
     try { reconRef.current.start(); } catch (_) {}
-    setTranscricaoEstado("recording");
+    setEstado("recording");
   }
 
   function encerrarTranscricao() {
     if (reconRef.current) { try { reconRef.current.abort(); } catch (_) {} reconRef.current = null; }
-    setTranscricaoEstado("idle");
+    setEstado("idle");
   }
 
   async function carregarTranscricaoRat() {
@@ -379,13 +389,16 @@ export default function AdminTrainingRoom() {
     const el = document.createElement("div");
     el.style.fontFamily = "Arial, sans-serif";
     el.style.padding = "20px";
+    // força cores explícitas para não herdar tema dark do body
+    el.style.color = "#1a1a1a";
+    el.style.background = "#ffffff";
     el.innerHTML = `
-      <h2 style="margin-bottom:4px">${room.title}</h2>
-      <p style="color:#666;margin-bottom:16px">Transcrição bruta — ${new Date().toLocaleDateString("pt-BR")}</p>
+      <h2 style="margin-bottom:4px;color:#111">${room.title}</h2>
+      <p style="color:#555;margin-bottom:16px">Transcrição bruta — ${new Date().toLocaleDateString("pt-BR")}</p>
       ${transcricaoRat.map((t) => `
         <div style="margin-bottom:12px">
-          <span style="font-size:11px;color:#888;font-weight:600">[${new Date(t.timestamp).toLocaleTimeString("pt-BR")}]</span>
-          <p style="margin:2px 0 0 0">${t.texto}</p>
+          <span style="font-size:11px;color:#555;font-weight:700">[${new Date(t.timestamp).toLocaleTimeString("pt-BR")}]</span>
+          <p style="margin:2px 0 0 0;color:#1a1a1a">${t.texto}</p>
         </div>
       `).join("")}
     `;
@@ -403,6 +416,8 @@ export default function AdminTrainingRoom() {
     try {
       const html = await gerarRatComIA(Number(id));
       setRatConteudo(html);
+      // força re-mount do RichTextEditor para refletir o novo conteúdo
+      setRatEditorKey((k) => k + 1);
       showRatMsg("success", "RAT gerado com sucesso! Revise e salve.");
     } catch {
       showRatMsg("error", "Erro ao gerar RAT. Verifique se há transcrição disponível.");
@@ -1419,6 +1434,7 @@ export default function AdminTrainingRoom() {
                   </Group>
 
                   <RichTextEditor
+                    key={ratEditorKey}
                     value={ratConteudo}
                     onChange={setRatConteudo}
                     hideVideo
