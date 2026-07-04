@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +22,7 @@ public class RatService {
     private final RatRepository ratRepository;
     private final TranscricaoTrechoRepository transcricaoRepository;
     private final TrainingRoomRepository trainingRoomRepository;
+    private final TrainingSessionRepository trainingSessionRepository;
     private final CompanyRepository companyRepository;
     private final IsmRepository ismRepository;
     private final AuditLogRepository auditLogRepository;
@@ -29,6 +32,7 @@ public class RatService {
             RatRepository ratRepository,
             TranscricaoTrechoRepository transcricaoRepository,
             TrainingRoomRepository trainingRoomRepository,
+            TrainingSessionRepository trainingSessionRepository,
             CompanyRepository companyRepository,
             IsmRepository ismRepository,
             AuditLogRepository auditLogRepository,
@@ -36,6 +40,7 @@ public class RatService {
         this.ratRepository = ratRepository;
         this.transcricaoRepository = transcricaoRepository;
         this.trainingRoomRepository = trainingRoomRepository;
+        this.trainingSessionRepository = trainingSessionRepository;
         this.companyRepository = companyRepository;
         this.ismRepository = ismRepository;
         this.auditLogRepository = auditLogRepository;
@@ -122,6 +127,52 @@ public class RatService {
 
     @Transactional
     public String gerarComIA(GerarRatRequestDTO req, User autor) {
+        TrainingRoom room = trainingRoomRepository.findById(req.trainingRoomId())
+                .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
+
+        List<TrainingSession> sessions = trainingSessionRepository
+                .findByTrainingRoomIdOrderByDayNumberAsc(req.trainingRoomId());
+
+        // Monta bloco de contexto com dados reais da sala
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
+        StringBuilder ctx = new StringBuilder();
+        ctx.append("=== INFORMAÇÕES DA SALA DE TREINAMENTO ===\n");
+        ctx.append("Título da sala: ").append(room.getTitle()).append("\n");
+
+        if (room.getDescription() != null && !room.getDescription().isBlank()) {
+            ctx.append("Descrição: ").append(room.getDescription()).append("\n");
+        }
+        if (room.getCompany() != null) {
+            ctx.append("Empresa/Cliente: ").append(room.getCompany().getName()).append("\n");
+        }
+        if (room.getIsm() != null) {
+            ctx.append("ISM/Analista Responsável: ").append(room.getIsm().getName()).append("\n");
+        }
+        if (room.getTrail() != null) {
+            ctx.append("Trilha vinculada: ").append(room.getTrail().getName()).append("\n");
+        }
+        if (!room.getInvitedEmployees().isEmpty()) {
+            String participantes = room.getInvitedEmployees().stream()
+                    .map(Employee::getName)
+                    .collect(Collectors.joining(", "));
+            ctx.append("Participantes (funcionários convidados): ").append(participantes).append("\n");
+        }
+        ctx.append("ISM presente na sessão: ").append(autor.getName()).append("\n");
+
+        if (!sessions.isEmpty()) {
+            ctx.append("\nDias de treinamento:\n");
+            for (TrainingSession s : sessions) {
+                ctx.append("  Dia ").append(s.getDayNumber())
+                        .append(": ").append(s.getDate().format(dateFmt))
+                        .append(" das ").append(s.getStartTime().format(timeFmt))
+                        .append(" às ").append(s.getEndTime().format(timeFmt))
+                        .append("\n");
+            }
+        }
+
+        ctx.append("\n=== TRANSCRIÇÃO DA SESSÃO ===\n");
+
         String transcricaoTexto = transcricaoRepository
                 .findByTrainingRoomIdOrderByTimestampAsc(req.trainingRoomId())
                 .stream()
@@ -131,6 +182,8 @@ public class RatService {
         if (transcricaoTexto.isBlank()) {
             transcricaoTexto = "(Nenhuma transcrição disponível para esta sala)";
         }
+
+        String userPrompt = ctx.toString() + transcricaoTexto;
 
         String systemPrompt = """
                 Você é um especialista em documentação de atendimento técnico corporativo (Customer Success / ISM).
@@ -166,8 +219,6 @@ public class RatService {
 
                 Responda APENAS com o HTML das seções, sem bloco de código, sem DOCTYPE, sem explicações extras.
                 """;
-
-        String userPrompt = "Transcrição da sessão de treinamento:\n\n" + transcricaoTexto;
 
         auditLogRepository.save(new AuditLog(
                 "RAT", "GERAR_RAT",
