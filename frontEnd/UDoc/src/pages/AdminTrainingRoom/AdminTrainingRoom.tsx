@@ -453,9 +453,6 @@ export default function AdminTrainingRoom() {
         conteudo,
       });
       showRatMsg("success", "RAT salvo com sucesso em Meus RATs!");
-      setRatTitulo("");
-      setRatConteudo("");
-      setRatEditorKey((k) => k + 1);
     } catch (err: any) {
       showRatMsg("error", err?.response?.data?.message || "Erro ao salvar o RAT.");
     } finally {
