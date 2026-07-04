@@ -110,6 +110,7 @@ import {
   reabrirRat,
   gerarRatComIA,
   getRatById,
+  listarRatsLegadoPorSala,
 } from "../../services/ratService";
 import RichTextEditor from "../../components/RichTextEditor/RichTextEditor";
 
@@ -236,6 +237,7 @@ export default function AdminTrainingRoom() {
   /* ── aba RAT — lista de sessões ── */
   const [sessoes, setSessoes] = useState<SessaoTreinamento[]>([]);
   const [loadingSessoes, setLoadingSessoes] = useState(false);
+  const [ratsLegado, setRatsLegado] = useState<Rat[]>([]);
 
   /* ── aba RAT — detalhe ── */
   const [sessaoSelecionada, setSessaoSelecionada] = useState<SessaoTreinamento | null>(null);
@@ -444,8 +446,12 @@ export default function AdminTrainingRoom() {
     if (!id) return;
     setLoadingSessoes(true);
     try {
-      const list = await listarSessoesPorSala(Number(id));
+      const [list, legado] = await Promise.all([
+        listarSessoesPorSala(Number(id)),
+        listarRatsLegadoPorSala(Number(id)),
+      ]);
       setSessoes(list);
+      setRatsLegado(legado);
     } catch { /* silencioso */ }
     finally { setLoadingSessoes(false); }
   }
@@ -1646,6 +1652,68 @@ export default function AdminTrainingRoom() {
                     </div>
                   </Paper>
                 )}
+
+                {/* ── RATs anteriores (criados antes da nova sessão de captura) ── */}
+                {ratsLegado.length > 0 && (
+                  <Stack gap="12px" mt="8px">
+                    <Text fw={700} c="var(--text-primary)" fz="sm">RATs anteriores</Text>
+                    <Paper radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
+                      <div style={{ overflowX: "auto" }}>
+                        <Table verticalSpacing="md" horizontalSpacing="md">
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th c="var(--text-primary)">Título</Table.Th>
+                              <Table.Th c="var(--text-primary)">Data</Table.Th>
+                              <Table.Th c="var(--text-primary)">Status</Table.Th>
+                              <Table.Th c="var(--text-primary)">Ações</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {ratsLegado.map((rat) => (
+                              <Table.Tr key={rat.id}>
+                                <Table.Td>
+                                  <Text fz="sm" fw={600} c="var(--text-primary)">{rat.titulo}</Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text fz="sm" c="var(--text-secondary)">
+                                    {new Date(rat.dataCriacao).toLocaleString("pt-BR")}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  {rat.status === "FINALIZADO"
+                                    ? <Badge color="green" variant="light" radius="xl">Finalizado</Badge>
+                                    : <Badge color="orange" variant="light" radius="xl">Rascunho</Badge>}
+                                </Table.Td>
+                                <Table.Td>
+                                  <Group gap="xs">
+                                    <Button size="xs" radius="xl" variant="light" color="red"
+                                      leftSection={<IconDownload size={12} />}
+                                      onClick={() => handleDownloadPdfSessao(rat)}>
+                                      PDF
+                                    </Button>
+                                    <Button size="xs" radius="xl" variant="light" color="blue"
+                                      leftSection={<IconFileText size={12} />}
+                                      onClick={() => {
+                                        const texto = stripHtml(rat.conteudo ?? "");
+                                        const blob = new Blob([`${rat.titulo}\n${new Date(rat.dataCriacao).toLocaleString("pt-BR")}\n\n${texto}`], { type: "text/plain;charset=utf-8" });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement("a");
+                                        a.href = url; a.download = `rat-${rat.id}.txt`; a.click();
+                                        URL.revokeObjectURL(url);
+                                      }}>
+                                      TXT
+                                    </Button>
+                                  </Group>
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      </div>
+                    </Paper>
+                  </Stack>
+                )}
+
               </Stack>
             )}
 

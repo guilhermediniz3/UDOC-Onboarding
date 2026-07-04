@@ -79,6 +79,12 @@ public class RatController {
         return ResponseEntity.ok(ratService.reabrir(id, req, autor));
     }
 
+    @GetMapping("/sala/{trainingRoomId}/legado")
+    public ResponseEntity<java.util.List<RatDTO>> listarLegadoPorSala(
+            @PathVariable Long trainingRoomId) {
+        return ResponseEntity.ok(ratService.listarLegadoPorSala(trainingRoomId));
+    }
+
     @PostMapping("/gerar-ia")
     public ResponseEntity<Map<String, String>> gerarComIA(
             @RequestBody GerarRatRequestDTO req,
