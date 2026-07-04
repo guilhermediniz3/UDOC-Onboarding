@@ -119,18 +119,15 @@ export default function AdminListRats() {
 
   async function handleDownloadPdf(rat: Rat) {
     const html2pdf = (await import("html2pdf.js")).default;
-
-    const scopeId = `rat-pdf-${Date.now()}`;
     const el = document.createElement("div");
-    el.id = scopeId;
-    // position:absolute at (0,0) so html2canvas can capture it; z-index:-9999 keeps-o atrás do conteúdo visível
-    el.style.cssText = "position:absolute;left:0;top:0;z-index:-9999;width:794px;background:#ffffff;font-family:Arial,sans-serif;padding:20px;pointer-events:none;";
-
+    el.style.cssText = "font-family:Arial,sans-serif;padding:20px;background:#ffffff;color:#111111;";
     el.innerHTML = `
       <style>
-        #${scopeId} * { color: #111111 !important; }
-        #${scopeId} h2, #${scopeId} h3 { font-weight: bold; margin: 0.8em 0 0.3em; }
-        #${scopeId} ul { padding-left: 1.4em; }
+        * { color: #111111 !important; }
+        h2, h3 { font-weight:bold; margin:0.8em 0 0.3em; }
+        p { margin:0.4em 0; }
+        ul, ol { padding-left:1.4em; }
+        li { margin:0.2em 0; }
       </style>
       <h2 style="margin-bottom:4px;">${rat.titulo}</h2>
       <p style="color:#555555;margin-bottom:4px;">
@@ -143,19 +140,12 @@ export default function AdminListRats() {
       </p>
       ${rat.conteudo ?? ""}
     `;
-
-    document.body.appendChild(el);
-
-    try {
-      await html2pdf().set({
-        margin: [15, 15, 15, 15],
-        filename: `rat-${rat.id}.pdf`,
-        html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      }).from(el).save();
-    } finally {
-      document.body.removeChild(el);
-    }
+    await html2pdf().set({
+      margin: [15, 15, 15, 15],
+      filename: `rat-${rat.id}.pdf`,
+      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    }).from(el).save();
   }
 
   const totalPages = Math.ceil(total / SIZE);
