@@ -442,6 +442,7 @@ export default function AdminTrainingRoom() {
       showRatMsg("success", "RAT salvo com sucesso em Meus RATs!");
       setRatTitulo("");
       setRatConteudo("");
+      setRatEditorKey((k) => k + 1);
     } catch (err: any) {
       showRatMsg("error", err?.response?.data?.message || "Erro ao salvar o RAT.");
     } finally {
@@ -1339,16 +1340,6 @@ export default function AdminTrainingRoom() {
           <Tabs.Panel value="rat">
             <Stack gap="24px">
 
-              {ratMsg && (
-                <Alert
-                  color={ratMsg.type === "success" ? "green" : "red"}
-                  icon={ratMsg.type === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
-                  radius="xl"
-                >
-                  {ratMsg.text}
-                </Alert>
-              )}
-
               {/* Transcrição da sessão */}
               <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
                 <Group justify="space-between" align="center" mb="md">
@@ -1439,6 +1430,16 @@ export default function AdminTrainingRoom() {
                     onChange={setRatConteudo}
                     hideVideo
                   />
+
+                  {ratMsg && (
+                    <Alert
+                      color={ratMsg.type === "success" ? "green" : "red"}
+                      icon={ratMsg.type === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
+                      radius="xl"
+                    >
+                      {ratMsg.text}
+                    </Alert>
+                  )}
 
                   <Group justify="flex-end">
                     <Button
