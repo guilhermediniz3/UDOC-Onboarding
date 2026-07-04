@@ -285,7 +285,9 @@ export default function AdminTrainingRoom() {
 
   /* ── carregamento inicial ── */
   useEffect(() => {
-    getStorageInfo().then((s) => setStoragePct(s.pct)).catch(() => {});
+    if (user?.role === "ADMIN") {
+      getStorageInfo().then((s) => setStoragePct(s.pct)).catch(() => {});
+    }
     getAllCompaniesSimple().then(setCompanies);
     getAllIsmsSimple().then(setIsmsData);
     getEmployees({ size: 1000 }).then((r) => setAllEmployees(r.content));
