@@ -134,12 +134,24 @@ export default function AdminListRats() {
       </p>
       ${rat.conteudo ?? ""}
     `;
-    html2pdf().set({
-      margin: [15, 15, 15, 15],
-      filename: `rat-${rat.id}.pdf`,
-      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    }).from(el).save();
+
+    // Força light mode durante a geração do PDF para que as CSS vars resolvam
+    // para cores escuras independente do tema ativo na tela
+    const root = document.documentElement;
+    const prevTheme = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "light");
+
+    try {
+      await html2pdf().set({
+        margin: [15, 15, 15, 15],
+        filename: `rat-${rat.id}.pdf`,
+        html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      }).from(el).save();
+    } finally {
+      if (prevTheme !== null) root.setAttribute("data-theme", prevTheme);
+      else root.removeAttribute("data-theme");
+    }
   }
 
   const totalPages = Math.ceil(total / SIZE);
