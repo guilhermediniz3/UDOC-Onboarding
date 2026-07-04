@@ -119,27 +119,33 @@ export default function AdminListRats() {
 
   async function handleDownloadPdf(rat: Rat) {
     const html2pdf = (await import("html2pdf.js")).default;
+
+    // ID único para escopo do CSS — evita afetar o resto da página
+    const scopeId = `rat-pdf-${Date.now()}`;
     const el = document.createElement("div");
-    el.style.fontFamily = "Arial, sans-serif";
-    el.style.padding = "20px";
+    el.id = scopeId;
+    // Posicionado fora da tela para que o html2canvas resolva os estilos no DOM
+    el.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#ffffff;font-family:Arial,sans-serif;padding:20px;";
+
     el.innerHTML = `
+      <style>
+        #${scopeId} * { color: #111111 !important; background-color: transparent !important; }
+        #${scopeId} h2, #${scopeId} h3 { font-weight: bold; margin: 0.8em 0 0.3em; }
+        #${scopeId} ul { padding-left: 1.4em; }
+      </style>
       <h2 style="margin-bottom:4px">${rat.titulo}</h2>
-      <p style="color:#666;margin-bottom:4px">
+      <p style="color:#555555;margin-bottom:4px">
         Sala: ${rat.trainingRoomTitle ?? "—"} &nbsp;|&nbsp;
         ISM: ${rat.ismName ?? "—"} &nbsp;|&nbsp;
         Empresa: ${rat.companyName ?? "—"}
       </p>
-      <p style="color:#666;margin-bottom:20px">
+      <p style="color:#555555;margin-bottom:20px">
         Data: ${new Date(rat.dataCriacao).toLocaleString("pt-BR")}
       </p>
       ${rat.conteudo ?? ""}
     `;
 
-    // Força light mode durante a geração do PDF para que as CSS vars resolvam
-    // para cores escuras independente do tema ativo na tela
-    const root = document.documentElement;
-    const prevTheme = root.getAttribute("data-theme");
-    root.setAttribute("data-theme", "light");
+    document.body.appendChild(el);
 
     try {
       await html2pdf().set({
@@ -149,8 +155,7 @@ export default function AdminListRats() {
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       }).from(el).save();
     } finally {
-      if (prevTheme !== null) root.setAttribute("data-theme", prevTheme);
-      else root.removeAttribute("data-theme");
+      document.body.removeChild(el);
     }
   }
 
