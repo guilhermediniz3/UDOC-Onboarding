@@ -5,14 +5,18 @@ import com.system.UDoc.dto.RatDTO;
 import com.system.UDoc.dto.RatRequestDTO;
 import com.system.UDoc.entity.*;
 import com.system.UDoc.repository.*;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,10 +59,26 @@ public class RatService {
             LocalDate dataInicio,
             LocalDate dataFim,
             Pageable pageable) {
+
         LocalDateTime inicio = dataInicio != null ? dataInicio.atStartOfDay() : null;
-        LocalDateTime fim = dataFim != null ? dataFim.atTime(23, 59, 59) : null;
-        return ratRepository.findWithFilters(ismId, companyId, autorId, inicio, fim, pageable)
-                .map(RatDTO::new);
+        LocalDateTime fim    = dataFim    != null ? dataFim.atTime(23, 59, 59) : null;
+
+        Specification<Rat> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (ismId     != null) predicates.add(cb.equal(root.get("ism").get("id"),     ismId));
+            if (companyId != null) predicates.add(cb.equal(root.get("company").get("id"), companyId));
+            if (autorId   != null) predicates.add(cb.equal(root.get("autor").get("id"),   autorId));
+            if (inicio    != null) predicates.add(cb.greaterThanOrEqualTo(root.get("dataCriacao"), inicio));
+            if (fim       != null) predicates.add(cb.lessThanOrEqualTo(root.get("dataCriacao"),    fim));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // Garante ordenação por dataCriacao DESC independente do Pageable enviado
+        Pageable orderedPage = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "dataCriacao"));
+
+        return ratRepository.findAll(spec, orderedPage).map(RatDTO::new);
     }
 
     @Transactional
