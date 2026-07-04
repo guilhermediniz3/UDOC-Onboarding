@@ -52,6 +52,7 @@ export async function deleteRat(id: number): Promise<void> {
 }
 
 export async function gerarRatComIA(trainingRoomId: number): Promise<string> {
-  const r = await api.post<{ content: string }>("/rat/gerar-ia", { trainingRoomId });
+  const timezoneOffset = new Date().getTimezoneOffset(); // minutos, ex: 180 para UTC-3
+  const r = await api.post<{ content: string }>("/rat/gerar-ia", { trainingRoomId, timezoneOffset });
   return r.data.content;
 }
