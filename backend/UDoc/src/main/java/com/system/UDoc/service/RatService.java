@@ -130,112 +130,137 @@ public class RatService {
         TrainingRoom room = trainingRoomRepository.findByIdWithContext(req.trainingRoomId())
                 .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
 
-        // Carrega transcrição — usada para data, duração e conteúdo
         List<TranscricaoTrecho> trechos = transcricaoRepository
                 .findByTrainingRoomIdOrderByTimestampAsc(req.trainingRoomId());
 
-        // Extrai data e duração dos timestamps da transcrição
+        // Não chama IA sem conteúdo transcrito
+        if (trechos.isEmpty()) {
+            throw new RuntimeException("Sessão sem conteúdo transcrito. Inicie a transcrição na aba Treinamento antes de gerar o RAT.");
+        }
+
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
-        String dataStr = "Não especificada";
-        String duracaoStr = "Não especificada";
-        if (!trechos.isEmpty()) {
-            LocalDateTime inicio = trechos.get(0).getTimestamp();
-            LocalDateTime fim = trechos.get(trechos.size() - 1).getTimestamp();
-            dataStr = inicio.toLocalDate().format(dateFmt)
-                    + " às " + inicio.toLocalTime().format(timeFmt);
-            long minutos = java.time.Duration.between(inicio, fim).toMinutes();
-            duracaoStr = minutos > 0 ? minutos + " minuto(s)" : "menos de 1 minuto";
+
+        LocalDateTime inicio = trechos.get(0).getTimestamp();
+        LocalDateTime fim    = trechos.get(trechos.size() - 1).getTimestamp();
+
+        String dataStr    = inicio.toLocalDate().format(dateFmt);
+        String horarioStr = inicio.toLocalTime().format(timeFmt) + " às " + fim.toLocalTime().format(timeFmt);
+
+        long totalMin = java.time.Duration.between(inicio, fim).toMinutes();
+        String duracaoStr;
+        if (totalMin >= 60) {
+            duracaoStr = (totalMin / 60) + "h" + (totalMin % 60 > 0 ? " " + (totalMin % 60) + "min" : "");
+        } else if (totalMin > 0) {
+            duracaoStr = totalMin + " min";
         } else {
-            // Fallback: usa a primeira sessão agendada se não houver transcrição
-            List<TrainingSession> sessions = trainingSessionRepository
-                    .findByTrainingRoomIdOrderByDayNumberAsc(req.trainingRoomId());
-            if (!sessions.isEmpty()) {
-                dataStr = sessions.get(0).getDate().format(dateFmt);
-            }
+            duracaoStr = "menos de 1 min";
         }
 
-        // ── Seção 1 gerada pelo Java — formatação garantida, sem depender da IA ──
+        // ── Seções 1 e 2 geradas pelo Java — dados dos metadados, sem variação de IA ──
+        String empresaNome = room.getCompany() != null ? room.getCompany().getName() : "Não especificada";
+        String ismNome     = room.getIsm()     != null ? room.getIsm().getName()     : "Não especificado";
+        String trilhaNome  = room.getTrail()   != null ? room.getTrail().getName()   : "não vinculada";
+
         String secao1 = "<h2>1. Identificação do Atendimento</h2>\n"
-                + "<p><strong>Empresa/Cliente:</strong></p>\n"
-                + "<p>" + (room.getCompany() != null ? room.getCompany().getName() : "Não especificada") + "</p>\n"
-                + "<p><strong>ISM/Analista Responsável:</strong></p>\n"
-                + "<p>" + (room.getIsm() != null ? room.getIsm().getName() : "Não especificado") + "</p>\n"
-                + "<p><strong>Data:</strong></p>\n"
-                + "<p>" + dataStr + "</p>\n"
-                + "<p><strong>Duração estimada do atendimento:</strong></p>\n"
-                + "<p>" + duracaoStr + "</p>\n";
+                + "<ul>\n"
+                + "<li><strong>Empresa/Cliente:</strong> " + empresaNome + "</li>\n"
+                + "<li><strong>ISM/Analista Responsável:</strong> " + ismNome + "</li>\n"
+                + "<li><strong>Data:</strong> " + dataStr + "</li>\n"
+                + "<li><strong>Horário:</strong> " + horarioStr + "</li>\n"
+                + "<li><strong>Duração:</strong> " + duracaoStr + "</li>\n"
+                + "<li><strong>Sala/Treinamento:</strong> " + room.getTitle() + "</li>\n"
+                + "</ul>\n";
 
-        // ── Contexto enviado à IA para as seções 2–8 ──
-        StringBuilder ctx = new StringBuilder();
-        ctx.append("=== INFORMAÇÕES DA SALA ===\n");
-        ctx.append("Título: ").append(room.getTitle()).append("\n");
-        if (room.getDescription() != null && !room.getDescription().isBlank()) {
-            ctx.append("Descrição: ").append(room.getDescription()).append("\n");
+        StringBuilder participantesHtml = new StringBuilder("<h2>2. Participantes</h2>\n<ul>\n");
+        for (Employee e : room.getInvitedEmployees()) {
+            participantesHtml.append("<li>").append(e.getName()).append(" — funcionário convidado</li>\n");
         }
-        if (room.getCompany() != null) ctx.append("Empresa: ").append(room.getCompany().getName()).append("\n");
-        if (room.getIsm() != null)     ctx.append("ISM: ").append(room.getIsm().getName()).append("\n");
-        if (room.getTrail() != null)   ctx.append("Trilha: ").append(room.getTrail().getName()).append("\n");
-        if (!room.getInvitedEmployees().isEmpty()) {
-            ctx.append("Convidados: ").append(
-                    room.getInvitedEmployees().stream().map(Employee::getName).collect(Collectors.joining(", "))
-            ).append("\n");
+        if (room.getIsm() != null) {
+            participantesHtml.append("<li>").append(ismNome).append(" — ISM/Analista Responsável</li>\n");
         }
-        ctx.append("ISM presente: ").append(autor.getName()).append("\n");
-        ctx.append("Data da sessão: ").append(dataStr).append("\n");
+        participantesHtml.append("<li>").append(autor.getName()).append(" — ISM presente na sessão</li>\n");
+        participantesHtml.append("</ul>\n");
+
+        // ── Mensagem do usuário: METADADOS + TRANSCRIÇÃO ──
+        StringBuilder metadados = new StringBuilder("METADADOS DA SESSÃO:\n");
+        metadados.append("- Empresa/Cliente: ").append(empresaNome).append("\n");
+        metadados.append("- ISM/Analista Responsável: ").append(ismNome).append("\n");
+        metadados.append("- Data: ").append(dataStr).append("\n");
+        metadados.append("- Horário: ").append(horarioStr).append("\n");
+        metadados.append("- Duração: ").append(duracaoStr).append("\n");
+        metadados.append("- Sala/Treinamento: ").append(room.getTitle()).append("\n");
+        metadados.append("- Trilha vinculada: ").append(trilhaNome).append("\n");
+        metadados.append("- Participantes:\n");
+        for (Employee e : room.getInvitedEmployees()) {
+            metadados.append("  * ").append(e.getName()).append(" — funcionário convidado\n");
+        }
+        if (room.getIsm() != null) {
+            metadados.append("  * ").append(ismNome).append(" — ISM/Analista Responsável\n");
+        }
+        metadados.append("  * ").append(autor.getName()).append(" — ISM presente na sessão\n");
 
         String transcricaoTexto = trechos.stream()
-                .map(t -> "[" + t.getTimestamp().toLocalTime().toString().substring(0, 8) + "] " + t.getTexto())
+                .map(t -> "[" + t.getTimestamp().toLocalTime().format(timeFmt) + "] " + t.getTexto())
                 .collect(Collectors.joining("\n"));
-        if (transcricaoTexto.isBlank()) {
-            transcricaoTexto = "(Nenhuma transcrição disponível)";
-        }
-        ctx.append("\n=== TRANSCRIÇÃO DA SESSÃO ===\n").append(transcricaoTexto);
+
+        String userMessage = metadados + "\nTRANSCRIÇÃO DA SESSÃO:\n" + transcricaoTexto;
+
+        // Log para conferência nas primeiras execuções
+        System.out.println("[RAT-IA] room=" + req.trainingRoomId()
+                + " | empresa=" + empresaNome + " | ism=" + ismNome
+                + " | data=" + dataStr + " | duracao=" + duracaoStr
+                + " | trechos=" + trechos.size());
 
         String systemPrompt = """
-                Você é um especialista em documentação de atendimento técnico corporativo (Customer Success / ISM).
-                Com base na transcrição e contexto fornecidos, gere as seções 2 a 8 de um RAT em HTML semântico.
-                Use somente as tags: <h2>, <p>, <ul>, <li>, <strong>.
-                Linguagem formal e objetiva. NÃO gere a seção 1 — ela já foi produzida pelo sistema.
+                Você é um assistente especializado em documentação de atendimentos técnicos. Sua tarefa é transformar a transcrição de uma sessão de treinamento em um RAT (Relatório de Atendimento Técnico) profissional, seguindo EXATAMENTE as regras abaixo.
 
-                REGRA DE FORMATAÇÃO — aplique em todos os campos com rótulo:
-                <p><strong>Rótulo:</strong></p>
-                <p>Valor do campo na linha seguinte</p>
+                REGRAS OBRIGATÓRIAS:
+                1. Os dados de identificação (empresa, responsável, data, duração, participantes) serão fornecidos nos METADADOS. Use-os exatamente como recebidos. NUNCA tente extraí-los ou deduzi-los da transcrição.
+                2. A seção "Resumo do Atendimento" é OBRIGATÓRIA e nunca pode ficar vazia: escreva 1 a 3 parágrafos narrando, em linguagem profissional e objetiva, o que foi o atendimento — o que foi ensinado, demonstrado ou discutido, com base no conteúdo real da conversa.
+                3. Nas seções "Dúvidas Levantadas", "Pendências" e "Próximos Passos": inclua APENAS itens com evidência explícita na transcrição. Se não houver evidência, escreva exatamente: <p>Nenhum item identificado nesta sessão.</p>
+                4. Considere como evidência de dúvida: perguntas feitas ou ecoadas pelo instrutor. Como evidência de pendência: itens verbalizados como em aberto. Como evidência de próximo passo: compromissos verbalizados.
+                5. Em "Tópicos Abordados", liste os assuntos efetivamente tratados na conversa, em itens curtos e objetivos.
+                6. Corrija erros óbvios de transcrição automática (palavras trocadas pela fonética) quando o contexto deixar claro o termo correto.
+                7. Não inclua opiniões, avaliações de desempenho ou informações externas à transcrição.
+                8. Escreva em português brasileiro profissional.
 
-                Seções a gerar:
+                FORMATO DE SAÍDA — use somente as tags HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>.
+                NÃO gere as seções 1 (Identificação) e 2 (Participantes) — elas já foram produzidas pelo sistema.
+                Gere APENAS as seções 3 a 9, começando diretamente com <h2>3. Objetivo do Atendimento</h2>.
+                Responda APENAS com o HTML, sem bloco de código, sem DOCTYPE, sem preâmbulo.
 
-                <h2>2. Participantes</h2>
-                <ul><li>Nome — papel (cliente, ISM, equipe interna)</li></ul>
+                ESTRUTURA A GERAR:
 
                 <h2>3. Objetivo do Atendimento</h2>
-                <p><strong>Propósito da sessão:</strong></p>
-                <p>Treinamento, implantação, suporte, acompanhamento etc.</p>
+                (usar trilha/treinamento vinculado do metadado; se ausente, derivar do conteúdo)
 
-                <h2>4. Tópicos Abordados</h2>
-                <ul><li>Cada tópico técnico ou funcional discutido</li></ul>
+                <h2>4. Resumo do Atendimento</h2>
+                (obrigatório — narrativa do que foi a sessão com base na conversa)
 
-                <h2>5. Dúvidas Levantadas</h2>
-                <ul><li>Dúvidas levantadas pelo cliente</li></ul>
+                <h2>5. Tópicos Abordados</h2>
+                <ul><li>apenas com evidência na transcrição</li></ul>
 
-                <h2>6. Pendências</h2>
-                <ul><li>Itens em aberto ou aguardando retorno</li></ul>
+                <h2>6. Dúvidas Levantadas</h2>
+                <ul><li>apenas com evidência; senão <p>Nenhum item identificado nesta sessão.</p></li></ul>
 
-                <h2>7. Próximos Passos</h2>
-                <ul><li>Ação — Responsável — Prazo estimado</li></ul>
+                <h2>7. Pendências</h2>
+                <ul><li>apenas com evidência; senão <p>Nenhum item identificado nesta sessão.</p></li></ul>
 
-                <h2>8. Observações Técnicas</h2>
-                <p>Informações complementares para o time de CS/ISM</p>
+                <h2>8. Próximos Passos</h2>
+                <ul><li>apenas com evidência; senão <p>Nenhum item identificado nesta sessão.</p></li></ul>
 
-                Responda APENAS com o HTML das seções 2 a 8, sem bloco de código, sem DOCTYPE, sem explicações.
+                <h2>9. Observações</h2>
+                (apenas se houver algo relevante que não coube acima; senão <p>Sem observações adicionais.</p>)
                 """;
 
         auditLogRepository.save(new AuditLog(
                 "RAT", "GERAR_RAT",
                 "training-room#" + req.trainingRoomId(),
                 autor.getEmail(),
-                "RAT gerado via IA"));
+                "RAT gerado via IA | empresa=" + empresaNome + " | trechos=" + trechos.size()));
 
-        String secoes2a8 = aiService.generate(systemPrompt, ctx.toString()).content();
-        return secao1 + secoes2a8;
+        String secoes3a9 = aiService.generate(systemPrompt, userMessage).content();
+        return secao1 + participantesHtml + secoes3a9;
     }
 }
