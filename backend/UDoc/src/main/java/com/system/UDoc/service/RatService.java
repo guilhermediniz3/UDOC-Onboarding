@@ -120,7 +120,7 @@ public class RatService {
 
     @Transactional(readOnly = true)
     public RatDTO buscarPorId(Long id) {
-        return ratRepository.findById(id)
+        return ratRepository.findByIdWithRelations(id)
                 .map(RatDTO::new)
                 .orElseThrow(() -> new RuntimeException("RAT não encontrado"));
     }
