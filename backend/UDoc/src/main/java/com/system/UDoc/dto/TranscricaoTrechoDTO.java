@@ -14,10 +14,13 @@ public class TranscricaoTrechoDTO {
 
     public TranscricaoTrechoDTO() {}
 
+    private Long sessaoId;
+
     public TranscricaoTrechoDTO(TranscricaoTrecho t) {
         this.id = t.getId();
         this.trainingRoomId = t.getTrainingRoomId();
         this.usuarioId = t.getUsuarioId();
+        this.sessaoId = t.getSessaoId();
         this.texto = t.getTexto();
         this.timestamp = t.getTimestamp();
     }
@@ -28,6 +31,8 @@ public class TranscricaoTrechoDTO {
     public void setTrainingRoomId(Long trainingRoomId) { this.trainingRoomId = trainingRoomId; }
     public Long getUsuarioId() { return usuarioId; }
     public void setUsuarioId(Long usuarioId) { this.usuarioId = usuarioId; }
+    public Long getSessaoId() { return sessaoId; }
+    public void setSessaoId(Long sessaoId) { this.sessaoId = sessaoId; }
     public String getTexto() { return texto; }
     public void setTexto(String texto) { this.texto = texto; }
 

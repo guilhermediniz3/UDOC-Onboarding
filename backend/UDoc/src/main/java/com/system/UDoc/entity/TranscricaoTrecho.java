@@ -18,6 +18,9 @@ public class TranscricaoTrecho {
     @Column(name = "usuario_id", nullable = false)
     private Long usuarioId;
 
+    @Column(name = "sessao_id")
+    private Long sessaoId;
+
     @Column(columnDefinition = "TEXT", nullable = false)
     private String texto;
 
@@ -39,6 +42,8 @@ public class TranscricaoTrecho {
     public void setTrainingRoomId(Long trainingRoomId) { this.trainingRoomId = trainingRoomId; }
     public Long getUsuarioId() { return usuarioId; }
     public void setUsuarioId(Long usuarioId) { this.usuarioId = usuarioId; }
+    public Long getSessaoId() { return sessaoId; }
+    public void setSessaoId(Long sessaoId) { this.sessaoId = sessaoId; }
     public String getTexto() { return texto; }
     public void setTexto(String texto) { this.texto = texto; }
     public LocalDateTime getTimestamp() { return timestamp; }

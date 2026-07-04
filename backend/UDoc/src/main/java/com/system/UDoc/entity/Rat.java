@@ -28,6 +28,14 @@ public class Rat {
     @JoinColumn(name = "autor_id")
     private User autor;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sessao_id")
+    private SessaoTreinamento sessao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'FINALIZADO'")
+    private RatStatus status;
+
     @Column(nullable = false)
     private String titulo;
 
@@ -44,6 +52,9 @@ public class Rat {
         if (dataCriacao == null) {
             dataCriacao = LocalDateTime.now(ZoneOffset.UTC);
         }
+        if (status == null) {
+            status = RatStatus.FINALIZADO;
+        }
     }
 
     public Long getId() { return id; }
@@ -56,6 +67,10 @@ public class Rat {
     public void setIsm(Ism ism) { this.ism = ism; }
     public User getAutor() { return autor; }
     public void setAutor(User autor) { this.autor = autor; }
+    public SessaoTreinamento getSessao() { return sessao; }
+    public void setSessao(SessaoTreinamento sessao) { this.sessao = sessao; }
+    public RatStatus getStatus() { return status; }
+    public void setStatus(RatStatus status) { this.status = status; }
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getConteudo() { return conteudo; }

@@ -30,15 +30,22 @@ public class TranscricaoService {
         TranscricaoTrecho trecho = new TranscricaoTrecho();
         trecho.setTrainingRoomId(req.getTrainingRoomId());
         trecho.setUsuarioId(usuario.getId());
+        trecho.setSessaoId(req.getSessaoId());
         trecho.setTexto(req.getTexto());
         TranscricaoTrecho saved = transcricaoRepository.save(trecho);
 
         // Registra início de captura apenas no primeiro trecho da sessão
-        long count = transcricaoRepository.countByTrainingRoomId(req.getTrainingRoomId());
-        if (count == 1) {
+        boolean primeiro = req.getSessaoId() != null
+                ? transcricaoRepository.countBySessaoId(req.getSessaoId()) == 1
+                : transcricaoRepository.countByTrainingRoomId(req.getTrainingRoomId()) == 1;
+
+        if (primeiro) {
+            String target = req.getSessaoId() != null
+                    ? "sessao#" + req.getSessaoId()
+                    : "training-room#" + req.getTrainingRoomId();
             auditLogRepository.save(new AuditLog(
                     "TRANSCRICAO", "INICIAR_CAPTURA",
-                    "training-room#" + req.getTrainingRoomId(),
+                    target,
                     usuario.getEmail(),
                     "Captura de transcrição iniciada"));
         }
@@ -50,6 +57,15 @@ public class TranscricaoService {
     public List<TranscricaoTrechoDTO> listarPorSala(Long trainingRoomId) {
         return transcricaoRepository
                 .findByTrainingRoomIdOrderByTimestampAsc(trainingRoomId)
+                .stream()
+                .map(TranscricaoTrechoDTO::new)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TranscricaoTrechoDTO> listarPorSessao(Long sessaoId) {
+        return transcricaoRepository
+                .findBySessaoIdOrderByTimestampAsc(sessaoId)
                 .stream()
                 .map(TranscricaoTrechoDTO::new)
                 .toList();

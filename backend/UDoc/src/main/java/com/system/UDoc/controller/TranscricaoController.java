@@ -34,4 +34,10 @@ public class TranscricaoController {
             @PathVariable Long trainingRoomId) {
         return ResponseEntity.ok(transcricaoService.listarPorSala(trainingRoomId));
     }
+
+    @GetMapping("/sessao/{sessaoId}")
+    public ResponseEntity<List<TranscricaoTrechoDTO>> listarPorSessao(
+            @PathVariable Long sessaoId) {
+        return ResponseEntity.ok(transcricaoService.listarPorSessao(sessaoId));
+    }
 }

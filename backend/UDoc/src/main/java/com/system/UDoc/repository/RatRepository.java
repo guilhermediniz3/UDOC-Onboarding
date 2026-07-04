@@ -21,4 +21,6 @@ public interface RatRepository extends JpaRepository<Rat, Long>, JpaSpecificatio
         WHERE r.id = :id
     """)
     Optional<Rat> findByIdWithRelations(@Param("id") Long id);
+
+    Optional<Rat> findBySessaoId(@Param("sessaoId") Long sessaoId);
 }

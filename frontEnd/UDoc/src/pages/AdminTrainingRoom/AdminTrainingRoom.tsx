@@ -4,7 +4,10 @@ import {
   Badge,
   Button,
   Checkbox,
+  Collapse,
   Group,
+  Loader,
+  Modal,
   MultiSelect,
   NumberInput,
   Paper,
@@ -26,11 +29,14 @@ import {
   IconBrandYoutube,
   IconCalendar,
   IconCheck,
+  IconChevronDown,
+  IconChevronUp,
   IconCopy,
   IconDownload,
   IconFileText,
   IconInfoCircle,
   IconLink,
+  IconLock,
   IconMail,
   IconMicrophone,
   IconMicrophoneOff,
@@ -88,9 +94,23 @@ import type { TrainingRoom } from "../../types/TrainingRoom";
 import type { Company } from "../../types/Company";
 import type { ISM } from "../../types/ISM";
 import type { TranscricaoTrecho } from "../../types/TranscricaoTrecho";
+import type { SessaoTreinamento } from "../../types/SessaoTreinamento";
+import type { Rat } from "../../types/Rat";
 
-import { salvarTrecho, listarTranscricaoPorSala } from "../../services/transcricaoService";
-import { createRat, gerarRatComIA } from "../../services/ratService";
+import { salvarTrecho, listarTranscricaoPorSessao } from "../../services/transcricaoService";
+import {
+  criarSessao,
+  encerrarSessao,
+  listarSessoesPorSala,
+} from "../../services/sessaoTreinamentoService";
+import {
+  createRat,
+  updateRat,
+  finalizarRat,
+  reabrirRat,
+  gerarRatComIA,
+  getRatById,
+} from "../../services/ratService";
 import RichTextEditor from "../../components/RichTextEditor/RichTextEditor";
 
 /* ── video helpers ── */
@@ -124,13 +144,19 @@ function conflictMessage(c: ConflictDetail): string {
   return `${label} já está na sala "${c.trainingRoomTitle}" no dia ${c.date} das ${c.startTime} às ${c.endTime}.`;
 }
 
+function stripHtml(html: string): string {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent ?? tmp.innerText ?? "";
+}
+
 /* ── tipos ── */
 
 interface DayRow {
   dayNumber: number;
-  date: string;      // "YYYY-MM-DD" — formato do input type="date"
-  startTime: string; // "HH:mm"
-  endTime: string;   // "HH:mm"
+  date: string;
+  startTime: string;
+  endTime: string;
 }
 
 const EMPTY: TrainingRoom = {
@@ -194,7 +220,6 @@ export default function AdminTrainingRoom() {
 
   /* ── transcrição de voz ── */
   const [transcricaoEstado, setTranscricaoEstado] = useState<"idle" | "recording" | "paused">("idle");
-  // ref para uso dentro do callback onend da SpeechRecognition (evita closure stale)
   const transcricaoEstadoRef = useRef<"idle" | "recording" | "paused">("idle");
   const [transcricaoSuportada] = useState(() =>
     typeof window !== "undefined" &&
@@ -203,18 +228,37 @@ export default function AdminTrainingRoom() {
   const reconRef = useRef<any>(null);
   const [transcricaoTrechos, setTranscricaoTrechos] = useState<TranscricaoTrecho[]>([]);
 
-  /* ── aba RAT ── */
-  const [ratTitulo, setRatTitulo] = useState("");
-  const [ratTituloError, setRatTituloError] = useState("");
-  const [ratConteudo, setRatConteudo] = useState("");
-  // chave incremental: força re-mount do RichTextEditor quando a IA gera conteúdo
-  const [ratEditorKey, setRatEditorKey] = useState(0);
-  const [ratMsg, setRatMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [salvandoRat, setSalvandoRat] = useState(false);
+  /* ── sessão de captura ── */
+  const [sessaoAtiva, setSessaoAtiva] = useState<SessaoTreinamento | null>(null);
+  const [encerrando, setEncerrando] = useState(false);
+  const sessaoAtivaRef = useRef<SessaoTreinamento | null>(null);
+
+  /* ── aba RAT — lista de sessões ── */
+  const [sessoes, setSessoes] = useState<SessaoTreinamento[]>([]);
+  const [loadingSessoes, setLoadingSessoes] = useState(false);
+
+  /* ── aba RAT — detalhe ── */
+  const [sessaoSelecionada, setSessaoSelecionada] = useState<SessaoTreinamento | null>(null);
+  const [ratSessaoId, setRatSessaoId] = useState<number | null>(null);
+  const [ratSessaoTitulo, setRatSessaoTitulo] = useState("");
+  const [ratSessaoTituloError, setRatSessaoTituloError] = useState("");
+  const [ratSessaoConteudo, setRatSessaoConteudo] = useState("");
+  const [ratSessaoKey, setRatSessaoKey] = useState(0);
+  const [ratSessaoStatus, setRatSessaoStatus] = useState<"SEM_RAT" | "RASCUNHO" | "FINALIZADO">("SEM_RAT");
+  const [transcricaoSessaoAberta, setTranscricaoSessaoAberta] = useState(false);
+  const [transcricaoSessaoTrechos, setTranscricaoSessaoTrechos] = useState<TranscricaoTrecho[]>([]);
+  const [loadingTranscricaoSessao, setLoadingTranscricaoSessao] = useState(false);
   const [gerandoRat, setGerandoRat] = useState(false);
-  const [transcricaoRat, setTranscricaoRat] = useState<TranscricaoTrecho[]>([]);
-  const [carregandoTranscricao, setCarregandoTranscricao] = useState(false);
-  const ratTituloRef = useRef<HTMLInputElement>(null);
+  const [salvandoRascunho, setSalvandoRascunho] = useState(false);
+  const [finalizandoRat, setFinalizandoRat] = useState(false);
+  const [ratDetailMsg, setRatDetailMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const ratSessaoTituloRef = useRef<HTMLInputElement>(null);
+
+  /* ── modal reabrir RAT ── */
+  const [reabrirModal, setReatrirModal] = useState(false);
+  const [reabrirMotivo, setReatrirMotivo] = useState("");
+  const [reabrirMotivoError, setReatrirMotivoError] = useState("");
+  const [reabrirLoading, setReatrirLoading] = useState(false);
 
   /* ── agendamento ── */
   const [totalDays, setTotalDays] = useState<number>(0);
@@ -228,14 +272,13 @@ export default function AdminTrainingRoom() {
     setMessageType(type); setMessage(text); setTimeout(() => setMessage(""), 4000);
   }
 
-  function showRatMsg(type: "success" | "error", text: string) {
-    setRatMsg({ type, text }); setTimeout(() => setRatMsg(null), 4000);
+  function showRatDetailMsg(type: "success" | "error", text: string) {
+    setRatDetailMsg({ type, text }); setTimeout(() => setRatDetailMsg(null), 4000);
   }
 
   function showScheduleMsg(type: "success" | "error", text: string) {
     setScheduleMsgType(type);
     setScheduleMsg(text);
-    // Conflitos ficam 30s para dar tempo de leitura; sucesso some em 4s
     const ms = type === "error" ? 30_000 : 4_000;
     setTimeout(() => setScheduleMsg(""), ms);
   }
@@ -262,10 +305,8 @@ export default function AdminTrainingRoom() {
         }
       });
 
-      // Carrega gravações existentes (XHR com token explícito — evita 401 do axios)
       getRoomRecordings(Number(id)).then(setRecordings);
 
-      // Load existing sessions
       getSessionsByRoom(Number(id)).then((sessions) => {
         if (sessions.length > 0) {
           setTotalDays(sessions.length);
@@ -311,14 +352,11 @@ export default function AdminTrainingRoom() {
     setDays((prev) => {
       const next = [...prev];
       (next[index] as any)[field] = value;
-
-      // Horário recorrente: replica a partir do dia 1
       if (recurringTime && index === 0 && (field === "startTime" || field === "endTime")) {
         for (let i = 1; i < next.length; i++) {
           (next[i] as any)[field] = value;
         }
       }
-
       return next;
     });
   }
@@ -329,8 +367,19 @@ export default function AdminTrainingRoom() {
     setTranscricaoEstado(e);
   }
 
-  function iniciarTranscricao() {
+  async function iniciarCaptura() {
     if (!id || !transcricaoSuportada) return;
+    try {
+      const sessao = await criarSessao(Number(id));
+      setSessaoAtiva(sessao);
+      sessaoAtivaRef.current = sessao;
+      iniciarSpeech(sessao.id);
+    } catch {
+      showMessage("error", "Erro ao criar sessão de captura.");
+    }
+  }
+
+  function iniciarSpeech(sessaoId: number) {
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const rec = new SpeechRec();
     rec.lang = "pt-BR";
@@ -341,14 +390,13 @@ export default function AdminTrainingRoom() {
         if (event.results[i].isFinal) {
           const texto = event.results[i][0].transcript.trim();
           if (texto) {
-            salvarTrecho(Number(id), texto)
+            salvarTrecho(Number(id), texto, sessaoId)
               .then((t) => setTranscricaoTrechos((prev) => [...prev, t]))
               .catch(() => {});
           }
         }
       }
     };
-    // usa ref para verificar estado atual sem closure stale
     rec.onend = () => {
       if (transcricaoEstadoRef.current === "recording") {
         try { rec.start(); } catch (_) {}
@@ -370,93 +418,257 @@ export default function AdminTrainingRoom() {
     setEstado("recording");
   }
 
-  function encerrarTranscricao() {
+  async function encerrarCaptura() {
+    if (!sessaoAtivaRef.current) return;
     if (reconRef.current) { try { reconRef.current.abort(); } catch (_) {} reconRef.current = null; }
     setEstado("idle");
-  }
-
-  async function carregarTranscricaoRat() {
-    if (!id) return;
-    setCarregandoTranscricao(true);
+    setEncerrando(true);
     try {
-      const list = await listarTranscricaoPorSala(Number(id));
-      setTranscricaoRat(list);
-    } catch { /* silencioso */ }
-    finally { setCarregandoTranscricao(false); }
+      await encerrarSessao(sessaoAtivaRef.current.id);
+      setSessaoAtiva(null);
+      sessaoAtivaRef.current = null;
+      setTranscricaoTrechos([]);
+      showMessage("success", "Sessão encerrada — RAT disponível na aba RAT");
+      carregarSessoes();
+    } catch {
+      showMessage("error", "Erro ao encerrar sessão.");
+    } finally {
+      setEncerrando(false);
+    }
   }
 
-  async function handleBaixarTranscricaoPdf() {
-    if (!transcricaoRat.length) return;
-    const html2pdf = (await import("html2pdf.js")).default;
-    const el = document.createElement("div");
-    el.style.fontFamily = "Arial, sans-serif";
-    el.style.padding = "20px";
-    // força cores explícitas para não herdar tema dark do body
-    el.style.color = "#1a1a1a";
-    el.style.background = "#ffffff";
-    el.innerHTML = `
-      <h2 style="margin-bottom:4px;color:#111">${room.title}</h2>
-      <p style="color:#555;margin-bottom:16px">Transcrição bruta — ${new Date().toLocaleDateString("pt-BR")}</p>
-      ${transcricaoRat.map((t) => `
-        <div style="margin-bottom:12px">
-          <span style="font-size:11px;color:#555;font-weight:700">[${new Date(t.timestamp).toLocaleTimeString("pt-BR")}]</span>
-          <p style="margin:2px 0 0 0;color:#1a1a1a">${t.texto}</p>
-        </div>
-      `).join("")}
-    `;
-    html2pdf().set({
-      margin: [15, 15, 15, 15],
-      filename: `transcricao-${id}-${Date.now()}.pdf`,
-      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    }).from(el).save();
+  /* ── aba RAT — sessões ── */
+  async function carregarSessoes() {
+    if (!id) return;
+    setLoadingSessoes(true);
+    try {
+      const list = await listarSessoesPorSala(Number(id));
+      setSessoes(list);
+    } catch { /* silencioso */ }
+    finally { setLoadingSessoes(false); }
+  }
+
+  async function abrirSessaoDetalhe(sessao: SessaoTreinamento) {
+    setSessaoSelecionada(sessao);
+    setRatSessaoStatus(sessao.ratStatus);
+    setRatSessaoId(sessao.ratId ?? null);
+    setRatSessaoTitulo("");
+    setRatSessaoConteudo("");
+    setRatSessaoKey((k) => k + 1);
+    setTranscricaoSessaoAberta(false);
+    setTranscricaoSessaoTrechos([]);
+    setRatDetailMsg(null);
+
+    setLoadingTranscricaoSessao(true);
+    try {
+      const trechos = await listarTranscricaoPorSessao(sessao.id);
+      setTranscricaoSessaoTrechos(trechos);
+    } catch { /* silencioso */ }
+    finally { setLoadingTranscricaoSessao(false); }
+
+    if (sessao.ratId) {
+      try {
+        const rat = await getRatById(sessao.ratId);
+        setRatSessaoTitulo(rat.titulo);
+        setRatSessaoConteudo(rat.conteudo ?? "");
+        setRatSessaoKey((k) => k + 1);
+      } catch { /* silencioso */ }
+    }
   }
 
   async function handleGerarRatIA() {
-    if (!id) return;
+    if (!sessaoSelecionada) return;
     setGerandoRat(true);
     try {
-      const html = await gerarRatComIA(Number(id));
-      setRatConteudo(html);
-      // força re-mount do RichTextEditor para refletir o novo conteúdo
-      setRatEditorKey((k) => k + 1);
-      showRatMsg("success", "RAT gerado com sucesso! Revise e salve.");
-    } catch {
-      showRatMsg("error", "Erro ao gerar RAT. Verifique se há transcrição disponível.");
+      const html = await gerarRatComIA(sessaoSelecionada.id);
+      setRatSessaoConteudo(html);
+      setRatSessaoKey((k) => k + 1);
+      showRatDetailMsg("success", "RAT gerado com sucesso! Revise e salve.");
+    } catch (err: any) {
+      showRatDetailMsg("error", err?.response?.data?.message || "Erro ao gerar RAT. Verifique se há transcrição disponível.");
     } finally {
       setGerandoRat(false);
     }
   }
 
-  async function handleSalvarRat() {
-    if (!id) return;
-    const titulo = (ratTitulo ?? "").trim();
-    const conteudo = (ratConteudo ?? "").trim();
+  async function handleSalvarRascunho() {
+    if (!sessaoSelecionada) return;
+    const titulo = (ratSessaoTitulo ?? "").trim();
+    const conteudo = (ratSessaoConteudo ?? "").trim();
     if (!titulo) {
-      setRatTituloError("Informe o título do RAT.");
-      ratTituloRef.current?.focus();
-      ratTituloRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setRatSessaoTituloError("Informe o título do RAT.");
+      ratSessaoTituloRef.current?.focus();
       return;
     }
     if (!conteudo || conteudo === "<p></p>") {
-      showRatMsg("error", "O conteúdo do RAT está vazio. Gere com IA ou escreva manualmente.");
+      showRatDetailMsg("error", "O conteúdo do RAT está vazio.");
       return;
     }
-    setRatTituloError("");
-    setSalvandoRat(true);
+    setRatSessaoTituloError("");
+    setSalvandoRascunho(true);
     try {
-      await createRat({
-        trainingRoomId: Number(id),
-        companyId: room.companyId ?? null,
-        ismId: room.ismId ?? null,
-        titulo,
-        conteudo,
-      });
-      showRatMsg("success", "RAT salvo com sucesso em Meus RATs!");
+      let rat: Rat;
+      if (ratSessaoId) {
+        rat = await updateRat(ratSessaoId, {
+          sessaoId: sessaoSelecionada.id,
+          titulo,
+          conteudo,
+          companyId: room.companyId ?? null,
+          ismId: room.ismId ?? null,
+        });
+      } else {
+        rat = await createRat({
+          sessaoId: sessaoSelecionada.id,
+          titulo,
+          conteudo,
+          companyId: room.companyId ?? null,
+          ismId: room.ismId ?? null,
+        });
+        setRatSessaoId(rat.id);
+      }
+      setRatSessaoStatus("RASCUNHO");
+      setSessaoSelecionada((s) => s ? { ...s, ratStatus: "RASCUNHO", ratId: rat.id } : s);
+      setSessoes((prev) => prev.map((s) =>
+        s.id === sessaoSelecionada.id ? { ...s, ratStatus: "RASCUNHO", ratId: rat.id } : s
+      ));
+      showRatDetailMsg("success", "Rascunho salvo.");
     } catch (err: any) {
-      showRatMsg("error", err?.response?.data?.message || "Erro ao salvar o RAT.");
+      showRatDetailMsg("error", err?.response?.data?.message || "Erro ao salvar rascunho.");
     } finally {
-      setSalvandoRat(false);
+      setSalvandoRascunho(false);
+    }
+  }
+
+  async function handleFinalizarRat() {
+    if (!sessaoSelecionada) return;
+    const titulo = (ratSessaoTitulo ?? "").trim();
+    const conteudo = (ratSessaoConteudo ?? "").trim();
+    if (!titulo) {
+      setRatSessaoTituloError("Informe o título do RAT.");
+      ratSessaoTituloRef.current?.focus();
+      return;
+    }
+    if (!conteudo || conteudo === "<p></p>") {
+      showRatDetailMsg("error", "O conteúdo do RAT está vazio.");
+      return;
+    }
+    setRatSessaoTituloError("");
+    setFinalizandoRat(true);
+    try {
+      let currentId = ratSessaoId;
+      // Cria o RAT se ainda não existe
+      if (!currentId) {
+        const rat = await createRat({
+          sessaoId: sessaoSelecionada.id,
+          titulo,
+          conteudo,
+          companyId: room.companyId ?? null,
+          ismId: room.ismId ?? null,
+        });
+        currentId = rat.id;
+        setRatSessaoId(rat.id);
+      } else {
+        // Garante que o conteúdo mais recente está salvo
+        await updateRat(currentId, {
+          sessaoId: sessaoSelecionada.id,
+          titulo,
+          conteudo,
+          companyId: room.companyId ?? null,
+          ismId: room.ismId ?? null,
+        });
+      }
+      await finalizarRat(currentId);
+      setRatSessaoStatus("FINALIZADO");
+      setSessaoSelecionada((s) => s ? { ...s, ratStatus: "FINALIZADO", ratId: currentId ?? undefined } : s);
+      setSessoes((prev) => prev.map((s) =>
+        s.id === sessaoSelecionada.id ? { ...s, ratStatus: "FINALIZADO", ratId: currentId ?? undefined } : s
+      ));
+      showRatDetailMsg("success", "RAT finalizado e disponível em Meus RATs.");
+    } catch (err: any) {
+      showRatDetailMsg("error", err?.response?.data?.message || "Erro ao finalizar RAT.");
+    } finally {
+      setFinalizandoRat(false);
+    }
+  }
+
+  async function handleReatrirRat() {
+    if (!ratSessaoId) return;
+    const motivo = reabrirMotivo.trim();
+    if (motivo.length < 10) {
+      setReatrirMotivoError("O motivo deve ter pelo menos 10 caracteres.");
+      return;
+    }
+    setReatrirMotivoError("");
+    setReatrirLoading(true);
+    try {
+      await reabrirRat(ratSessaoId, motivo);
+      setRatSessaoStatus("RASCUNHO");
+      setSessaoSelecionada((s) => s ? { ...s, ratStatus: "RASCUNHO" } : s);
+      setSessoes((prev) => prev.map((s) =>
+        s.id === sessaoSelecionada!.id ? { ...s, ratStatus: "RASCUNHO" } : s
+      ));
+      setReatrirModal(false);
+      setReatrirMotivo("");
+      showRatDetailMsg("success", "RAT reaberto. Edite e finalize novamente.");
+    } catch (err: any) {
+      setReatrirMotivoError(err?.response?.data?.message || "Erro ao reabrir RAT.");
+    } finally {
+      setReatrirLoading(false);
+    }
+  }
+
+  async function handleDownloadPdfSessao(rat: Rat) {
+    const html2pdf = (await import("html2pdf.js")).default;
+    const el = document.createElement("div");
+    el.style.cssText = "font-family:Arial,sans-serif;padding:20px;background:#ffffff;color:#111111;";
+    el.innerHTML = `
+      <style>
+        * { color: #111111 !important; }
+        h2, h3 { font-weight:bold; margin:0.8em 0 0.3em; }
+        p { margin:0.4em 0; }
+        ul, ol { padding-left:1.4em; }
+        li { margin:0.2em 0; }
+      </style>
+      <h2 style="margin-bottom:4px;">${rat.titulo}</h2>
+      <p style="color:#555555;margin-bottom:4px;">
+        Sala: ${rat.trainingRoomTitle ?? "—"} &nbsp;|&nbsp;
+        ISM: ${rat.ismName ?? "—"} &nbsp;|&nbsp;
+        Empresa: ${rat.companyName ?? "—"}
+      </p>
+      <p style="color:#555555;margin-bottom:20px;">
+        Data: ${new Date(rat.dataCriacao).toLocaleString("pt-BR")}
+      </p>
+      ${rat.conteudo ?? ""}
+    `;
+    await html2pdf().set({
+      margin: [15, 15, 15, 15], filename: `rat-${rat.id}.pdf`,
+      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    }).from(el).save();
+  }
+
+  async function handleDownloadPdfBySessaoId(sessao: SessaoTreinamento) {
+    if (!sessao.ratId) return;
+    try {
+      const rat = await getRatById(sessao.ratId);
+      await handleDownloadPdfSessao(rat);
+    } catch {
+      showMessage("error", "Erro ao baixar PDF.");
+    }
+  }
+
+  async function handleDownloadTxtDetalhe() {
+    if (!sessaoSelecionada || !ratSessaoId) return;
+    try {
+      const rat = await getRatById(ratSessaoId);
+      const texto = stripHtml(rat.conteudo ?? "");
+      const blob = new Blob([`${rat.titulo}\n${new Date(rat.dataCriacao).toLocaleString("pt-BR")}\n\n${texto}`], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `rat-${rat.id}.txt`; a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showRatDetailMsg("error", "Erro ao baixar TXT.");
     }
   }
 
@@ -499,28 +711,15 @@ export default function AdminTrainingRoom() {
     setSavingSchedule(true);
     try {
       const payload: TrainingSessionData[] = days.map((d) => ({
-        dayNumber: d.dayNumber,
-        date: d.date,
-        startTime: d.startTime,
-        endTime: d.endTime,
+        dayNumber: d.dayNumber, date: d.date, startTime: d.startTime, endTime: d.endTime,
       }));
-
       await replaceRoomSessions(Number(id), payload);
       showScheduleMsg("success", "Agendamento salvo com sucesso!");
     } catch (err: unknown) {
-      const e = err as {
-        response?: {
-          data?: {
-            message?: string;
-            conflicts?: ConflictDetail[];
-          };
-        };
-      };
-
+      const e = err as { response?: { data?: { message?: string; conflicts?: ConflictDetail[] } } };
       const conflicts = e?.response?.data?.conflicts;
       if (conflicts && conflicts.length > 0) {
-        const msgs = conflicts.map(conflictMessage).join("\n");
-        showScheduleMsg("error", msgs);
+        showScheduleMsg("error", conflicts.map(conflictMessage).join("\n"));
       } else {
         showScheduleMsg("error", e?.response?.data?.message || "Erro ao salvar o agendamento.");
       }
@@ -530,7 +729,7 @@ export default function AdminTrainingRoom() {
   /* ── jitsi ── */
   function stopJitsi() {
     if (jitsiApiRef.current) {
-      try { jitsiApiRef.current.dispose(); } catch (_) { /* ignora erros de dispose */ }
+      try { jitsiApiRef.current.dispose(); } catch (_) {}
       jitsiApiRef.current = null;
     }
     setShowJitsi(false);
@@ -539,54 +738,32 @@ export default function AdminTrainingRoom() {
   }
 
   function handleStartJitsi() {
-    // Garante limpeza antes de iniciar nova sessão
     if (jitsiApiRef.current) {
       try { jitsiApiRef.current.dispose(); } catch (_) {}
       jitsiApiRef.current = null;
     }
-
     const roomId = room.jitsiRoomId || `udoc-${Date.now()}`;
     const link = `https://meet.jit.si/${roomId}`;
     setJitsiLink(link);
     setShowJitsi(true);
-
     const displayName = user?.name || "ISM";
-
     const init = () => {
-      // Aguarda o container React ser montado no DOM
       setTimeout(() => {
         if (!jitsiContainerRef.current) return;
-
         jitsiApiRef.current = new (window as any).JitsiMeetExternalAPI("meet.jit.si", {
-          roomName: roomId,
-          width: "100%",
-          height: "100%",
+          roomName: roomId, width: "100%", height: "100%",
           parentNode: jitsiContainerRef.current,
           userInfo: { displayName },
-          configOverwrite: {
-            prejoinPageEnabled: false,
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-          },
+          configOverwrite: { prejoinPageEnabled: false, startWithAudioMuted: false, startWithVideoMuted: false },
           interfaceConfigOverwrite: {
-            TOOLBAR_BUTTONS: [
-              "microphone", "camera", "desktop",
-              "hangup", "chat", "participants-pane", "tileview",
-            ],
+            TOOLBAR_BUTTONS: ["microphone", "camera", "desktop", "hangup", "chat", "participants-pane", "tileview"],
             SHOW_JITSI_WATERMARK: false,
           },
         });
-
-        // Quando o usuário clica em "Sair" dentro do Jitsi → encerra limpo
-        jitsiApiRef.current.addEventListener("readyToClose", () => {
-          stopJitsi();
-        });
+        jitsiApiRef.current.addEventListener("readyToClose", () => stopJitsi());
       }, 100);
     };
-
-    if ((window as any).JitsiMeetExternalAPI) {
-      init();
-    } else {
+    if ((window as any).JitsiMeetExternalAPI) { init(); } else {
       const script = document.createElement("script");
       script.src = "https://meet.jit.si/external_api.js";
       script.onload = init;
@@ -594,63 +771,44 @@ export default function AdminTrainingRoom() {
     }
   }
 
-  function handleStopJitsi() {
-    stopJitsi();
-  }
+  function handleStopJitsi() { stopJitsi(); }
 
   function handleCopyLink() {
     navigator.clipboard.writeText(jitsiLink).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 3000);
+      setLinkCopied(true); setTimeout(() => setLinkCopied(false), 3000);
     });
   }
 
-  /* ── WhatsApp ── */
   function handleWhatsApp() {
-    const roomTitle = room.title || "Treinamento";
-    const msg = encodeURIComponent(
-      `🎓 *${roomTitle}*\nOlá! O treinamento está iniciando. Acesse pelo link:\n${jitsiLink}`
-    );
+    const msg = encodeURIComponent(`🎓 *${room.title || "Treinamento"}*\nOlá! O treinamento está iniciando. Acesse pelo link:\n${jitsiLink}`);
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   }
 
-  /* ── Email invite ── */
   async function handleSendEmailInvite() {
     if (!id) return;
-    setSendingInvite(true);
-    setInviteMsg("");
+    setSendingInvite(true); setInviteMsg("");
     try {
       const { sent, emails } = await sendTrainingInvite(Number(id), jitsiLink);
-      setInviteMsg(sent > 0
-        ? `✓ Enviado para: ${emails.join(", ")}`
-        : "Nenhum funcionário convidado tem e-mail cadastrado."
-      );
+      setInviteMsg(sent > 0 ? `✓ Enviado para: ${emails.join(", ")}` : "Nenhum funcionário convidado tem e-mail cadastrado.");
     } catch {
       setInviteMsg("Erro ao enviar convites. Verifique as configurações de e-mail.");
     } finally {
-      setSendingInvite(false);
-      setTimeout(() => setInviteMsg(""), 5000);
+      setSendingInvite(false); setTimeout(() => setInviteMsg(""), 5000);
     }
   }
 
   /* ── Gravação de tela ── */
   async function handleStartRecording() {
     try {
-      const stream = await (navigator.mediaDevices as any).getDisplayMedia({
-        video: { mediaSource: "screen" },
-        audio: true,
-      });
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-        ? "video/webm;codecs=vp9"
-        : "video/webm";
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({ video: { mediaSource: "screen" }, audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
       const recorder = new MediaRecorder(stream, { mimeType });
       recChunksRef.current = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) recChunksRef.current.push(e.data); };
       recorder.onstop = () => stream.getTracks().forEach((t: any) => t.stop());
       recorder.start(1000);
       mediaRecRef.current = recorder;
-      setIsRecording(true);
-      setRecSeconds(0);
+      setIsRecording(true); setRecSeconds(0);
       recTimerRef.current = setInterval(() => setRecSeconds((s) => s + 1), 1000);
     } catch (e: any) {
       if (e?.name !== "NotAllowedError") alert("Erro ao iniciar gravação: " + e?.message);
@@ -663,14 +821,12 @@ export default function AdminTrainingRoom() {
     const duration = recSeconds;
     mediaRecRef.current.stop();
     mediaRecRef.current = null;
-    setIsRecording(false);
-    setUploadingRec(true);
-    // Aguarda o ondataavailable finalizar
+    setIsRecording(false); setUploadingRec(true);
     await new Promise((r) => setTimeout(r, 500));
     try {
       const blob = new Blob(recChunksRef.current, { type: "video/webm" });
-      const ts   = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-      const rec  = await uploadRoomRecording(Number(id), blob, `gravacao_${ts}.webm`, duration);
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const rec = await uploadRoomRecording(Number(id), blob, `gravacao_${ts}.webm`, duration);
       setRecordings((prev) => [rec, ...prev]);
     } catch { alert("Erro ao fazer upload da gravação."); }
     finally { setUploadingRec(false); recChunksRef.current = []; }
@@ -694,6 +850,17 @@ export default function AdminTrainingRoom() {
     const vimeo = getVimeoEmbedUrl(url);
     if (vimeo) { setEmbedUrl(vimeo); const v = videoUrlInput; setRoom((p) => ({ ...p, vimeoUrl: v, youtubeUrl: "" })); return; }
     showMessage("error", "URL inválida. Cole uma URL do YouTube ou Vimeo.");
+  }
+
+  /* ── helpers de display ── */
+  function formatDataHora(iso: string) {
+    return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  }
+
+  function ratStatusBadge(s: "SEM_RAT" | "RASCUNHO" | "FINALIZADO") {
+    if (s === "FINALIZADO") return <Badge color="green" variant="light" radius="xl">Finalizado</Badge>;
+    if (s === "RASCUNHO")   return <Badge color="orange" variant="light" radius="xl">Rascunho</Badge>;
+    return <Badge color="gray" variant="light" radius="xl">Sem RAT</Badge>;
   }
 
   /* ── estilos ── */
@@ -730,7 +897,7 @@ export default function AdminTrainingRoom() {
             {!isNew && (
               <Badge
                 color={
-                  room.status === "CONCLUIDA"   ? "green"  :
+                  room.status === "CONCLUIDA"    ? "green"  :
                   room.status === "EM_ANDAMENTO" ? "orange" :
                   room.status === "CANCELADA"    ? "red"    : "blue"
                 }
@@ -769,7 +936,7 @@ export default function AdminTrainingRoom() {
               value="rat"
               leftSection={<IconFileText size={16} />}
               disabled={isNew}
-              onClick={carregarTranscricaoRat}
+              onClick={carregarSessoes}
             >
               RAT
             </Tabs.Tab>
@@ -797,13 +964,10 @@ export default function AdminTrainingRoom() {
                 onChange={(v) => {
                   const newCompanyId = v ? Number(v) : undefined;
                   setRoom((p) => ({
-                    ...p,
-                    companyId: newCompanyId,
-                    // Limpa convidados que não pertencem à nova empresa
+                    ...p, companyId: newCompanyId,
                     invitedEmployeeIds: newCompanyId
                       ? (p.invitedEmployeeIds ?? []).filter((eid) =>
-                          allEmployees.find((e) => e.id === eid)?.companyId === newCompanyId
-                        )
+                          allEmployees.find((e) => e.id === eid)?.companyId === newCompanyId)
                       : p.invitedEmployeeIds,
                   }));
                 }}
@@ -836,7 +1000,6 @@ export default function AdminTrainingRoom() {
                 onChange={async (v) => {
                   const newTrailId = v ? Number(v) : undefined;
                   setRoom((p) => ({ ...p, trailId: newTrailId }));
-                  // Para nova sala, preenche automaticamente com o próximo número sequencial
                   if (isNew && newTrailId) {
                     try {
                       const nextOrder = await getNextTrailOrder(newTrailId);
@@ -848,9 +1011,8 @@ export default function AdminTrainingRoom() {
 
               <NumberInput
                 label="Ordem na trilha"
-                description={isNew ? "Preenchido automaticamente com a próxima posição. Altere se quiser inserir em outra posição (as demais serão deslocadas)." : "Ao salvar, salas com a mesma ordem serão deslocadas para frente."}
-                placeholder="Ex: 1"
-                radius="xl" size="md" min={0}
+                description={isNew ? "Preenchido automaticamente com a próxima posição." : "Ao salvar, salas com a mesma ordem serão deslocadas para frente."}
+                placeholder="Ex: 1" radius="xl" size="md" min={0}
                 value={room.sortOrder}
                 onChange={(v) => setRoom((p) => ({ ...p, sortOrder: Number(v) || 0 }))}
                 styles={{ ...inputStyles, description: { color: "var(--text-secondary)", marginTop: 4 } }}
@@ -898,8 +1060,7 @@ export default function AdminTrainingRoom() {
                 <Alert
                   color={scheduleMsgType === "success" ? "green" : "red"}
                   icon={scheduleMsgType === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
-                  radius="xl"
-                  style={{ whiteSpace: "pre-wrap" }}
+                  radius="xl" style={{ whiteSpace: "pre-wrap" }}
                 >
                   {scheduleMsg}
                 </Alert>
@@ -909,13 +1070,11 @@ export default function AdminTrainingRoom() {
                 <NumberInput
                   label="Quantidade de dias de treinamento"
                   description="Define quantos dias terá este treinamento"
-                  placeholder="Ex: 3"
-                  radius="xl" size="md" min={0} max={365}
+                  placeholder="Ex: 3" radius="xl" size="md" min={0} max={365}
                   value={totalDays}
                   onChange={(v) => handleTotalDaysChange(Number(v) || 0)}
                   disabled={isNew}
-                  styles={inputStyles}
-                  style={{ flex: 1 }}
+                  styles={inputStyles} style={{ flex: 1 }}
                 />
                 {totalDays > 1 && (
                   <Checkbox
@@ -927,9 +1086,7 @@ export default function AdminTrainingRoom() {
                       setRecurringTime(checked);
                       if (checked && days[0]) {
                         const { startTime, endTime } = days[0];
-                        setDays((prev) =>
-                          prev.map((d, i) => i === 0 ? d : { ...d, startTime, endTime })
-                        );
+                        setDays((prev) => prev.map((d, i) => i === 0 ? d : { ...d, startTime, endTime }));
                       }
                     }}
                     styles={{ label: { color: "var(--text-primary)" }, description: { color: "var(--text-secondary)" } }}
@@ -953,63 +1110,26 @@ export default function AdminTrainingRoom() {
                       {days.map((day, index) => (
                         <Table.Tr key={day.dayNumber}>
                           <Table.Td>
-                            <Badge variant="light" color="violet" radius="xl">
-                              Dia {day.dayNumber}
-                            </Badge>
+                            <Badge variant="light" color="violet" radius="xl">Dia {day.dayNumber}</Badge>
                           </Table.Td>
                           <Table.Td>
-                            <input
-                              type="date"
-                              value={day.date}
+                            <input type="date" value={day.date}
                               onChange={(e) => updateDay(index, "date", e.currentTarget.value)}
-                              style={{
-                                width: 150,
-                                padding: "6px 12px",
-                                borderRadius: 20,
-                                border: "1px solid var(--border-color)",
-                                background: "var(--input-bg)",
-                                color: "var(--text-primary)",
-                                fontSize: 14,
-                                outline: "none",
-                              }}
+                              style={{ width: 150, padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
                             />
                           </Table.Td>
                           <Table.Td>
-                            <input
-                              type="time"
-                              value={day.startTime}
+                            <input type="time" value={day.startTime}
                               onChange={(e) => updateDay(index, "startTime", e.currentTarget.value)}
                               disabled={recurringTime && index > 0}
-                              style={{
-                                width: 110,
-                                padding: "6px 12px",
-                                borderRadius: 20,
-                                border: "1px solid var(--border-color)",
-                                background: "var(--input-bg)",
-                                color: "var(--text-primary)",
-                                fontSize: 14,
-                                outline: "none",
-                                opacity: recurringTime && index > 0 ? 0.5 : 1,
-                              }}
+                              style={{ width: 110, padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none", opacity: recurringTime && index > 0 ? 0.5 : 1 }}
                             />
                           </Table.Td>
                           <Table.Td>
-                            <input
-                              type="time"
-                              value={day.endTime}
+                            <input type="time" value={day.endTime}
                               onChange={(e) => updateDay(index, "endTime", e.currentTarget.value)}
                               disabled={recurringTime && index > 0}
-                              style={{
-                                width: 110,
-                                padding: "6px 12px",
-                                borderRadius: 20,
-                                border: "1px solid var(--border-color)",
-                                background: "var(--input-bg)",
-                                color: "var(--text-primary)",
-                                fontSize: 14,
-                                outline: "none",
-                                opacity: recurringTime && index > 0 ? 0.5 : 1,
-                              }}
+                              style={{ width: 110, padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none", opacity: recurringTime && index > 0 ? 0.5 : 1 }}
                             />
                           </Table.Td>
                         </Table.Tr>
@@ -1036,30 +1156,22 @@ export default function AdminTrainingRoom() {
           <Tabs.Panel value="treinamento">
             <Stack gap="24px">
 
-              {/* Ao vivo — Jitsi */}
-              {/* Banner de cota de armazenamento ≥ 90% */}
               {storagePct >= 90 && (
-                <Alert
-                  color={storagePct >= 100 ? "red" : "orange"}
-                  radius="xl" variant="light"
-                  icon={<IconInfoCircle size={16} />}
-                  mb="sm"
-                >
+                <Alert color={storagePct >= 100 ? "red" : "orange"} radius="xl" variant="light"
+                  icon={<IconInfoCircle size={16} />} mb="sm">
                   {storagePct >= 100
                     ? "Espaço de armazenamento esgotado. Acesse as Configurações para liberar espaço ou aumentar a cota."
-                    : `Atenção: ${storagePct}% do espaço de gravações está sendo utilizado. Considere liberar espaço.`}
+                    : `Atenção: ${storagePct}% do espaço de gravações está sendo utilizado.`}
                 </Alert>
               )}
 
+              {/* Ao vivo — Jitsi */}
               <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
-
                 <Group justify="space-between" align="center" mb={showJitsi ? "md" : 0}>
                   <div>
                     <Text fw={700} c="var(--text-primary)" fz="md">Treinamento ao vivo</Text>
                     <Text c="var(--text-secondary)" fz="sm">
-                      {room.jitsiRoomId
-                        ? <>ID da sala: <b>{room.jitsiRoomId}</b></>
-                        : "A sala será criada ao clicar em Iniciar ao vivo"}
+                      {room.jitsiRoomId ? <>ID da sala: <b>{room.jitsiRoomId}</b></> : "A sala será criada ao clicar em Iniciar ao vivo"}
                     </Text>
                   </div>
                   <Group gap="sm">
@@ -1078,13 +1190,10 @@ export default function AdminTrainingRoom() {
                   </Group>
                 </Group>
 
-                {/* Link + convites — aparece quando a sessão está ativa */}
                 {showJitsi && jitsiLink && (
                   <Stack gap="8px" mb="md">
-                    <Group
-                      gap="sm" p="12px"
-                      style={{ background: "rgba(34,197,94,0.08)", borderRadius: 12, border: "1px solid rgba(34,197,94,0.3)" }}
-                    >
+                    <Group gap="sm" p="12px"
+                      style={{ background: "rgba(34,197,94,0.08)", borderRadius: 12, border: "1px solid rgba(34,197,94,0.3)" }}>
                       <IconLink size={16} color="var(--mantine-color-green-6)" />
                       <Text fz="sm" c="var(--text-primary)" style={{ flex: 1, wordBreak: "break-all" }}>
                         <b>Link:</b> {jitsiLink}
@@ -1095,44 +1204,29 @@ export default function AdminTrainingRoom() {
                         onClick={handleCopyLink}>
                         {linkCopied ? "Copiado!" : "Copiar"}
                       </Button>
-
-                      {/* WhatsApp */}
-                      <Tooltip label="Enviar convite pelo WhatsApp Web (usa o celular da pessoa)" withArrow>
+                      <Tooltip label="Enviar convite pelo WhatsApp Web" withArrow>
                         <Button size="xs" radius="xl" variant="light" color="green"
-                          leftSection={<IconBrandWhatsapp size={14} />}
-                          onClick={handleWhatsApp}>
+                          leftSection={<IconBrandWhatsapp size={14} />} onClick={handleWhatsApp}>
                           WhatsApp
                         </Button>
                       </Tooltip>
-
-                      {/* E-mail */}
                       <Tooltip label="Enviar convite por e-mail para todos os funcionários convidados" withArrow>
                         <Button size="xs" radius="xl" variant="light" color="blue"
                           leftSection={<IconMail size={14} />}
-                          loading={sendingInvite}
-                          onClick={handleSendEmailInvite}>
+                          loading={sendingInvite} onClick={handleSendEmailInvite}>
                           E-mail
                         </Button>
                       </Tooltip>
                     </Group>
                     {inviteMsg && (
-                      <Text fz="xs" c={inviteMsg.startsWith("✓") ? "green" : "orange"} pl="4px">
-                        {inviteMsg}
-                      </Text>
+                      <Text fz="xs" c={inviteMsg.startsWith("✓") ? "green" : "orange"} pl="4px">{inviteMsg}</Text>
                     )}
                   </Stack>
                 )}
 
                 {showJitsi && (
-                  <div
-                    ref={jitsiContainerRef}
-                    style={{
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      height: "75vh",
-                      minHeight: 600,
-                      border: "1px solid var(--border-color)",
-                    }}
+                  <div ref={jitsiContainerRef}
+                    style={{ borderRadius: 12, overflow: "hidden", height: "75vh", minHeight: 600, border: "1px solid var(--border-color)" }}
                   />
                 )}
               </Paper>
@@ -1146,11 +1240,16 @@ export default function AdminTrainingRoom() {
                       Transcreve a fala do microfone em tempo real via Web Speech API (Chrome/Edge).
                     </Text>
                   </div>
-                  {transcricaoEstado === "recording" && (
-                    <Badge color="red" variant="dot" size="lg" radius="xl">
-                      Transcrição ativa
-                    </Badge>
-                  )}
+                  <Group gap="sm">
+                    {transcricaoEstado === "recording" && (
+                      <Badge color="red" variant="dot" size="lg" radius="xl">Gravando</Badge>
+                    )}
+                    {sessaoAtiva && (
+                      <Badge color="teal" variant="light" size="sm" radius="xl">
+                        Sessão #{sessaoAtiva.id}
+                      </Badge>
+                    )}
+                  </Group>
                 </Group>
 
                 {!transcricaoSuportada ? (
@@ -1163,47 +1262,37 @@ export default function AdminTrainingRoom() {
                   <Stack gap="sm">
                     <Group gap="sm">
                       {transcricaoEstado === "idle" && (
-                        <Button
-                          leftSection={<IconMicrophone size={16} />}
+                        <Button leftSection={<IconMicrophone size={16} />}
                           radius="xl" size="sm" color="green" variant="light"
-                          onClick={iniciarTranscricao}
-                        >
-                          Iniciar
+                          onClick={iniciarCaptura}>
+                          Iniciar captura
                         </Button>
                       )}
                       {transcricaoEstado === "recording" && (
                         <>
-                          <Button
-                            leftSection={<IconPlayerPause size={16} />}
+                          <Button leftSection={<IconPlayerPause size={16} />}
                             radius="xl" size="sm" color="orange" variant="light"
-                            onClick={pausarTranscricao}
-                          >
+                            onClick={pausarTranscricao}>
                             Pausar
                           </Button>
-                          <Button
-                            leftSection={<IconPlayerStop size={16} />}
+                          <Button leftSection={<IconPlayerStop size={16} />}
                             radius="xl" size="sm" color="red" variant="light"
-                            onClick={encerrarTranscricao}
-                          >
-                            Encerrar
+                            loading={encerrando} onClick={encerrarCaptura}>
+                            Encerrar sessão
                           </Button>
                         </>
                       )}
                       {transcricaoEstado === "paused" && (
                         <>
-                          <Button
-                            leftSection={<IconPlayerPlay size={16} />}
+                          <Button leftSection={<IconPlayerPlay size={16} />}
                             radius="xl" size="sm" color="green" variant="light"
-                            onClick={retormarTranscricao}
-                          >
+                            onClick={retormarTranscricao}>
                             Retomar
                           </Button>
-                          <Button
-                            leftSection={<IconPlayerStop size={16} />}
+                          <Button leftSection={<IconPlayerStop size={16} />}
                             radius="xl" size="sm" color="red" variant="light"
-                            onClick={encerrarTranscricao}
-                          >
-                            Encerrar
+                            loading={encerrando} onClick={encerrarCaptura}>
+                            Encerrar sessão
                           </Button>
                         </>
                       )}
@@ -1211,15 +1300,7 @@ export default function AdminTrainingRoom() {
 
                     {transcricaoTrechos.length > 0 && (
                       <Stack gap="4px" mt="xs"
-                        style={{
-                          maxHeight: 200,
-                          overflowY: "auto",
-                          padding: "12px",
-                          borderRadius: 10,
-                          background: "var(--card-bg)",
-                          border: "1px solid var(--border-color)",
-                        }}
-                      >
+                        style={{ maxHeight: 200, overflowY: "auto", padding: "12px", borderRadius: 10, background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
                         {transcricaoTrechos.map((t) => (
                           <Group key={t.id} gap="xs" align="flex-start" wrap="nowrap">
                             <Text fz="10px" c="var(--text-secondary)" style={{ flexShrink: 0, marginTop: 2 }}>
@@ -1238,19 +1319,15 @@ export default function AdminTrainingRoom() {
               <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
                 <Text fw={700} c="var(--text-primary)" fz="md" mb="md">Vídeo gravado</Text>
                 <Group mb="md" align="flex-end">
-                  <TextInput
-                    label="URL do YouTube ou Vimeo"
+                  <TextInput label="URL do YouTube ou Vimeo"
                     placeholder="https://www.youtube.com/watch?v=..."
                     leftSection={<IconBrandYoutube size={16} />}
                     radius="xl" size="md"
                     value={videoUrlInput}
                     onChange={(e) => setVideoUrlInput(e.currentTarget.value)}
-                    style={{ flex: 1 }}
-                    styles={inputStyles}
+                    style={{ flex: 1 }} styles={inputStyles}
                   />
-                  <Button radius="xl" size="md" variant="light" color="violet" onClick={handleEmbedUrl}>
-                    Incorporar
-                  </Button>
+                  <Button radius="xl" size="md" variant="light" color="violet" onClick={handleEmbedUrl}>Incorporar</Button>
                 </Group>
                 {embedUrl && (
                   <div style={{ borderRadius: 12, overflow: "hidden", aspectRatio: "16/9" }}>
@@ -1273,18 +1350,12 @@ export default function AdminTrainingRoom() {
                   </div>
                   <Group gap="sm">
                     {!isRecording ? (
-                      <Tooltip
-                        disabled={storagePct < 100}
-                        label="Espaço de armazenamento esgotado. Acesse as configurações para liberar espaço ou aumentar a cota."
-                        withArrow multiline w={260}
-                      >
-                        <Button
-                          leftSection={<IconPlayerRecord size={16} />}
+                      <Tooltip disabled={storagePct < 100}
+                        label="Espaço de armazenamento esgotado." withArrow multiline w={260}>
+                        <Button leftSection={<IconPlayerRecord size={16} />}
                           radius="xl" size="sm" color="red" variant="light"
-                          loading={uploadingRec}
-                          onClick={handleStartRecording}
-                          disabled={isNew || storagePct >= 100}
-                        >
+                          loading={uploadingRec} onClick={handleStartRecording}
+                          disabled={isNew || storagePct >= 100}>
                           {uploadingRec ? "Enviando..." : "Iniciar gravação"}
                         </Button>
                       </Tooltip>
@@ -1301,11 +1372,8 @@ export default function AdminTrainingRoom() {
                   </Group>
                 </Group>
 
-                {isNew && (
-                  <Text fz="xs" c="var(--text-secondary)">Salve a sala primeiro para habilitar a gravação.</Text>
-                )}
+                {isNew && <Text fz="xs" c="var(--text-secondary)">Salve a sala primeiro para habilitar a gravação.</Text>}
 
-                {/* Lista de gravações */}
                 {recordings.length > 0 && (
                   <Stack gap="12px">
                     {recordings.map((rec) => (
@@ -1325,11 +1393,8 @@ export default function AdminTrainingRoom() {
                             <IconTrash size={14} />
                           </ActionIcon>
                         </Group>
-                        <video
-                          controls
-                          style={{ width: "100%", borderRadius: 8, maxHeight: 320, background: "#000" }}
-                          src={getRecordingFileUrl(rec.id)}
-                        />
+                        <video controls style={{ width: "100%", borderRadius: 8, maxHeight: 320, background: "#000" }}
+                          src={getRecordingFileUrl(rec.id)} />
                       </Paper>
                     ))}
                   </Stack>
@@ -1348,130 +1413,275 @@ export default function AdminTrainingRoom() {
 
           {/* ── ABA RAT ── */}
           <Tabs.Panel value="rat">
-            <Stack gap="24px">
 
-              {/* Transcrição da sessão */}
-              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
-                <Group justify="space-between" align="center" mb="md">
-                  <div>
-                    <Text fw={700} c="var(--text-primary)" fz="md">Transcrição da sessão</Text>
-                    <Text fz="xs" c="var(--text-secondary)">Trechos capturados em ordem cronológica</Text>
-                  </div>
+            {/* ── Detalhe de sessão ── */}
+            {sessaoSelecionada ? (
+              <Stack gap="20px">
+
+                {/* Cabeçalho do detalhe */}
+                <Group justify="space-between" align="center">
                   <Group gap="sm">
-                    <Button
-                      size="xs" radius="xl" variant="light" color="violet"
-                      leftSection={<IconDownload size={14} />}
-                      loading={carregandoTranscricao}
-                      onClick={carregarTranscricaoRat}
-                    >
-                      Atualizar
+                    <Button size="xs" radius="xl" variant="default"
+                      leftSection={<IconArrowLeft size={14} />}
+                      onClick={() => { setSessaoSelecionada(null); setRatDetailMsg(null); }}>
+                      Voltar à lista
                     </Button>
-                    {transcricaoRat.length > 0 && (
-                      <Button
-                        size="xs" radius="xl" variant="light" color="red"
-                        leftSection={<IconDownload size={14} />}
-                        onClick={handleBaixarTranscricaoPdf}
-                      >
-                        Baixar PDF
-                      </Button>
-                    )}
+                    <Text fw={700} c="var(--text-primary)" fz="md">
+                      Sessão de {formatDataHora(sessaoSelecionada.dataHoraInicio)}
+                    </Text>
+                    {ratStatusBadge(ratSessaoStatus)}
                   </Group>
+                  {ratSessaoId && (
+                    <Group gap="xs">
+                      <Button size="xs" radius="xl" variant="light" color="red"
+                        leftSection={<IconDownload size={12} />}
+                        onClick={() => handleDownloadPdfBySessaoId(sessaoSelecionada)}>
+                        PDF
+                      </Button>
+                      <Button size="xs" radius="xl" variant="light" color="blue"
+                        leftSection={<IconFileText size={12} />}
+                        onClick={handleDownloadTxtDetalhe}>
+                        TXT
+                      </Button>
+                    </Group>
+                  )}
                 </Group>
 
-                {transcricaoRat.length === 0 ? (
-                  <Text fz="sm" c="var(--text-secondary)">
-                    Nenhuma transcrição disponível para esta sala. Inicie a captura na aba Treinamento.
-                  </Text>
-                ) : (
-                  <Stack gap="4px"
-                    style={{
-                      maxHeight: 280,
-                      overflowY: "auto",
-                      padding: "12px",
-                      borderRadius: 10,
-                      background: "var(--card-bg)",
-                      border: "1px solid var(--border-color)",
-                    }}
-                  >
-                    {transcricaoRat.map((t) => (
-                      <Group key={t.id} gap="xs" align="flex-start" wrap="nowrap">
-                        <Text fz="10px" c="var(--text-secondary)" style={{ flexShrink: 0, marginTop: 3 }}>
-                          {new Date(t.timestamp).toLocaleTimeString("pt-BR")}
+                {/* Transcrição recolhível */}
+                <Paper p="16px" radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                  <Group justify="space-between" align="center" style={{ cursor: "pointer" }}
+                    onClick={() => setTranscricaoSessaoAberta((v) => !v)}>
+                    <Group gap="xs">
+                      <Text fw={600} fz="sm" c="var(--text-primary)">Transcrição da sessão</Text>
+                      {loadingTranscricaoSessao && <Loader size="xs" color="violet" />}
+                      {!loadingTranscricaoSessao && (
+                        <Badge variant="light" color="gray" size="sm">{transcricaoSessaoTrechos.length} trechos</Badge>
+                      )}
+                    </Group>
+                    {transcricaoSessaoAberta ? <IconChevronUp size={16} color="var(--text-secondary)" /> : <IconChevronDown size={16} color="var(--text-secondary)" />}
+                  </Group>
+                  <Collapse in={transcricaoSessaoAberta}>
+                    <Stack gap="4px" mt="md"
+                      style={{ maxHeight: 280, overflowY: "auto", padding: "12px", borderRadius: 10, background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                      {transcricaoSessaoTrechos.length === 0 ? (
+                        <Text fz="sm" c="var(--text-secondary)">Nenhuma transcrição para esta sessão.</Text>
+                      ) : transcricaoSessaoTrechos.map((t) => (
+                        <Group key={t.id} gap="xs" align="flex-start" wrap="nowrap">
+                          <Text fz="10px" c="var(--text-secondary)" style={{ flexShrink: 0, marginTop: 3 }}>
+                            {new Date(t.timestamp).toLocaleTimeString("pt-BR")}
+                          </Text>
+                          <Text fz="sm" c="var(--text-primary)">{t.texto}</Text>
+                        </Group>
+                      ))}
+                    </Stack>
+                  </Collapse>
+                </Paper>
+
+                {/* Editor de RAT */}
+                <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                  <Stack gap="16px">
+
+                    <TextInput
+                      ref={ratSessaoTituloRef}
+                      label="Título do RAT"
+                      placeholder="Ex: RAT — Treinamento onboarding — Empresa ABC"
+                      radius="xl" size="md"
+                      value={ratSessaoTitulo}
+                      error={ratSessaoTituloError}
+                      disabled={ratSessaoStatus === "FINALIZADO"}
+                      onChange={(e) => { setRatSessaoTitulo(e.currentTarget.value); setRatSessaoTituloError(""); }}
+                      styles={inputStyles}
+                    />
+
+                    {ratSessaoStatus !== "FINALIZADO" && (
+                      <Group gap="sm">
+                        <Button leftSection={<IconRobot size={16} />}
+                          radius="xl" size="sm" variant="gradient"
+                          gradient={{ from: "violet", to: "indigo" }}
+                          loading={gerandoRat} onClick={handleGerarRatIA}>
+                          Gerar RAT com IA
+                        </Button>
+                        <Text fz="xs" c="var(--text-secondary)">
+                          ou escreva / edite manualmente abaixo
                         </Text>
-                        <Text fz="sm" c="var(--text-primary)">{t.texto}</Text>
                       </Group>
-                    ))}
+                    )}
+
+                    {ratSessaoStatus === "FINALIZADO" ? (
+                      <Paper p="12px" radius="12px"
+                        style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                        <Group gap="xs" mb="xs">
+                          <IconLock size={14} color="var(--text-secondary)" />
+                          <Text fz="xs" c="var(--text-secondary)">RAT finalizado — somente leitura</Text>
+                        </Group>
+                        <div
+                          style={{ color: "var(--text-primary)", fontSize: 14, lineHeight: 1.6 }}
+                          dangerouslySetInnerHTML={{ __html: ratSessaoConteudo || "<p>—</p>" }}
+                        />
+                      </Paper>
+                    ) : (
+                      <RichTextEditor
+                        key={ratSessaoKey}
+                        value={ratSessaoConteudo}
+                        onChange={setRatSessaoConteudo}
+                        hideVideo
+                      />
+                    )}
+
+                    {ratDetailMsg && (
+                      <Alert
+                        color={ratDetailMsg.type === "success" ? "green" : "red"}
+                        icon={ratDetailMsg.type === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
+                        radius="xl">
+                        {ratDetailMsg.text}
+                      </Alert>
+                    )}
+
+                    <Group justify="flex-end" gap="sm">
+                      {ratSessaoStatus === "FINALIZADO" ? (
+                        <Button leftSection={<IconPlayerPlay size={16} />}
+                          radius="xl" size="md" color="orange" variant="light"
+                          onClick={() => { setReatrirModal(true); setReatrirMotivo(""); setReatrirMotivoError(""); }}>
+                          Reabrir RAT
+                        </Button>
+                      ) : (
+                        <>
+                          <Button leftSection={<IconFileText size={16} />}
+                            radius="xl" size="md" variant="default"
+                            loading={salvandoRascunho} onClick={handleSalvarRascunho}>
+                            Salvar rascunho
+                          </Button>
+                          <Button leftSection={<IconCheck size={16} />}
+                            radius="xl" size="md" variant="gradient"
+                            gradient={{ from: "violet", to: "blue" }}
+                            loading={finalizandoRat} onClick={handleFinalizarRat}>
+                            Finalizar RAT
+                          </Button>
+                        </>
+                      )}
+                    </Group>
+
                   </Stack>
-                )}
-              </Paper>
+                </Paper>
 
-              {/* Geração do RAT */}
-              <Paper p="20px" radius="16px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
-                <Text fw={700} c="var(--text-primary)" fz="md" mb="md">Documento RAT</Text>
+              </Stack>
+            ) : (
 
-                <Stack gap="16px">
-                  <TextInput
-                    ref={ratTituloRef}
-                    label="Título do RAT"
-                    placeholder="Ex: RAT — Treinamento onboarding — Empresa ABC"
-                    radius="xl" size="md"
-                    value={ratTitulo}
-                    error={ratTituloError}
-                    onChange={(e) => { setRatTitulo(e.currentTarget.value); setRatTituloError(""); }}
-                    styles={inputStyles}
-                  />
+              /* ── Lista de sessões ── */
+              <Stack gap="16px">
 
-                  <Group gap="sm">
-                    <Button
-                      leftSection={<IconRobot size={16} />}
-                      radius="xl" size="sm" variant="gradient"
-                      gradient={{ from: "violet", to: "indigo" }}
-                      loading={gerandoRat}
-                      onClick={handleGerarRatIA}
-                    >
-                      Gerar RAT com IA
-                    </Button>
-                    <Text fz="xs" c="var(--text-secondary)">
-                      ou escreva / edite manualmente no editor abaixo
+                <Group justify="space-between" align="center">
+                  <Text fw={700} c="var(--text-primary)" fz="md">Sessões de captura</Text>
+                  <Button size="xs" radius="xl" variant="light" color="violet"
+                    loading={loadingSessoes} onClick={carregarSessoes}>
+                    Atualizar
+                  </Button>
+                </Group>
+
+                {loadingSessoes ? (
+                  <Group justify="center" py="xl"><Loader size="md" color="violet" /></Group>
+                ) : sessoes.length === 0 ? (
+                  <Paper p="20px" radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
+                    <Text fz="sm" c="var(--text-secondary)" ta="center">
+                      Nenhuma sessão registrada. Inicie uma captura na aba Treinamento.
                     </Text>
-                  </Group>
+                  </Paper>
+                ) : (
+                  <Paper radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
+                    <div style={{ overflowX: "auto" }}>
+                      <Table verticalSpacing="md" horizontalSpacing="md">
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th c="var(--text-primary)">Data/Horário</Table.Th>
+                            <Table.Th c="var(--text-primary)">Duração</Table.Th>
+                            <Table.Th c="var(--text-primary)">Status sessão</Table.Th>
+                            <Table.Th c="var(--text-primary)">Status RAT</Table.Th>
+                            <Table.Th c="var(--text-primary)">Ações</Table.Th>
+                          </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {sessoes.map((s) => {
+                            const dur = s.dataHoraFim
+                              ? Math.round((new Date(s.dataHoraFim).getTime() - new Date(s.dataHoraInicio).getTime()) / 60000)
+                              : null;
+                            return (
+                              <Table.Tr key={s.id}>
+                                <Table.Td>
+                                  <Text fz="sm" c="var(--text-primary)">{formatDataHora(s.dataHoraInicio)}</Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Text fz="sm" c="var(--text-secondary)">
+                                    {dur !== null ? (dur >= 60 ? `${Math.floor(dur / 60)}h ${dur % 60}min` : `${dur} min`) : "Em andamento"}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td>
+                                  <Badge variant="light" radius="xl"
+                                    color={s.status === "EM_ANDAMENTO" ? "orange" : "teal"}>
+                                    {s.status === "EM_ANDAMENTO" ? "Em andamento" : "Encerrada"}
+                                  </Badge>
+                                </Table.Td>
+                                <Table.Td>{ratStatusBadge(s.ratStatus)}</Table.Td>
+                                <Table.Td>
+                                  <Group gap="xs">
+                                    <Button size="xs" radius="xl" variant="light" color="violet"
+                                      onClick={() => abrirSessaoDetalhe(s)}>
+                                      Abrir
+                                    </Button>
+                                    {s.ratId && (
+                                      <Button size="xs" radius="xl" variant="light" color="red"
+                                        leftSection={<IconDownload size={12} />}
+                                        onClick={() => handleDownloadPdfBySessaoId(s)}>
+                                        PDF
+                                      </Button>
+                                    )}
+                                  </Group>
+                                </Table.Td>
+                              </Table.Tr>
+                            );
+                          })}
+                        </Table.Tbody>
+                      </Table>
+                    </div>
+                  </Paper>
+                )}
+              </Stack>
+            )}
 
-                  <RichTextEditor
-                    key={ratEditorKey}
-                    value={ratConteudo}
-                    onChange={setRatConteudo}
-                    hideVideo
-                  />
-
-                  {ratMsg && (
-                    <Alert
-                      color={ratMsg.type === "success" ? "green" : "red"}
-                      icon={ratMsg.type === "success" ? <IconCheck size={18} /> : <IconX size={18} />}
-                      radius="xl"
-                    >
-                      {ratMsg.text}
-                    </Alert>
-                  )}
-
-                  <Group justify="flex-end">
-                    <Button
-                      leftSection={<IconCheck size={16} />}
-                      radius="xl" size="md" variant="gradient"
-                      gradient={{ from: "violet", to: "blue" }}
-                      loading={salvandoRat}
-                      onClick={handleSalvarRat}
-                    >
-                      Salvar RAT
-                    </Button>
-                  </Group>
-                </Stack>
-              </Paper>
-
-            </Stack>
           </Tabs.Panel>
 
         </Tabs>
       </Paper>
+
+      {/* ── Modal Reabrir RAT ── */}
+      <Modal
+        opened={reabrirModal}
+        onClose={() => setReatrirModal(false)}
+        title={<Text fw={700} c="var(--text-primary)">Reabrir RAT</Text>}
+        radius="xl"
+        styles={{ content: { background: "var(--card-bg)", border: "1px solid var(--border-color)" }, header: { background: "var(--card-bg)" } }}
+      >
+        <Stack gap="16px">
+          <Text fz="sm" c="var(--text-secondary)">
+            Informe o motivo da reabertura. Mínimo de 10 caracteres. Esta ação será registrada no log de auditoria.
+          </Text>
+          <Textarea
+            label="Motivo"
+            placeholder="Descreva o motivo da reabertura..."
+            minRows={3} autosize
+            value={reabrirMotivo}
+            error={reabrirMotivoError}
+            onChange={(e) => { setReatrirMotivo(e.currentTarget.value); setReatrirMotivoError(""); }}
+            styles={inputStyles}
+          />
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" radius="xl" onClick={() => setReatrirModal(false)}>Cancelar</Button>
+            <Button radius="xl" color="orange" loading={reabrirLoading} onClick={handleReatrirRat}>
+              Confirmar reabertura
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
     </Stack>
   );
 }

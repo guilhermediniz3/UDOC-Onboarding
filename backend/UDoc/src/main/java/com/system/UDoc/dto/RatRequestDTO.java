@@ -3,6 +3,7 @@ package com.system.UDoc.dto;
 public class RatRequestDTO {
 
     private Long trainingRoomId;
+    private Long sessaoId;
     private Long companyId;
     private Long ismId;
     private String titulo;
@@ -12,6 +13,8 @@ public class RatRequestDTO {
 
     public Long getTrainingRoomId() { return trainingRoomId; }
     public void setTrainingRoomId(Long trainingRoomId) { this.trainingRoomId = trainingRoomId; }
+    public Long getSessaoId() { return sessaoId; }
+    public void setSessaoId(Long sessaoId) { this.sessaoId = sessaoId; }
     public Long getCompanyId() { return companyId; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public Long getIsmId() { return ismId; }

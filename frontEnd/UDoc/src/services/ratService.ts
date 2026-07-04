@@ -10,11 +10,13 @@ interface GetRatsParams {
   autorId?: number | null;
   dataInicio?: string;
   dataFim?: string;
+  status?: string;
   timezoneOffset?: number;
 }
 
 interface RatRequest {
-  trainingRoomId: number;
+  trainingRoomId?: number;
+  sessaoId?: number;
   companyId?: number | null;
   ismId?: number | null;
   titulo: string;
@@ -49,12 +51,18 @@ export async function updateRat(id: number, data: RatRequest): Promise<Rat> {
   return r.data;
 }
 
-export async function deleteRat(id: number): Promise<void> {
-  await api.delete(`/rat/${id}`);
+export async function finalizarRat(id: number): Promise<Rat> {
+  const r = await api.post<Rat>(`/rat/${id}/finalizar`);
+  return r.data;
 }
 
-export async function gerarRatComIA(trainingRoomId: number): Promise<string> {
-  const timezoneOffset = new Date().getTimezoneOffset(); // minutos, ex: 180 para UTC-3
-  const r = await api.post<{ content: string }>("/rat/gerar-ia", { trainingRoomId, timezoneOffset });
+export async function reabrirRat(id: number, motivo: string): Promise<Rat> {
+  const r = await api.post<Rat>(`/rat/${id}/reabrir`, { motivo });
+  return r.data;
+}
+
+export async function gerarRatComIA(sessaoId: number): Promise<string> {
+  const timezoneOffset = new Date().getTimezoneOffset();
+  const r = await api.post<{ content: string }>("/rat/gerar-ia", { sessaoId, timezoneOffset });
   return r.data.content;
 }

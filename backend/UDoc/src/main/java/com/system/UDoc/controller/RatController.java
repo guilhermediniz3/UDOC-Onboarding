@@ -2,6 +2,7 @@ package com.system.UDoc.controller;
 
 import com.system.UDoc.dto.GerarRatRequestDTO;
 import com.system.UDoc.dto.RatDTO;
+import com.system.UDoc.dto.RatReopenRequestDTO;
 import com.system.UDoc.dto.RatRequestDTO;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.service.RatService;
@@ -43,9 +44,11 @@ public class RatController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false, defaultValue = "0") int timezoneOffset,
             Pageable pageable) {
-        return ResponseEntity.ok(ratService.listar(ismId, companyId, autorId, dataInicio, dataFim, timezoneOffset, pageable));
+        return ResponseEntity.ok(
+                ratService.listar(ismId, companyId, autorId, dataInicio, dataFim, status, timezoneOffset, pageable));
     }
 
     @GetMapping("/{id}")
@@ -61,12 +64,19 @@ public class RatController {
         return ResponseEntity.ok(ratService.atualizar(id, req, autor));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(
+    @PostMapping("/{id}/finalizar")
+    public ResponseEntity<RatDTO> finalizar(
             @PathVariable Long id,
             @AuthenticationPrincipal User autor) {
-        ratService.deletar(id, autor);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ratService.finalizar(id, autor));
+    }
+
+    @PostMapping("/{id}/reabrir")
+    public ResponseEntity<RatDTO> reabrir(
+            @PathVariable Long id,
+            @RequestBody RatReopenRequestDTO req,
+            @AuthenticationPrincipal User autor) {
+        return ResponseEntity.ok(ratService.reabrir(id, req, autor));
     }
 
     @PostMapping("/gerar-ia")

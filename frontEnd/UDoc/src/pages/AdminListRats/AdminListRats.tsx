@@ -9,7 +9,6 @@ import {
   Stack,
   Table,
   Text,
-  TextInput,
   Title,
 } from "@mantine/core";
 
@@ -18,14 +17,12 @@ import {
   IconDownload,
   IconFileText,
   IconSearch,
-  IconTrash,
   IconX,
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
-import { getRats, deleteRat } from "../../services/ratService";
+import { getRats } from "../../services/ratService";
 import { getAllCompaniesSimple } from "../../services/companyService";
 import { getAllIsmsSimple } from "../../services/ismService";
 
@@ -45,7 +42,6 @@ function stripHtml(html: string): string {
 }
 
 export default function AdminListRats() {
-  const navigate = useNavigate();
 
   const [rats, setRats] = useState<Rat[]>([]);
   const [total, setTotal] = useState(0);
@@ -60,15 +56,16 @@ export default function AdminListRats() {
   const [filterIsm, setFilterIsm] = useState<string | null>(null);
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string | null>("FINALIZADO");
 
   const SIZE = 10;
 
   useEffect(() => {
-    getAllCompaniesSimple().then(setCompanies).catch((e) => console.error("[AdminListRats] companies:", e?.response?.status, e?.message));
-    getAllIsmsSimple().then(setIsmsData).catch((e) => console.error("[AdminListRats] ISMs:", e?.response?.status, e?.message));
+    getAllCompaniesSimple().then(setCompanies).catch((e) => console.error("[AdminListRats] companies:", e?.response?.status));
+    getAllIsmsSimple().then(setIsmsData).catch((e) => console.error("[AdminListRats] ISMs:", e?.response?.status));
   }, []);
 
-  useEffect(() => { load(); }, [page, filterCompany, filterIsm, filterDataInicio, filterDataFim]);
+  useEffect(() => { load(); }, [page, filterCompany, filterIsm, filterDataInicio, filterDataFim, filterStatus]);
 
   async function load() {
     setLoading(true);
@@ -80,14 +77,15 @@ export default function AdminListRats() {
         ismId: filterIsm ? Number(filterIsm) : null,
         dataInicio: filterDataInicio || undefined,
         dataFim: filterDataFim || undefined,
+        status: filterStatus || undefined,
       });
       setRats(result.content);
       setTotal(result.totalElements);
     } catch (err: any) {
       const status = err?.response?.status;
-      const msg = err?.response?.data?.message || err?.message || "Erro desconhecido";
-      console.error("[AdminListRats] load() falhou:", status, msg, err);
-      showMsg("error", `Erro ao carregar RATs (${status ?? "rede"}): ${msg}`);
+      const errMsg = err?.response?.data?.message || err?.message || "Erro desconhecido";
+      console.error("[AdminListRats] load() falhou:", status, errMsg);
+      showMsg("error", `Erro ao carregar RATs (${status ?? "rede"}): ${errMsg}`);
     } finally { setLoading(false); }
   }
 
@@ -95,25 +93,12 @@ export default function AdminListRats() {
     setMsg({ type, text }); setTimeout(() => setMsg(null), 4000);
   }
 
-  async function handleDelete(id: number, titulo: string) {
-    if (!confirm(`Excluir o RAT "${titulo}"?`)) return;
-    try {
-      await deleteRat(id);
-      showMsg("success", "RAT excluído.");
-      load();
-    } catch {
-      showMsg("error", "Erro ao excluir o RAT.");
-    }
-  }
-
   function handleDownloadTxt(rat: Rat) {
     const texto = stripHtml(rat.conteudo ?? "");
     const blob = new Blob([`${rat.titulo}\n${new Date(rat.dataCriacao).toLocaleString("pt-BR")}\n\n${texto}`], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `rat-${rat.id}.txt`;
-    a.click();
+    a.href = url; a.download = `rat-${rat.id}.txt`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -141,8 +126,7 @@ export default function AdminListRats() {
       ${rat.conteudo ?? ""}
     `;
     await html2pdf().set({
-      margin: [15, 15, 15, 15],
-      filename: `rat-${rat.id}.pdf`,
+      margin: [15, 15, 15, 15], filename: `rat-${rat.id}.pdf`,
       html2canvas: { scale: 2, backgroundColor: "#ffffff" },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     }).from(el).save();
@@ -158,7 +142,7 @@ export default function AdminListRats() {
         <Group justify="space-between" align="center">
           <div>
             <Title order={2} c="var(--text-primary)">Meus RATs</Title>
-            <Text c="var(--text-secondary)" mt={4}>Relatórios de Atendimento Técnico salvos</Text>
+            <Text c="var(--text-secondary)" mt={4}>Relatórios de Atendimento Técnico</Text>
           </div>
         </Group>
       </Paper>
@@ -177,12 +161,7 @@ export default function AdminListRats() {
       <Paper p="20px" radius="24px" style={{ background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
         <Group gap="md" align="flex-end" wrap="wrap">
           <Select
-            label="Empresa"
-            placeholder="Todas"
-            clearable
-            searchable
-            radius="xl"
-            size="sm"
+            label="Empresa" placeholder="Todas" clearable searchable radius="xl" size="sm"
             style={{ minWidth: 200 }}
             data={companies.map((c) => ({ value: String(c.id), label: c.name }))}
             value={filterCompany}
@@ -190,47 +169,42 @@ export default function AdminListRats() {
             styles={inputStyles}
           />
           <Select
-            label="ISM"
-            placeholder="Todos"
-            clearable
-            searchable
-            radius="xl"
-            size="sm"
+            label="ISM" placeholder="Todos" clearable searchable radius="xl" size="sm"
             style={{ minWidth: 200 }}
             data={ismsData.map((i) => ({ value: String(i.id), label: i.name }))}
             value={filterIsm}
             onChange={(v) => { setFilterIsm(v); setPage(0); }}
             styles={inputStyles}
           />
+          <Select
+            label="Status" radius="xl" size="sm"
+            style={{ minWidth: 160 }}
+            data={[
+              { value: "FINALIZADO", label: "Finalizado" },
+              { value: "RASCUNHO", label: "Rascunho" },
+            ]}
+            value={filterStatus}
+            onChange={(v) => { setFilterStatus(v); setPage(0); }}
+            clearable
+            styles={inputStyles}
+          />
           <div>
             <Text fz="sm" c="var(--text-primary)" mb={6}>Data início</Text>
-            <input
-              type="date"
-              value={filterDataInicio}
+            <input type="date" value={filterDataInicio}
               onChange={(e) => { setFilterDataInicio(e.currentTarget.value); setPage(0); }}
-              style={{
-                padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)",
-                background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none",
-              }}
+              style={{ padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
             />
           </div>
           <div>
             <Text fz="sm" c="var(--text-primary)" mb={6}>Data fim</Text>
-            <input
-              type="date"
-              value={filterDataFim}
+            <input type="date" value={filterDataFim}
               onChange={(e) => { setFilterDataFim(e.currentTarget.value); setPage(0); }}
-              style={{
-                padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)",
-                background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none",
-              }}
+              style={{ padding: "7px 14px", borderRadius: 20, border: "1px solid var(--border-color)", background: "var(--input-bg)", color: "var(--text-primary)", fontSize: 14, outline: "none" }}
             />
           </div>
-          <Button
-            size="sm" radius="xl" variant="light" color="violet"
+          <Button size="sm" radius="xl" variant="light" color="violet"
             leftSection={<IconSearch size={14} />}
-            onClick={() => { setPage(0); load(); }}
-          >
+            onClick={() => { setPage(0); load(); }}>
             Buscar
           </Button>
         </Group>
@@ -252,6 +226,7 @@ export default function AdminListRats() {
                     <Table.Th c="var(--text-primary)">Sala</Table.Th>
                     <Table.Th c="var(--text-primary)">ISM</Table.Th>
                     <Table.Th c="var(--text-primary)">Empresa</Table.Th>
+                    <Table.Th c="var(--text-primary)">Status</Table.Th>
                     <Table.Th c="var(--text-primary)">Data</Table.Th>
                     <Table.Th c="var(--text-primary)">Ações</Table.Th>
                   </Table.Tr>
@@ -274,32 +249,26 @@ export default function AdminListRats() {
                         <Text fz="sm" c="var(--text-secondary)">{rat.companyName ?? "—"}</Text>
                       </Table.Td>
                       <Table.Td>
+                        {rat.status === "FINALIZADO"
+                          ? <Badge variant="light" color="green" radius="xl">Finalizado</Badge>
+                          : <Badge variant="light" color="orange" radius="xl">Rascunho</Badge>}
+                      </Table.Td>
+                      <Table.Td>
                         <Text fz="sm" c="var(--text-secondary)">
                           {new Date(rat.dataCriacao).toLocaleString("pt-BR")}
                         </Text>
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          <Button
-                            size="xs" radius="xl" variant="light" color="red"
+                          <Button size="xs" radius="xl" variant="light" color="red"
                             leftSection={<IconDownload size={12} />}
-                            onClick={() => handleDownloadPdf(rat)}
-                          >
+                            onClick={() => handleDownloadPdf(rat)}>
                             PDF
                           </Button>
-                          <Button
-                            size="xs" radius="xl" variant="light" color="blue"
+                          <Button size="xs" radius="xl" variant="light" color="blue"
                             leftSection={<IconFileText size={12} />}
-                            onClick={() => handleDownloadTxt(rat)}
-                          >
+                            onClick={() => handleDownloadTxt(rat)}>
                             TXT
-                          </Button>
-                          <Button
-                            size="xs" radius="xl" variant="light" color="gray"
-                            leftSection={<IconTrash size={12} />}
-                            onClick={() => handleDelete(rat.id, rat.titulo)}
-                          >
-                            Excluir
                           </Button>
                         </Group>
                       </Table.Td>
@@ -309,16 +278,13 @@ export default function AdminListRats() {
               </Table>
             </div>
 
-            {/* Paginação simples */}
             {totalPages > 1 && (
               <Group justify="center" gap="sm">
                 <Button size="xs" radius="xl" variant="light" disabled={page === 0}
                   onClick={() => setPage((p) => p - 1)}>
                   ← Anterior
                 </Button>
-                <Text fz="sm" c="var(--text-secondary)">
-                  Página {page + 1} de {totalPages}
-                </Text>
+                <Text fz="sm" c="var(--text-secondary)">Página {page + 1} de {totalPages}</Text>
                 <Button size="xs" radius="xl" variant="light" disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => p + 1)}>
                   Próxima →

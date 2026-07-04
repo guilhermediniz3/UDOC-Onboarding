@@ -2,6 +2,7 @@ package com.system.UDoc.service;
 
 import com.system.UDoc.dto.GerarRatRequestDTO;
 import com.system.UDoc.dto.RatDTO;
+import com.system.UDoc.dto.RatReopenRequestDTO;
 import com.system.UDoc.dto.RatRequestDTO;
 import com.system.UDoc.entity.*;
 import com.system.UDoc.repository.*;
@@ -27,6 +28,7 @@ public class RatService {
     private final TranscricaoTrechoRepository transcricaoRepository;
     private final TrainingRoomRepository trainingRoomRepository;
     private final TrainingSessionRepository trainingSessionRepository;
+    private final SessaoTreinamentoRepository sessaoTreinamentoRepository;
     private final CompanyRepository companyRepository;
     private final IsmRepository ismRepository;
     private final AuditLogRepository auditLogRepository;
@@ -37,6 +39,7 @@ public class RatService {
             TranscricaoTrechoRepository transcricaoRepository,
             TrainingRoomRepository trainingRoomRepository,
             TrainingSessionRepository trainingSessionRepository,
+            SessaoTreinamentoRepository sessaoTreinamentoRepository,
             CompanyRepository companyRepository,
             IsmRepository ismRepository,
             AuditLogRepository auditLogRepository,
@@ -45,6 +48,7 @@ public class RatService {
         this.transcricaoRepository = transcricaoRepository;
         this.trainingRoomRepository = trainingRoomRepository;
         this.trainingSessionRepository = trainingSessionRepository;
+        this.sessaoTreinamentoRepository = sessaoTreinamentoRepository;
         this.companyRepository = companyRepository;
         this.ismRepository = ismRepository;
         this.auditLogRepository = auditLogRepository;
@@ -58,10 +62,10 @@ public class RatService {
             Long autorId,
             LocalDate dataInicio,
             LocalDate dataFim,
+            String status,
             int timezoneOffset,
             Pageable pageable) {
 
-        // timezoneOffset: minutos de Date.getTimezoneOffset() (positivo = atrás do UTC: UTC-3 → 180)
         java.time.ZoneOffset clientOffset = java.time.ZoneOffset.ofTotalSeconds(-timezoneOffset * 60);
         LocalDateTime inicio = dataInicio != null
                 ? dataInicio.atStartOfDay().atOffset(clientOffset)
@@ -79,10 +83,15 @@ public class RatService {
             if (autorId   != null) predicates.add(cb.equal(root.get("autor").get("id"),   autorId));
             if (inicio    != null) predicates.add(cb.greaterThanOrEqualTo(root.get("dataCriacao"), inicio));
             if (fim       != null) predicates.add(cb.lessThanOrEqualTo(root.get("dataCriacao"),    fim));
+            if (status    != null && !status.isBlank()) {
+                try {
+                    RatStatus rs = RatStatus.valueOf(status);
+                    predicates.add(cb.equal(root.get("status"), rs));
+                } catch (IllegalArgumentException ignored) {}
+            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        // Garante ordenação por dataCriacao DESC independente do Pageable enviado
         Pageable orderedPage = org.springframework.data.domain.PageRequest.of(
                 pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "dataCriacao"));
@@ -92,29 +101,44 @@ public class RatService {
 
     @Transactional
     public RatDTO salvar(RatRequestDTO req, User autor) {
-        TrainingRoom room = trainingRoomRepository.findById(req.getTrainingRoomId())
-                .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
+        TrainingRoom room;
+        SessaoTreinamento sessao = null;
+
+        if (req.getSessaoId() != null) {
+            sessao = sessaoTreinamentoRepository.findById(req.getSessaoId())
+                    .orElseThrow(() -> new RuntimeException("Sessão não encontrada"));
+            room = sessao.getTrainingRoom();
+        } else {
+            room = trainingRoomRepository.findById(req.getTrainingRoomId())
+                    .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
+        }
 
         Rat rat = new Rat();
         rat.setTrainingRoom(room);
+        rat.setSessao(sessao);
         rat.setTitulo(req.getTitulo());
         rat.setConteudo(req.getConteudo());
         rat.setAutor(autor);
+        rat.setStatus(RatStatus.RASCUNHO);
 
         if (req.getCompanyId() != null) {
             companyRepository.findById(req.getCompanyId()).ifPresent(rat::setCompany);
+        } else if (room.getCompany() != null) {
+            rat.setCompany(room.getCompany());
         }
         if (req.getIsmId() != null) {
             ismRepository.findById(req.getIsmId()).ifPresent(rat::setIsm);
+        } else if (room.getIsm() != null) {
+            rat.setIsm(room.getIsm());
         }
 
         Rat saved = ratRepository.save(rat);
 
         auditLogRepository.save(new AuditLog(
-                "RAT", "SALVAR_RAT",
-                "training-room#" + req.getTrainingRoomId(),
+                "RAT", "SALVAR_RASCUNHO",
+                "rat#" + saved.getId(),
                 autor.getEmail(),
-                "RAT salvo: " + req.getTitulo()));
+                "Rascunho de RAT criado: " + req.getTitulo()));
 
         return new RatDTO(saved);
     }
@@ -123,6 +147,10 @@ public class RatService {
     public RatDTO atualizar(Long id, RatRequestDTO req, User autor) {
         Rat rat = ratRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("RAT não encontrado"));
+
+        if (rat.getStatus() == RatStatus.FINALIZADO) {
+            throw new RuntimeException("RAT finalizado não pode ser editado. Use 'Reabrir' primeiro.");
+        }
 
         rat.setTitulo(req.getTitulo());
         rat.setConteudo(req.getConteudo());
@@ -138,13 +166,49 @@ public class RatService {
     }
 
     @Transactional
-    public void deletar(Long id, User autor) {
-        ratRepository.deleteById(id);
+    public RatDTO finalizar(Long id, User autor) {
+        Rat rat = ratRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("RAT não encontrado"));
+
+        rat.setStatus(RatStatus.FINALIZADO);
+        Rat saved = ratRepository.save(rat);
+
         auditLogRepository.save(new AuditLog(
-                "RAT", "DELETAR_RAT",
+                "RAT", "FINALIZAR_RAT",
                 "rat#" + id,
                 autor.getEmail(),
-                "RAT excluído"));
+                "RAT finalizado: " + rat.getTitulo()));
+
+        return new RatDTO(saved);
+    }
+
+    @Transactional
+    public RatDTO reabrir(Long id, RatReopenRequestDTO req, User autor) {
+        if (req.motivo() == null || req.motivo().trim().length() < 10) {
+            throw new RuntimeException("Motivo de reabertura deve ter pelo menos 10 caracteres.");
+        }
+
+        Rat rat = ratRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("RAT não encontrado"));
+
+        if (rat.getStatus() != RatStatus.FINALIZADO) {
+            throw new RuntimeException("Apenas RATs finalizados podem ser reabertos.");
+        }
+
+        String snapshot = "TITULO=" + rat.getTitulo()
+                + " | CONTEUDO_LEN=" + (rat.getConteudo() != null ? rat.getConteudo().length() : 0)
+                + " | MOTIVO=" + req.motivo().trim();
+
+        rat.setStatus(RatStatus.RASCUNHO);
+        Rat saved = ratRepository.save(rat);
+
+        auditLogRepository.save(new AuditLog(
+                "RAT", "REABRIR_RAT",
+                "rat#" + id,
+                autor.getEmail(),
+                snapshot));
+
+        return new RatDTO(saved);
     }
 
     @Transactional(readOnly = true)
@@ -156,13 +220,15 @@ public class RatService {
 
     @Transactional
     public String gerarComIA(GerarRatRequestDTO req, User autor) {
-        TrainingRoom room = trainingRoomRepository.findByIdWithContext(req.trainingRoomId())
+        SessaoTreinamento sessao = sessaoTreinamentoRepository.findById(req.sessaoId())
+                .orElseThrow(() -> new RuntimeException("Sessão não encontrada"));
+
+        TrainingRoom room = trainingRoomRepository.findByIdWithContext(sessao.getTrainingRoom().getId())
                 .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
 
         List<TranscricaoTrecho> trechos = transcricaoRepository
-                .findByTrainingRoomIdOrderByTimestampAsc(req.trainingRoomId());
+                .findBySessaoIdOrderByTimestampAsc(req.sessaoId());
 
-        // Não chama IA sem conteúdo transcrito
         if (trechos.isEmpty()) {
             throw new RuntimeException("Sessão sem conteúdo transcrito. Inicie a transcrição na aba Treinamento antes de gerar o RAT.");
         }
@@ -170,9 +236,6 @@ public class RatService {
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
 
-        // Timestamps salvos em UTC — converte para o fuso do cliente
-        // timezoneOffset: minutos retornados por Date.getTimezoneOffset() no browser
-        //   (positivo = atrás do UTC: ex. Brasília UTC-3 → 180)
         int offsetMinutes = req.timezoneOffset() != null ? req.timezoneOffset() : 180;
         java.time.ZoneOffset clientOffset = java.time.ZoneOffset.ofTotalSeconds(-offsetMinutes * 60);
         LocalDateTime inicio = trechos.get(0).getTimestamp()
@@ -193,7 +256,6 @@ public class RatService {
             duracaoStr = "menos de 1 min";
         }
 
-        // ── Seções 1 e 2 geradas pelo Java — dados dos metadados, sem variação de IA ──
         String empresaNome = room.getCompany() != null ? room.getCompany().getName() : "Não especificada";
         String ismNome     = room.getIsm()     != null ? room.getIsm().getName()     : "Não especificado";
         String trilhaNome  = room.getTrail()   != null ? room.getTrail().getName()   : "não vinculada";
@@ -218,7 +280,6 @@ public class RatService {
         participantesHtml.append("<li>").append(autor.getName()).append(" — ISM presente na sessão</li>\n");
         participantesHtml.append("</ul>\n");
 
-        // ── Mensagem do usuário: METADADOS + TRANSCRIÇÃO ──
         StringBuilder metadados = new StringBuilder("METADADOS DA SESSÃO:\n");
         metadados.append("- Empresa/Cliente: ").append(empresaNome).append("\n");
         metadados.append("- ISM/Analista Responsável: ").append(ismNome).append("\n");
@@ -242,8 +303,7 @@ public class RatService {
 
         String userMessage = metadados + "\nTRANSCRIÇÃO DA SESSÃO:\n" + transcricaoTexto;
 
-        // Log para conferência nas primeiras execuções
-        System.out.println("[RAT-IA] room=" + req.trainingRoomId()
+        System.out.println("[RAT-IA] sessao=" + req.sessaoId()
                 + " | empresa=" + empresaNome + " | ism=" + ismNome
                 + " | data=" + dataStr + " | duracao=" + duracaoStr
                 + " | trechos=" + trechos.size());
@@ -291,8 +351,8 @@ public class RatService {
                 """;
 
         auditLogRepository.save(new AuditLog(
-                "RAT", "GERAR_RAT",
-                "training-room#" + req.trainingRoomId(),
+                "RAT", "GERAR_RAT_IA",
+                "sessao#" + req.sessaoId(),
                 autor.getEmail(),
                 "RAT gerado via IA | empresa=" + empresaNome + " | trechos=" + trechos.size()));
 

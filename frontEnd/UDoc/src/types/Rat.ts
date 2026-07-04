@@ -8,6 +8,8 @@ export interface Rat {
   ismName?: string;
   autorId?: number;
   autorName?: string;
+  sessaoId?: number;
+  status: "RASCUNHO" | "FINALIZADO";
   titulo: string;
   conteudo?: string;
   dataCriacao: string;

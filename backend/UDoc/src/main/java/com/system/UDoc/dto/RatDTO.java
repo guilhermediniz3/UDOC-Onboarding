@@ -15,6 +15,8 @@ public class RatDTO {
     private String ismName;
     private Long autorId;
     private String autorName;
+    private Long sessaoId;
+    private String status;
     private String titulo;
     private String conteudo;
     private LocalDateTime dataCriacao;
@@ -39,6 +41,11 @@ public class RatDTO {
             this.autorId = rat.getAutor().getId();
             this.autorName = rat.getAutor().getName();
         }
+        if (rat.getSessao() != null) {
+            this.sessaoId = rat.getSessao().getId();
+        }
+        // Trata null como FINALIZADO para RATs antigos sem status
+        this.status = rat.getStatus() != null ? rat.getStatus().name() : "FINALIZADO";
         this.titulo = rat.getTitulo();
         this.conteudo = rat.getConteudo();
         this.dataCriacao = rat.getDataCriacao();
@@ -62,6 +69,10 @@ public class RatDTO {
     public void setAutorId(Long autorId) { this.autorId = autorId; }
     public String getAutorName() { return autorName; }
     public void setAutorName(String autorName) { this.autorName = autorName; }
+    public Long getSessaoId() { return sessaoId; }
+    public void setSessaoId(Long sessaoId) { this.sessaoId = sessaoId; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getConteudo() { return conteudo; }
