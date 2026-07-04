@@ -40,6 +40,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
+            log.warn("[JWT] {} {} — Authorization header ausente ou mal-formado", request.getMethod(), request.getRequestURI());
             chain.doFilter(request, response);
             return;
         }
@@ -59,10 +60,13 @@ public class JwtFilter extends OncePerRequestFilter {
                             );
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);
+                    log.debug("[JWT] {} {} — autenticado como {}", request.getMethod(), request.getRequestURI(), email);
+                } else {
+                    log.warn("[JWT] {} {} — token inválido para {}", request.getMethod(), request.getRequestURI(), email);
                 }
             }
         } catch (Exception e) {
-            log.warn("JWT validation failed for [{}]: {}", request.getRequestURI(), e.getMessage());
+            log.warn("[JWT] {} {} — falha na validação: {}", request.getMethod(), request.getRequestURI(), e.getMessage());
         }
 
         chain.doFilter(request, response);

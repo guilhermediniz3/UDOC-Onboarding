@@ -88,6 +88,8 @@ public class SecurityConfig {
                         .requestMatchers("/auditoria/**").hasAnyAuthority("ADMIN", "GESTOR")
                         // Leitura das minhas permissões — qualquer autenticado; PUT só admin via @PreAuthorize
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/permissions/my").authenticated()
+                        // RATs — mapeado explicitamente (Belt-and-suspenders; anyRequest também cobriria)
+                        .requestMatchers("/rat/**").authenticated()
                         // Todo o resto exige autenticação
                         .anyRequest().authenticated()
                 )

@@ -43,9 +43,7 @@ public class RatController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
-            Pageable pageable,
-            @org.springframework.security.core.annotation.AuthenticationPrincipal com.system.UDoc.entity.User caller) {
-        System.out.println("[RAT-LIST] chamado por: " + (caller != null ? caller.getEmail() + " role=" + caller.getRole() : "ANONIMO"));
+            Pageable pageable) {
         return ResponseEntity.ok(ratService.listar(ismId, companyId, autorId, dataInicio, dataFim, pageable));
     }
 
