@@ -120,26 +120,25 @@ export default function AdminListRats() {
   async function handleDownloadPdf(rat: Rat) {
     const html2pdf = (await import("html2pdf.js")).default;
 
-    // ID único para escopo do CSS — evita afetar o resto da página
     const scopeId = `rat-pdf-${Date.now()}`;
     const el = document.createElement("div");
     el.id = scopeId;
-    // Posicionado fora da tela para que o html2canvas resolva os estilos no DOM
-    el.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#ffffff;font-family:Arial,sans-serif;padding:20px;";
+    // position:absolute at (0,0) so html2canvas can capture it; z-index:-9999 keeps-o atrás do conteúdo visível
+    el.style.cssText = "position:absolute;left:0;top:0;z-index:-9999;width:794px;background:#ffffff;font-family:Arial,sans-serif;padding:20px;pointer-events:none;";
 
     el.innerHTML = `
       <style>
-        #${scopeId} * { color: #111111 !important; background-color: transparent !important; }
+        #${scopeId} * { color: #111111 !important; }
         #${scopeId} h2, #${scopeId} h3 { font-weight: bold; margin: 0.8em 0 0.3em; }
         #${scopeId} ul { padding-left: 1.4em; }
       </style>
-      <h2 style="margin-bottom:4px">${rat.titulo}</h2>
-      <p style="color:#555555;margin-bottom:4px">
+      <h2 style="margin-bottom:4px;">${rat.titulo}</h2>
+      <p style="color:#555555;margin-bottom:4px;">
         Sala: ${rat.trainingRoomTitle ?? "—"} &nbsp;|&nbsp;
         ISM: ${rat.ismName ?? "—"} &nbsp;|&nbsp;
         Empresa: ${rat.companyName ?? "—"}
       </p>
-      <p style="color:#555555;margin-bottom:20px">
+      <p style="color:#555555;margin-bottom:20px;">
         Data: ${new Date(rat.dataCriacao).toLocaleString("pt-BR")}
       </p>
       ${rat.conteudo ?? ""}
