@@ -64,8 +64,8 @@ export default function AdminListRats() {
   const SIZE = 10;
 
   useEffect(() => {
-    getAllCompaniesSimple().then(setCompanies).catch(() => {});
-    getAllIsmsSimple().then(setIsmsData).catch(() => {});
+    getAllCompaniesSimple().then(setCompanies).catch((e) => console.error("[AdminListRats] companies:", e?.response?.status, e?.message));
+    getAllIsmsSimple().then(setIsmsData).catch((e) => console.error("[AdminListRats] ISMs:", e?.response?.status, e?.message));
   }, []);
 
   useEffect(() => { load(); }, [page, filterCompany, filterIsm, filterDataInicio, filterDataFim]);
@@ -83,8 +83,12 @@ export default function AdminListRats() {
       });
       setRats(result.content);
       setTotal(result.totalElements);
-    } catch { /* silencioso */ }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || err?.message || "Erro desconhecido";
+      console.error("[AdminListRats] load() falhou:", status, msg, err);
+      showMsg("error", `Erro ao carregar RATs (${status ?? "rede"}): ${msg}`);
+    } finally { setLoading(false); }
   }
 
   function showMsg(type: "success" | "error", text: string) {

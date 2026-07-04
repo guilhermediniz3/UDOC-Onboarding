@@ -34,7 +34,7 @@ api.interceptors.response.use(
       if (message === "Token ausente ou inválido") {
         localStorage.removeItem("udoc-token");
         localStorage.removeItem("udoc-user");
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent("udoc:session-expired"));
       }
     }
 

@@ -66,6 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    const handler = () => logout();
+    window.addEventListener("udoc:session-expired", handler);
+    return () => window.removeEventListener("udoc:session-expired", handler);
+  }, []);
+
   function login(newToken: string, newUser: AuthUser) {
     setToken(newToken);
     setUser(newUser);
