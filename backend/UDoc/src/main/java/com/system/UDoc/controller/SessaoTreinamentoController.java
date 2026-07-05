@@ -26,7 +26,7 @@ public class SessaoTreinamentoController {
             @RequestBody CriarSessaoRequestDTO req,
             @AuthenticationPrincipal User usuario) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(sessaoService.criarSessao(req.trainingRoomId(), usuario));
+                .body(sessaoService.criarSessao(req.trainingRoomId(), req.modoCaptura(), usuario));
     }
 
     @PostMapping("/{id}/encerrar")

@@ -30,6 +30,10 @@ public class SessaoTreinamento {
     @JoinColumn(name = "criado_por_id", nullable = false)
     private User criadoPor;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private ModoCaptura modoCaptura;
+
     public SessaoTreinamento() {}
 
     @PrePersist
@@ -39,6 +43,9 @@ public class SessaoTreinamento {
         }
         if (status == null) {
             status = SessaoTreinamentoStatus.EM_ANDAMENTO;
+        }
+        if (modoCaptura == null) {
+            modoCaptura = ModoCaptura.SOLO;
         }
     }
 
@@ -54,4 +61,6 @@ public class SessaoTreinamento {
     public void setStatus(SessaoTreinamentoStatus status) { this.status = status; }
     public User getCriadoPor() { return criadoPor; }
     public void setCriadoPor(User criadoPor) { this.criadoPor = criadoPor; }
+    public ModoCaptura getModoCaptura() { return modoCaptura; }
+    public void setModoCaptura(ModoCaptura modoCaptura) { this.modoCaptura = modoCaptura; }
 }

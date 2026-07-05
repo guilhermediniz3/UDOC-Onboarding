@@ -35,6 +35,7 @@ import {
   IconFileText,
   IconInfoCircle,
   IconLink,
+  IconDeviceTv,
   IconLock,
   IconMail,
   IconMicrophone,
@@ -224,6 +225,10 @@ export default function AdminTrainingRoom() {
     typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
   );
+  const [displayMediaSuportado] = useState(() =>
+    typeof navigator !== "undefined" &&
+    typeof (navigator.mediaDevices as any)?.getDisplayMedia === "function"
+  );
   const reconRef = useRef<any>(null);
   const [transcricaoTrechos, setTranscricaoTrechos] = useState<TranscricaoTrecho[]>([]);
 
@@ -231,6 +236,10 @@ export default function AdminTrainingRoom() {
   const [sessaoAtiva, setSessaoAtiva] = useState<SessaoTreinamento | null>(null);
   const [encerrando, setEncerrando] = useState(false);
   const sessaoAtivaRef = useRef<SessaoTreinamento | null>(null);
+  const [modoCapturaAtivo, setModoCapturaAtivo] = useState<"SOLO" | "COMPLETO" | null>(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const displayStreamRef = useRef<MediaStream | null>(null);
+  const displayAudioCtxRef = useRef<AudioContext | null>(null);
 
   /* ── aba RAT — lista de sessões ── */
   const [sessoes, setSessoes] = useState<SessaoTreinamento[]>([]);
@@ -362,14 +371,42 @@ export default function AdminTrainingRoom() {
     setTranscricaoEstado(e);
   }
 
-  async function iniciarCaptura() {
+  async function iniciarCapturaSolo() {
     if (!id || !transcricaoSuportada) return;
     try {
-      const sessao = await criarSessao(Number(id));
+      const sessao = await criarSessao(Number(id), "SOLO");
       setSessaoAtiva(sessao);
       sessaoAtivaRef.current = sessao;
+      setModoCapturaAtivo("SOLO");
       iniciarSpeech(sessao.id);
     } catch {
+      showMessage("error", "Erro ao criar sessão de captura.");
+    }
+  }
+
+  async function iniciarCapturaCompleto() {
+    if (!id || !transcricaoSuportada || !displayMediaSuportado) return;
+    let displayStream: MediaStream;
+    try {
+      displayStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true });
+    } catch (err: any) {
+      // Usuário cancelou ou negou — volta sem criar sessão
+      return;
+    }
+    displayStreamRef.current = displayStream;
+    const videoTrack = displayStream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.onended = () => encerrarCaptura();
+    }
+    try {
+      const sessao = await criarSessao(Number(id), "COMPLETO");
+      setSessaoAtiva(sessao);
+      sessaoAtivaRef.current = sessao;
+      setModoCapturaAtivo("COMPLETO");
+      iniciarSpeech(sessao.id);
+    } catch {
+      displayStream.getTracks().forEach((t) => t.stop());
+      displayStreamRef.current = null;
       showMessage("error", "Erro ao criar sessão de captura.");
     }
   }
@@ -416,7 +453,16 @@ export default function AdminTrainingRoom() {
   async function encerrarCaptura() {
     if (!sessaoAtivaRef.current) return;
     if (reconRef.current) { try { reconRef.current.abort(); } catch (_) {} reconRef.current = null; }
+    if (displayStreamRef.current) {
+      displayStreamRef.current.getTracks().forEach((t) => t.stop());
+      displayStreamRef.current = null;
+    }
+    if (displayAudioCtxRef.current) {
+      try { displayAudioCtxRef.current.close(); } catch (_) {}
+      displayAudioCtxRef.current = null;
+    }
     setEstado("idle");
+    setModoCapturaAtivo(null);
     setEncerrando(true);
     try {
       await encerrarSessao(sessaoAtivaRef.current.id);
@@ -1153,7 +1199,9 @@ export default function AdminTrainingRoom() {
                   </div>
                   <Group gap="sm">
                     {transcricaoEstado === "recording" && (
-                      <Badge color="red" variant="dot" size="lg" radius="xl">Gravando</Badge>
+                      <Badge color="red" variant="dot" size="lg" radius="xl">
+                        {modoCapturaAtivo === "COMPLETO" ? "Gravando os dois lados" : "Gravando"}
+                      </Badge>
                     )}
                     {sessaoAtiva && (
                       <Badge color="teal" variant="light" size="sm" radius="xl">
@@ -1171,13 +1219,36 @@ export default function AdminTrainingRoom() {
                   <Text fz="xs" c="var(--text-secondary)">Salve a sala primeiro para habilitar a transcrição.</Text>
                 ) : (
                   <Stack gap="sm">
-                    <Group gap="sm">
+                    <Group gap="sm" align="flex-start">
                       {transcricaoEstado === "idle" && (
-                        <Button leftSection={<IconMicrophone size={16} />}
-                          radius="xl" size="sm" color="green" variant="light"
-                          onClick={iniciarCaptura}>
-                          Iniciar captura
-                        </Button>
+                        <>
+                          <Stack gap="4px" align="center">
+                            <Button leftSection={<IconMicrophone size={16} />}
+                              radius="xl" size="sm" color="green" variant="light"
+                              onClick={iniciarCapturaSolo}>
+                              Iniciar Solo
+                            </Button>
+                            <Text fz="10px" c="var(--text-secondary)" ta="center" maw={140}>
+                              Captura apenas seu microfone. Ideal para sessões rápidas.
+                            </Text>
+                          </Stack>
+                          <Tooltip
+                            disabled={displayMediaSuportado}
+                            label="disponível em Chrome/Edge — o modo Completo requer compartilhamento de aba com áudio"
+                            withArrow multiline w={240}>
+                            <Stack gap="4px" align="center">
+                              <Button leftSection={<IconDeviceTv size={16} />}
+                                radius="xl" size="sm" color="violet" variant="light"
+                                disabled={!displayMediaSuportado}
+                                onClick={() => setShowConsentModal(true)}>
+                                Iniciar Completo
+                              </Button>
+                              <Text fz="10px" c="var(--text-secondary)" ta="center" maw={160}>
+                                Captura seu microfone + áudio da aba do treinamento. Necessário compartilhar a aba com áudio ao iniciar.
+                              </Text>
+                            </Stack>
+                          </Tooltip>
+                        </>
                       )}
                       {transcricaoEstado === "recording" && (
                         <>
@@ -1535,6 +1606,32 @@ export default function AdminTrainingRoom() {
 
         </Tabs>
       </Paper>
+
+      {/* Modal de consentimento — Modo Completo */}
+      <Modal
+        opened={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        title="Consentimento de gravação"
+        centered
+        radius="lg"
+        size="sm">
+        <Stack gap="md">
+          <Text fz="sm" c="var(--text-primary)">
+            Esta captura registrará também a fala de outros participantes.
+            Certifique-se de ter o consentimento deles antes de continuar.
+          </Text>
+          <Group justify="flex-end" gap="sm">
+            <Button radius="xl" variant="default" onClick={() => setShowConsentModal(false)}>
+              Cancelar
+            </Button>
+            <Button radius="xl" color="violet"
+              leftSection={<IconDeviceTv size={16} />}
+              onClick={() => { setShowConsentModal(false); iniciarCapturaCompleto(); }}>
+              Confirmar e iniciar
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
     </Stack>
   );
