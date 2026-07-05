@@ -415,6 +415,9 @@ export default function AdminTrainingRoom() {
     }
 
     const audioCtx = new AudioContext();
+    // Chrome inicia AudioContext em "suspended" por política de autoplay.
+    // resume() garante que o grafo de áudio começa a processar imediatamente.
+    if (audioCtx.state === "suspended") await audioCtx.resume();
     const dest = audioCtx.createMediaStreamDestination();
     audioCtx.createMediaStreamSource(micStream).connect(dest);
     audioCtx.createMediaStreamSource(displayStream).connect(dest);

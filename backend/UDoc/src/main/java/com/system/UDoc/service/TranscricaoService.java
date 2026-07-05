@@ -126,8 +126,13 @@ public class TranscricaoService {
             public String getFilename() { return "audio.webm"; }
         };
 
+        // Groq Whisper exige que o arquivo seja enviado com Content-Type correto.
+        // Sem ele, a API pode rejeitar o arquivo ou inferir o formato incorretamente.
+        HttpHeaders fileHeaders = new HttpHeaders();
+        fileHeaders.setContentType(MediaType.valueOf("audio/webm"));
+
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", resource);
+        body.add("file", new org.springframework.http.HttpEntity<>(resource, fileHeaders));
         body.add("model", whisperModel);
         body.add("language", "pt");
         body.add("response_format", "json");
