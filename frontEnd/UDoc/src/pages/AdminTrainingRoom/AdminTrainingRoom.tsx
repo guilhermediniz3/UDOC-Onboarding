@@ -97,7 +97,7 @@ import type { TranscricaoTrecho } from "../../types/TranscricaoTrecho";
 import type { SessaoTreinamento } from "../../types/SessaoTreinamento";
 import type { Rat } from "../../types/Rat";
 
-import { salvarTrecho, listarTranscricaoPorSessao } from "../../services/transcricaoService";
+import { salvarTrecho, listarTranscricaoPorSessao, enviarAudioChunk } from "../../services/transcricaoService";
 import {
   criarSessao,
   encerrarSessao,
@@ -240,6 +240,11 @@ export default function AdminTrainingRoom() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const displayStreamRef = useRef<MediaStream | null>(null);
   const displayAudioCtxRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const destStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const modoCapturaAtivoRef = useRef<"SOLO" | "COMPLETO" | null>(null);
+  const gravandoRef = useRef(false);
 
   /* ── aba RAT — lista de sessões ── */
   const [sessoes, setSessoes] = useState<SessaoTreinamento[]>([]);
@@ -385,30 +390,93 @@ export default function AdminTrainingRoom() {
   }
 
   async function iniciarCapturaCompleto() {
-    if (!id || !transcricaoSuportada || !displayMediaSuportado) return;
+    if (!id || !displayMediaSuportado) return;
+
     let displayStream: MediaStream;
     try {
       displayStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true });
-    } catch (err: any) {
-      // Usuário cancelou ou negou — volta sem criar sessão
+    } catch {
+      return; // cancelado pelo usuário
+    }
+
+    if (displayStream.getAudioTracks().length === 0) {
+      displayStream.getTracks().forEach((t) => t.stop());
+      showMessage("error", "Nenhuma fonte de áudio selecionada. Marque 'Compartilhar áudio da aba' ao escolher a aba.");
       return;
     }
-    displayStreamRef.current = displayStream;
-    const videoTrack = displayStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.onended = () => encerrarCaptura();
-    }
+
+    let micStream: MediaStream;
     try {
-      const sessao = await criarSessao(Number(id), "COMPLETO");
-      setSessaoAtiva(sessao);
-      sessaoAtivaRef.current = sessao;
-      setModoCapturaAtivo("COMPLETO");
-      iniciarSpeech(sessao.id);
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       displayStream.getTracks().forEach((t) => t.stop());
-      displayStreamRef.current = null;
-      showMessage("error", "Erro ao criar sessão de captura.");
+      showMessage("error", "Não foi possível acessar o microfone.");
+      return;
     }
+
+    const audioCtx = new AudioContext();
+    const dest = audioCtx.createMediaStreamDestination();
+    audioCtx.createMediaStreamSource(micStream).connect(dest);
+    audioCtx.createMediaStreamSource(displayStream).connect(dest);
+
+    displayStreamRef.current = displayStream;
+    displayAudioCtxRef.current = audioCtx;
+    micStreamRef.current = micStream;
+    destStreamRef.current = dest.stream;
+
+    displayStream.getVideoTracks()[0]?.addEventListener("ended", () => encerrarCaptura());
+
+    let sessao;
+    try {
+      sessao = await criarSessao(Number(id), "COMPLETO");
+    } catch {
+      [displayStream, micStream].forEach((s) => s.getTracks().forEach((t) => t.stop()));
+      audioCtx.close();
+      displayStreamRef.current = null;
+      displayAudioCtxRef.current = null;
+      micStreamRef.current = null;
+      destStreamRef.current = null;
+      showMessage("error", "Erro ao criar sessão de captura.");
+      return;
+    }
+
+    setSessaoAtiva(sessao);
+    sessaoAtivaRef.current = sessao;
+    setModoCapturaAtivo("COMPLETO");
+    modoCapturaAtivoRef.current = "COMPLETO";
+    gravandoRef.current = true;
+    setEstado("recording");
+
+    iniciarGravacaoChunk(dest.stream, Number(id), sessao.id);
+  }
+
+  function iniciarGravacaoChunk(stream: MediaStream, trainingRoomId: number, sessaoId: number) {
+    const chunks: Blob[] = [];
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : MediaRecorder.isTypeSupported("audio/webm")
+      ? "audio/webm"
+      : "";
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    mediaRecorderRef.current = recorder;
+
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = async () => {
+      if (chunks.length > 0 && sessaoAtivaRef.current?.id === sessaoId) {
+        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        const trecho = await enviarAudioChunk(trainingRoomId, sessaoId, blob);
+        if (trecho) setTranscricaoTrechos((prev) => [...prev, trecho]);
+      }
+      if (gravandoRef.current) {
+        iniciarGravacaoChunk(stream, trainingRoomId, sessaoId);
+      }
+    };
+
+    recorder.start();
+    setTimeout(() => {
+      if (recorder.state !== "inactive") recorder.stop();
+    }, 15000);
   }
 
   function iniciarSpeech(sessaoId: number) {
@@ -440,29 +508,53 @@ export default function AdminTrainingRoom() {
   }
 
   function pausarTranscricao() {
-    if (reconRef.current) { try { reconRef.current.stop(); } catch (_) {} }
+    if (modoCapturaAtivoRef.current === "COMPLETO") {
+      gravandoRef.current = false;
+      if (mediaRecorderRef.current?.state !== "inactive") {
+        try { mediaRecorderRef.current?.stop(); } catch (_) {}
+      }
+    } else {
+      if (reconRef.current) { try { reconRef.current.stop(); } catch (_) {} }
+    }
     setEstado("paused");
   }
 
   function retormarTranscricao() {
-    if (!reconRef.current) return;
-    try { reconRef.current.start(); } catch (_) {}
-    setEstado("recording");
+    if (modoCapturaAtivoRef.current === "COMPLETO") {
+      if (destStreamRef.current && sessaoAtivaRef.current && id) {
+        gravandoRef.current = true;
+        setEstado("recording");
+        iniciarGravacaoChunk(destStreamRef.current, Number(id), sessaoAtivaRef.current.id);
+      }
+    } else {
+      if (!reconRef.current) return;
+      try { reconRef.current.start(); } catch (_) {}
+      setEstado("recording");
+    }
   }
 
   async function encerrarCaptura() {
     if (!sessaoAtivaRef.current) return;
+
+    // Para Web Speech API (Solo)
     if (reconRef.current) { try { reconRef.current.abort(); } catch (_) {} reconRef.current = null; }
-    if (displayStreamRef.current) {
-      displayStreamRef.current.getTracks().forEach((t) => t.stop());
-      displayStreamRef.current = null;
+
+    // Para MediaRecorder (Completo) — seta gravandoRef=false antes para onstop não reiniciar
+    gravandoRef.current = false;
+    if (mediaRecorderRef.current?.state !== "inactive") {
+      try { mediaRecorderRef.current?.stop(); } catch (_) {}
     }
-    if (displayAudioCtxRef.current) {
-      try { displayAudioCtxRef.current.close(); } catch (_) {}
-      displayAudioCtxRef.current = null;
-    }
+    mediaRecorderRef.current = null;
+
+    // Libera streams
+    if (micStreamRef.current) { micStreamRef.current.getTracks().forEach((t) => t.stop()); micStreamRef.current = null; }
+    if (displayStreamRef.current) { displayStreamRef.current.getTracks().forEach((t) => t.stop()); displayStreamRef.current = null; }
+    destStreamRef.current = null;
+    if (displayAudioCtxRef.current) { try { displayAudioCtxRef.current.close(); } catch (_) {} displayAudioCtxRef.current = null; }
+
     setEstado("idle");
     setModoCapturaAtivo(null);
+    modoCapturaAtivoRef.current = null;
     setEncerrando(true);
     try {
       await encerrarSessao(sessaoAtivaRef.current.id);

@@ -31,3 +31,22 @@ export async function registrarAcessoTranscricao(
 ): Promise<void> {
   await api.post(`/transcricao/sessao/${sessaoId}/acesso`, { ratId, acao });
 }
+
+export async function enviarAudioChunk(
+  trainingRoomId: number,
+  sessaoId: number,
+  blob: Blob
+): Promise<TranscricaoTrecho | null> {
+  const form = new FormData();
+  form.append("audio", blob, "audio.webm");
+  form.append("trainingRoomId", String(trainingRoomId));
+  try {
+    const r = await api.post<TranscricaoTrecho>(
+      `/transcricao/sessao/${sessaoId}/audio`,
+      form
+    );
+    return r.status === 204 ? null : r.data;
+  } catch {
+    return null;
+  }
+}
