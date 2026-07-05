@@ -96,7 +96,13 @@ public class RatService {
                 pageable.getPageNumber(), pageable.getPageSize(),
                 Sort.by(Sort.Direction.DESC, "dataCriacao"));
 
-        return ratRepository.findAll(spec, orderedPage).map(RatDTO::new);
+        return ratRepository.findAll(spec, orderedPage).map(rat -> {
+            RatDTO dto = new RatDTO(rat);
+            if (dto.getSessaoId() != null) {
+                dto.setTemTranscricao(transcricaoRepository.countBySessaoId(dto.getSessaoId()) > 0);
+            }
+            return dto;
+        });
     }
 
     @Transactional

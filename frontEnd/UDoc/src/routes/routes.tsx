@@ -33,6 +33,7 @@ import AdminPermissions from "../pages/AdminPermissions/AdminPermissions";
 import Catalogo from "../pages/Catalogo/Catalogo";
 import AdminChatInsights from "../pages/AdminChatInsights/AdminChatInsights";
 import AdminListRats from "../pages/AdminListRats/AdminListRats";
+import TranscricaoViewer from "../pages/TranscricaoViewer/TranscricaoViewer";
 
 function AppRoutes() {
   return (
@@ -118,6 +119,7 @@ function AppRoutes() {
 
       {/* MEUS RATs */}
       <Route path="/admin/rats" element={<AdminListRats />} />
+      <Route path="/admin/rats/:ratId/transcricao" element={<TranscricaoViewer />} />
 
       {/* 403 — Acesso negado */}
       <Route path="/403" element={<Forbidden />} />

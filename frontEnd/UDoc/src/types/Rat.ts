@@ -9,6 +9,7 @@ export interface Rat {
   autorId?: number;
   autorName?: string;
   sessaoId?: number;
+  temTranscricao?: boolean;
   status: "RASCUNHO" | "FINALIZADO";
   titulo: string;
   conteudo?: string;

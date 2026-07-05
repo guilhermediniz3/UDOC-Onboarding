@@ -23,3 +23,11 @@ export async function listarTranscricaoPorSessao(
   const r = await api.get<TranscricaoTrecho[]>(`/transcricao/sessao/${sessaoId}`);
   return r.data;
 }
+
+export async function registrarAcessoTranscricao(
+  sessaoId: number,
+  ratId: number,
+  acao: "VIEW" | "DOWNLOAD_PDF" | "DOWNLOAD_TXT"
+): Promise<void> {
+  await api.post(`/transcricao/sessao/${sessaoId}/acesso`, { ratId, acao });
+}

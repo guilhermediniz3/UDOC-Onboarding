@@ -16,6 +16,7 @@ public class RatDTO {
     private Long autorId;
     private String autorName;
     private Long sessaoId;
+    private boolean temTranscricao;
     private String status;
     private String titulo;
     private String conteudo;
@@ -71,6 +72,8 @@ public class RatDTO {
     public void setAutorName(String autorName) { this.autorName = autorName; }
     public Long getSessaoId() { return sessaoId; }
     public void setSessaoId(Long sessaoId) { this.sessaoId = sessaoId; }
+    public boolean isTemTranscricao() { return temTranscricao; }
+    public void setTemTranscricao(boolean temTranscricao) { this.temTranscricao = temTranscricao; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getTitulo() { return titulo; }

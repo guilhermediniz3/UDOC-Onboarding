@@ -1,5 +1,6 @@
 package com.system.UDoc.controller;
 
+import com.system.UDoc.dto.TranscricaoAcessoDTO;
 import com.system.UDoc.dto.TranscricaoTrechoDTO;
 import com.system.UDoc.dto.TranscricaoTrechoRequestDTO;
 import com.system.UDoc.entity.User;
@@ -39,5 +40,14 @@ public class TranscricaoController {
     public ResponseEntity<List<TranscricaoTrechoDTO>> listarPorSessao(
             @PathVariable Long sessaoId) {
         return ResponseEntity.ok(transcricaoService.listarPorSessao(sessaoId));
+    }
+
+    @PostMapping("/sessao/{sessaoId}/acesso")
+    public ResponseEntity<Void> registrarAcesso(
+            @PathVariable Long sessaoId,
+            @RequestBody TranscricaoAcessoDTO req,
+            @AuthenticationPrincipal User usuario) {
+        transcricaoService.registrarAcesso(sessaoId, req.ratId(), req.acao(), usuario);
+        return ResponseEntity.ok().build();
     }
 }

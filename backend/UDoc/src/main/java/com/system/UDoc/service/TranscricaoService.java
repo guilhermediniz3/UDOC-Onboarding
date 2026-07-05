@@ -70,4 +70,14 @@ public class TranscricaoService {
                 .map(TranscricaoTrechoDTO::new)
                 .toList();
     }
+
+    @Transactional
+    public void registrarAcesso(Long sessaoId, Long ratId, String acao, User usuario) {
+        String target = "sessao#" + sessaoId + (ratId != null ? "|rat#" + ratId : "");
+        auditLogRepository.save(new AuditLog(
+                "TRANSCRICAO", acao,
+                target,
+                usuario.getEmail(),
+                "acao=" + acao + " | sessaoId=" + sessaoId));
+    }
 }

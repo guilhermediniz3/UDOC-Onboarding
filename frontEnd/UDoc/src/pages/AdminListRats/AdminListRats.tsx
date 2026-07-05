@@ -1,4 +1,5 @@
 import {
+  ActionIcon,
   Alert,
   Badge,
   Button,
@@ -12,17 +13,20 @@ import {
   Text,
   Textarea,
   Title,
+  Tooltip,
 } from "@mantine/core";
 
 import {
   IconCheck,
   IconDownload,
+  IconEye,
   IconFileText,
   IconSearch,
   IconX,
 } from "@tabler/icons-react";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getRats, reabrirRat } from "../../services/ratService";
 import { getAllCompaniesSimple } from "../../services/companyService";
@@ -44,6 +48,7 @@ function stripHtml(html: string): string {
 }
 
 export default function AdminListRats() {
+  const navigate = useNavigate();
 
   const [rats, setRats] = useState<Rat[]>([]);
   const [total, setTotal] = useState(0);
@@ -300,6 +305,14 @@ export default function AdminListRats() {
                             onClick={() => handleDownloadTxt(rat)}>
                             TXT
                           </Button>
+                          {rat.sessaoId && rat.temTranscricao && (
+                            <Tooltip label="Visualizar transcrição" radius="xl">
+                              <ActionIcon size="sm" radius="xl" variant="light" color="teal"
+                                onClick={() => navigate(`/admin/rats/${rat.id}/transcricao`)}>
+                                <IconEye size={14} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
                           {rat.status === "FINALIZADO" && (
                             <Button size="xs" radius="xl" variant="light" color="orange"
                               onClick={() => { setReabrirId(rat.id); setReabrirMotivo(""); setReabrirMotivoError(""); }}>
