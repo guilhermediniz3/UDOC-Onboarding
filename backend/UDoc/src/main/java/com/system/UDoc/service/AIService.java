@@ -62,6 +62,24 @@ public class AIService {
     /** Provedor + chave + modelo já resolvidos, prontos para uma chamada de geração. */
     private record EffectiveConfig(AIProvider provider, String apiKey, String model) {}
 
+    /**
+     * Retorna a chave da API Groq ativa, usando a mesma cascata da geração de texto
+     * (usuário → empresa → configuração global → application.properties).
+     * Retorna null se nenhuma chave Groq válida estiver configurada.
+     */
+    public String resolveGroqKey() {
+        try {
+            EffectiveConfig cfg = resolveEffectiveConfig();
+            if (cfg != null && cfg.provider() == AIProvider.GROQ) {
+                return cfg.apiKey();
+            }
+        } catch (Exception ignored) {}
+        if (defaultApiKey != null && !defaultApiKey.isBlank() && !"valor_padrao".equals(defaultApiKey)) {
+            return defaultApiKey;
+        }
+        return null;
+    }
+
     public AIResponseDTO generate(String userPrompt) {
         return generate(SYSTEM_INSTRUCTION, userPrompt);
     }

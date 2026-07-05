@@ -7,7 +7,6 @@ import com.system.UDoc.entity.TranscricaoTrecho;
 import com.system.UDoc.entity.User;
 import com.system.UDoc.repository.AuditLogRepository;
 import com.system.UDoc.repository.TranscricaoTrechoRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -24,9 +23,6 @@ import java.util.Map;
 @Service
 public class TranscricaoService {
 
-    @Value("${ai.key}")
-    private String aiKey;
-
     @Value("${ai.whisper.model:whisper-large-v3-turbo}")
     private String whisperModel;
 
@@ -35,14 +31,17 @@ public class TranscricaoService {
     private final TranscricaoTrechoRepository transcricaoRepository;
     private final AuditLogRepository auditLogRepository;
     private final RestTemplate restTemplate;
+    private final AIService aiService;
 
     public TranscricaoService(
             TranscricaoTrechoRepository transcricaoRepository,
             AuditLogRepository auditLogRepository,
-            RestTemplate restTemplate) {
+            RestTemplate restTemplate,
+            AIService aiService) {
         this.transcricaoRepository = transcricaoRepository;
         this.auditLogRepository = auditLogRepository;
         this.restTemplate = restTemplate;
+        this.aiService = aiService;
     }
 
     @Transactional
@@ -118,7 +117,9 @@ public class TranscricaoService {
 
     @SuppressWarnings("unchecked")
     private String transcreverComWhisper(MultipartFile audio) throws IOException {
-        if (aiKey == null || aiKey.isBlank() || "valor_padrao".equals(aiKey)) return null;
+        // Usa a mesma cascata do AIService: usuário → empresa → config global → application.properties
+        String groqKey = aiService.resolveGroqKey();
+        if (groqKey == null || groqKey.isBlank()) return null;
 
         byte[] bytes = audio.getBytes();
         ByteArrayResource resource = new ByteArrayResource(bytes) {
@@ -138,7 +139,7 @@ public class TranscricaoService {
         body.add("response_format", "json");
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(aiKey);
+        headers.setBearerAuth(groqKey);
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);

@@ -238,6 +238,7 @@ export default function AdminTrainingRoom() {
   const sessaoAtivaRef = useRef<SessaoTreinamento | null>(null);
   const [modoCapturaAtivo, setModoCapturaAtivo] = useState<"SOLO" | "COMPLETO" | null>(null);
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [chunksEnviados, setChunksEnviados] = useState(0);
   const displayStreamRef = useRef<MediaStream | null>(null);
   const displayAudioCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -468,6 +469,7 @@ export default function AdminTrainingRoom() {
     recorder.onstop = async () => {
       if (chunks.length > 0 && sessaoAtivaRef.current?.id === sessaoId) {
         const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        setChunksEnviados((n) => n + 1);
         const trecho = await enviarAudioChunk(trainingRoomId, sessaoId, blob);
         if (trecho) setTranscricaoTrechos((prev) => [...prev, trecho]);
       }
@@ -563,6 +565,7 @@ export default function AdminTrainingRoom() {
       setSessaoAtiva(null);
       sessaoAtivaRef.current = null;
       setTranscricaoTrechos([]);
+      setChunksEnviados(0);
       showMessage("success", "Sessão encerrada — RAT disponível na aba RAT");
       carregarSessoes();
     } catch {
@@ -1296,9 +1299,18 @@ export default function AdminTrainingRoom() {
                   </div>
                   <Group gap="sm">
                     {transcricaoEstado === "recording" && (
-                      <Badge color="red" variant="dot" size="lg" radius="xl">
-                        {modoCapturaAtivo === "COMPLETO" ? "Gravando os dois lados" : "Gravando"}
-                      </Badge>
+                      <>
+                        <Badge color="red" variant="dot" size="lg" radius="xl">
+                          {modoCapturaAtivo === "COMPLETO" ? "Gravando os dois lados" : "Gravando"}
+                        </Badge>
+                        {modoCapturaAtivo === "COMPLETO" && (
+                          <Text fz="xs" c="var(--text-secondary)">
+                            {chunksEnviados === 0
+                              ? "Aguardando 1º chunk (≈15s)..."
+                              : `${chunksEnviados} chunk(s) enviado(s) · ${transcricaoTrechos.length} trecho(s) transcrito(s)`}
+                          </Text>
+                        )}
+                      </>
                     )}
                     {sessaoAtiva && (
                       <Badge color="teal" variant="light" size="sm" radius="xl">
