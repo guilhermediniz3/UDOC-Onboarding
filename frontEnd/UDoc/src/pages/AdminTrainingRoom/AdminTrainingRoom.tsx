@@ -546,11 +546,10 @@ export default function AdminTrainingRoom() {
     }
     mediaRecorderRef.current = null;
 
-    // Libera streams
+    // Para as tracks de captura (mic e display) — AudioContext fecha depois, abaixo
     if (micStreamRef.current) { micStreamRef.current.getTracks().forEach((t) => t.stop()); micStreamRef.current = null; }
     if (displayStreamRef.current) { displayStreamRef.current.getTracks().forEach((t) => t.stop()); displayStreamRef.current = null; }
     destStreamRef.current = null;
-    if (displayAudioCtxRef.current) { try { displayAudioCtxRef.current.close(); } catch (_) {} displayAudioCtxRef.current = null; }
 
     setEstado("idle");
     setModoCapturaAtivo(null);
@@ -567,6 +566,9 @@ export default function AdminTrainingRoom() {
       showMessage("error", "Erro ao encerrar sessão.");
     } finally {
       setEncerrando(false);
+      // Fecha AudioContext só após encerrarSessao para garantir que onstop
+      // do MediaRecorder já enviou o chunk final antes do contexto ser destruído
+      if (displayAudioCtxRef.current) { try { displayAudioCtxRef.current.close(); } catch (_) {} displayAudioCtxRef.current = null; }
     }
   }
 

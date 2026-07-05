@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { BASE_URL } from "./api";
 import type { TranscricaoTrecho } from "../types/TranscricaoTrecho";
 
 export async function salvarTrecho(
@@ -32,20 +32,28 @@ export async function registrarAcessoTranscricao(
   await api.post(`/transcricao/sessao/${sessaoId}/acesso`, { ratId, acao });
 }
 
+// Usa fetch diretamente para evitar que um 401 acidental (chunk vazio, silêncio)
+// passe pelo interceptor do axios e dispare o logout do usuário.
 export async function enviarAudioChunk(
   trainingRoomId: number,
   sessaoId: number,
   blob: Blob
 ): Promise<TranscricaoTrecho | null> {
+  const token = localStorage.getItem("udoc-token");
+  if (!token) return null;
+
   const form = new FormData();
   form.append("audio", blob, "audio.webm");
   form.append("trainingRoomId", String(trainingRoomId));
+
   try {
-    const r = await api.post<TranscricaoTrecho>(
-      `/transcricao/sessao/${sessaoId}/audio`,
-      form
-    );
-    return r.status === 204 ? null : r.data;
+    const r = await fetch(`${BASE_URL}/transcricao/sessao/${sessaoId}/audio`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    if (!r.ok || r.status === 204) return null;
+    return (await r.json()) as TranscricaoTrecho;
   } catch {
     return null;
   }
