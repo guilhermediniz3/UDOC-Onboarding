@@ -212,15 +212,6 @@ public class RatService {
     }
 
     @Transactional(readOnly = true)
-    public List<RatDTO> listarLegadoPorSala(Long trainingRoomId) {
-        return ratRepository
-                .findByTrainingRoomIdAndSessaoIsNullOrderByDataCriacaoDesc(trainingRoomId)
-                .stream()
-                .map(RatDTO::new)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public RatDTO buscarPorId(Long id) {
         return ratRepository.findByIdWithRelations(id)
                 .map(RatDTO::new)

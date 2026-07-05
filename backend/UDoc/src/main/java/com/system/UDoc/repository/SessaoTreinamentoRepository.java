@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SessaoTreinamentoRepository extends JpaRepository<SessaoTreinamento, Long> {
-    List<SessaoTreinamento> findByTrainingRoomIdOrderByDataHoraInicioAsc(Long trainingRoomId);
+    List<SessaoTreinamento> findByTrainingRoomIdOrderByDataHoraInicioDesc(Long trainingRoomId);
 }

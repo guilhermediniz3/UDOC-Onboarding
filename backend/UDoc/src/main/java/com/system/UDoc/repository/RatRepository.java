@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface RatRepository extends JpaRepository<Rat, Long>, JpaSpecificationExecutor<Rat> {
@@ -24,6 +23,4 @@ public interface RatRepository extends JpaRepository<Rat, Long>, JpaSpecificatio
     Optional<Rat> findByIdWithRelations(@Param("id") Long id);
 
     Optional<Rat> findBySessaoId(@Param("sessaoId") Long sessaoId);
-
-    List<Rat> findByTrainingRoomIdAndSessaoIsNullOrderByDataCriacaoDesc(Long trainingRoomId);
 }

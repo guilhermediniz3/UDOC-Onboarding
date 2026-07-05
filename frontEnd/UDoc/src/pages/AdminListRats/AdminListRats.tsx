@@ -4,11 +4,13 @@ import {
   Button,
   Group,
   Loader,
+  Modal,
   Paper,
   Select,
   Stack,
   Table,
   Text,
+  Textarea,
   Title,
 } from "@mantine/core";
 
@@ -22,7 +24,7 @@ import {
 
 import { useEffect, useState } from "react";
 
-import { getRats } from "../../services/ratService";
+import { getRats, reabrirRat } from "../../services/ratService";
 import { getAllCompaniesSimple } from "../../services/companyService";
 import { getAllIsmsSimple } from "../../services/ismService";
 
@@ -57,6 +59,12 @@ export default function AdminListRats() {
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
   const [filterStatus, setFilterStatus] = useState<string | null>("FINALIZADO");
+
+  /* ── modal reabrir ── */
+  const [reabrirId, setReabrirId] = useState<number | null>(null);
+  const [reabrirMotivo, setReabrirMotivo] = useState("");
+  const [reabrirMotivoError, setReabrirMotivoError] = useState("");
+  const [reabrirLoading, setReabrirLoading] = useState(false);
 
   const SIZE = 10;
 
@@ -132,6 +140,28 @@ export default function AdminListRats() {
     }).from(el).save();
   }
 
+  async function handleReabrir() {
+    if (!reabrirId) return;
+    const motivo = reabrirMotivo.trim();
+    if (motivo.length < 10) {
+      setReabrirMotivoError("O motivo deve ter pelo menos 10 caracteres.");
+      return;
+    }
+    setReabrirMotivoError("");
+    setReabrirLoading(true);
+    try {
+      await reabrirRat(reabrirId, motivo);
+      setReabrirId(null);
+      setReabrirMotivo("");
+      showMsg("success", "RAT reaberto. Acesse a aba RAT da sala para continuar a edição.");
+      load();
+    } catch (err: any) {
+      setReabrirMotivoError(err?.response?.data?.message || "Erro ao reabrir RAT.");
+    } finally {
+      setReabrirLoading(false);
+    }
+  }
+
   const totalPages = Math.ceil(total / SIZE);
 
   return (
@@ -142,7 +172,7 @@ export default function AdminListRats() {
         <Group justify="space-between" align="center">
           <div>
             <Title order={2} c="var(--text-primary)">Meus RATs</Title>
-            <Text c="var(--text-secondary)" mt={4}>Relatórios de Atendimento Técnico</Text>
+            <Text c="var(--text-secondary)" mt={4}>Relatórios de Atendimento Técnico finalizados</Text>
           </div>
         </Group>
       </Paper>
@@ -270,6 +300,12 @@ export default function AdminListRats() {
                             onClick={() => handleDownloadTxt(rat)}>
                             TXT
                           </Button>
+                          {rat.status === "FINALIZADO" && (
+                            <Button size="xs" radius="xl" variant="light" color="orange"
+                              onClick={() => { setReabrirId(rat.id); setReabrirMotivo(""); setReabrirMotivoError(""); }}>
+                              Reabrir
+                            </Button>
+                          )}
                         </Group>
                       </Table.Td>
                     </Table.Tr>
@@ -294,6 +330,36 @@ export default function AdminListRats() {
           </Stack>
         )}
       </Paper>
+
+      {/* Modal Reabrir RAT */}
+      <Modal
+        opened={reabrirId !== null}
+        onClose={() => setReabrirId(null)}
+        title={<Text fw={700} c="var(--text-primary)">Reabrir RAT</Text>}
+        radius="xl"
+        styles={{ content: { background: "var(--card-bg)", border: "1px solid var(--border-color)" }, header: { background: "var(--card-bg)" } }}
+      >
+        <Stack gap="16px">
+          <Text fz="sm" c="var(--text-secondary)">
+            Informe o motivo da reabertura. Mínimo de 10 caracteres. Esta ação será registrada no log de auditoria. Após reabrir, acesse a aba RAT da sala de treinamento para continuar a edição.
+          </Text>
+          <Textarea
+            label="Motivo"
+            placeholder="Descreva o motivo da reabertura..."
+            minRows={3} autosize
+            value={reabrirMotivo}
+            error={reabrirMotivoError}
+            onChange={(e) => { setReabrirMotivo(e.currentTarget.value); setReabrirMotivoError(""); }}
+            styles={inputStyles}
+          />
+          <Group justify="flex-end" gap="sm">
+            <Button variant="default" radius="xl" onClick={() => setReabrirId(null)}>Cancelar</Button>
+            <Button radius="xl" color="orange" loading={reabrirLoading} onClick={handleReabrir}>
+              Confirmar reabertura
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
     </Stack>
   );

@@ -61,11 +61,6 @@ export async function reabrirRat(id: number, motivo: string): Promise<Rat> {
   return r.data;
 }
 
-export async function listarRatsLegadoPorSala(trainingRoomId: number): Promise<Rat[]> {
-  const r = await api.get<Rat[]>(`/rat/sala/${trainingRoomId}/legado`);
-  return r.data;
-}
-
 export async function gerarRatComIA(sessaoId: number): Promise<string> {
   const timezoneOffset = new Date().getTimezoneOffset();
   const r = await api.post<{ content: string }>("/rat/gerar-ia", { sessaoId, timezoneOffset });

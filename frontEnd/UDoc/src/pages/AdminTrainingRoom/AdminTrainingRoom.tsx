@@ -32,7 +32,6 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconCopy,
-  IconDownload,
   IconFileText,
   IconInfoCircle,
   IconLink,
@@ -110,7 +109,6 @@ import {
   reabrirRat,
   gerarRatComIA,
   getRatById,
-  listarRatsLegadoPorSala,
 } from "../../services/ratService";
 import RichTextEditor from "../../components/RichTextEditor/RichTextEditor";
 
@@ -237,7 +235,6 @@ export default function AdminTrainingRoom() {
   /* ── aba RAT — lista de sessões ── */
   const [sessoes, setSessoes] = useState<SessaoTreinamento[]>([]);
   const [loadingSessoes, setLoadingSessoes] = useState(false);
-  const [ratsLegado, setRatsLegado] = useState<Rat[]>([]);
 
   /* ── aba RAT — detalhe ── */
   const [sessaoSelecionada, setSessaoSelecionada] = useState<SessaoTreinamento | null>(null);
@@ -255,12 +252,6 @@ export default function AdminTrainingRoom() {
   const [finalizandoRat, setFinalizandoRat] = useState(false);
   const [ratDetailMsg, setRatDetailMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const ratSessaoTituloRef = useRef<HTMLInputElement>(null);
-
-  /* ── modal reabrir RAT ── */
-  const [reabrirModal, setReatrirModal] = useState(false);
-  const [reabrirMotivo, setReatrirMotivo] = useState("");
-  const [reabrirMotivoError, setReatrirMotivoError] = useState("");
-  const [reabrirLoading, setReatrirLoading] = useState(false);
 
   /* ── agendamento ── */
   const [totalDays, setTotalDays] = useState<number>(0);
@@ -446,12 +437,8 @@ export default function AdminTrainingRoom() {
     if (!id) return;
     setLoadingSessoes(true);
     try {
-      const [list, legado] = await Promise.all([
-        listarSessoesPorSala(Number(id)),
-        listarRatsLegadoPorSala(Number(id)),
-      ]);
+      const list = await listarSessoesPorSala(Number(id));
       setSessoes(list);
-      setRatsLegado(legado);
     } catch { /* silencioso */ }
     finally { setLoadingSessoes(false); }
   }
@@ -586,97 +573,13 @@ export default function AdminTrainingRoom() {
         });
       }
       await finalizarRat(currentId);
-      setRatSessaoStatus("FINALIZADO");
-      setSessaoSelecionada((s) => s ? { ...s, ratStatus: "FINALIZADO", ratId: currentId ?? undefined } : s);
-      setSessoes((prev) => prev.map((s) =>
-        s.id === sessaoSelecionada.id ? { ...s, ratStatus: "FINALIZADO", ratId: currentId ?? undefined } : s
-      ));
-      showRatDetailMsg("success", "RAT finalizado e disponível em Meus RATs.");
+      setSessoes(prev => prev.filter(s => s.id !== sessaoSelecionada!.id));
+      setSessaoSelecionada(null);
+      showMessage("success", "RAT finalizado — disponível em Meus RATs");
     } catch (err: any) {
       showRatDetailMsg("error", err?.response?.data?.message || "Erro ao finalizar RAT.");
     } finally {
       setFinalizandoRat(false);
-    }
-  }
-
-  async function handleReatrirRat() {
-    if (!ratSessaoId) return;
-    const motivo = reabrirMotivo.trim();
-    if (motivo.length < 10) {
-      setReatrirMotivoError("O motivo deve ter pelo menos 10 caracteres.");
-      return;
-    }
-    setReatrirMotivoError("");
-    setReatrirLoading(true);
-    try {
-      await reabrirRat(ratSessaoId, motivo);
-      setRatSessaoStatus("RASCUNHO");
-      setSessaoSelecionada((s) => s ? { ...s, ratStatus: "RASCUNHO" } : s);
-      setSessoes((prev) => prev.map((s) =>
-        s.id === sessaoSelecionada!.id ? { ...s, ratStatus: "RASCUNHO" } : s
-      ));
-      setReatrirModal(false);
-      setReatrirMotivo("");
-      showRatDetailMsg("success", "RAT reaberto. Edite e finalize novamente.");
-    } catch (err: any) {
-      setReatrirMotivoError(err?.response?.data?.message || "Erro ao reabrir RAT.");
-    } finally {
-      setReatrirLoading(false);
-    }
-  }
-
-  async function handleDownloadPdfSessao(rat: Rat) {
-    const html2pdf = (await import("html2pdf.js")).default;
-    const el = document.createElement("div");
-    el.style.cssText = "font-family:Arial,sans-serif;padding:20px;background:#ffffff;color:#111111;";
-    el.innerHTML = `
-      <style>
-        * { color: #111111 !important; }
-        h2, h3 { font-weight:bold; margin:0.8em 0 0.3em; }
-        p { margin:0.4em 0; }
-        ul, ol { padding-left:1.4em; }
-        li { margin:0.2em 0; }
-      </style>
-      <h2 style="margin-bottom:4px;">${rat.titulo}</h2>
-      <p style="color:#555555;margin-bottom:4px;">
-        Sala: ${rat.trainingRoomTitle ?? "—"} &nbsp;|&nbsp;
-        ISM: ${rat.ismName ?? "—"} &nbsp;|&nbsp;
-        Empresa: ${rat.companyName ?? "—"}
-      </p>
-      <p style="color:#555555;margin-bottom:20px;">
-        Data: ${new Date(rat.dataCriacao).toLocaleString("pt-BR")}
-      </p>
-      ${rat.conteudo ?? ""}
-    `;
-    await html2pdf().set({
-      margin: [15, 15, 15, 15], filename: `rat-${rat.id}.pdf`,
-      html2canvas: { scale: 2, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    }).from(el).save();
-  }
-
-  async function handleDownloadPdfBySessaoId(sessao: SessaoTreinamento) {
-    if (!sessao.ratId) return;
-    try {
-      const rat = await getRatById(sessao.ratId);
-      await handleDownloadPdfSessao(rat);
-    } catch {
-      showMessage("error", "Erro ao baixar PDF.");
-    }
-  }
-
-  async function handleDownloadTxtDetalhe() {
-    if (!sessaoSelecionada || !ratSessaoId) return;
-    try {
-      const rat = await getRatById(ratSessaoId);
-      const texto = stripHtml(rat.conteudo ?? "");
-      const blob = new Blob([`${rat.titulo}\n${new Date(rat.dataCriacao).toLocaleString("pt-BR")}\n\n${texto}`], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `rat-${rat.id}.txt`; a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      showRatDetailMsg("error", "Erro ao baixar TXT.");
     }
   }
 
@@ -1439,20 +1342,6 @@ export default function AdminTrainingRoom() {
                     </Text>
                     {ratStatusBadge(ratSessaoStatus)}
                   </Group>
-                  {ratSessaoId && (
-                    <Group gap="xs">
-                      <Button size="xs" radius="xl" variant="light" color="red"
-                        leftSection={<IconDownload size={12} />}
-                        onClick={() => handleDownloadPdfBySessaoId(sessaoSelecionada)}>
-                        PDF
-                      </Button>
-                      <Button size="xs" radius="xl" variant="light" color="blue"
-                        leftSection={<IconFileText size={12} />}
-                        onClick={handleDownloadTxtDetalhe}>
-                        TXT
-                      </Button>
-                    </Group>
-                  )}
                 </Group>
 
                 {/* Transcrição recolhível */}
@@ -1546,13 +1435,7 @@ export default function AdminTrainingRoom() {
                     )}
 
                     <Group justify="flex-end" gap="sm">
-                      {ratSessaoStatus === "FINALIZADO" ? (
-                        <Button leftSection={<IconPlayerPlay size={16} />}
-                          radius="xl" size="md" color="orange" variant="light"
-                          onClick={() => { setReatrirModal(true); setReatrirMotivo(""); setReatrirMotivoError(""); }}>
-                          Reabrir RAT
-                        </Button>
-                      ) : (
+                      {ratSessaoStatus !== "FINALIZADO" && (
                         <>
                           <Button leftSection={<IconFileText size={16} />}
                             radius="xl" size="md" variant="default"
@@ -1591,7 +1474,7 @@ export default function AdminTrainingRoom() {
                 ) : sessoes.length === 0 ? (
                   <Paper p="20px" radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)" }}>
                     <Text fz="sm" c="var(--text-secondary)" ta="center">
-                      Nenhuma sessão registrada. Inicie uma captura na aba Treinamento.
+                      Nenhuma sessão com RAT pendente. RATs finalizados estão disponíveis em Meus RATs.
                     </Text>
                   </Paper>
                 ) : (
@@ -1630,19 +1513,11 @@ export default function AdminTrainingRoom() {
                                 </Table.Td>
                                 <Table.Td>{ratStatusBadge(s.ratStatus)}</Table.Td>
                                 <Table.Td>
-                                  <Group gap="xs">
-                                    <Button size="xs" radius="xl" variant="light" color="violet"
-                                      onClick={() => abrirSessaoDetalhe(s)}>
-                                      Abrir
-                                    </Button>
-                                    {s.ratId && (
-                                      <Button size="xs" radius="xl" variant="light" color="red"
-                                        leftSection={<IconDownload size={12} />}
-                                        onClick={() => handleDownloadPdfBySessaoId(s)}>
-                                        PDF
-                                      </Button>
-                                    )}
-                                  </Group>
+                                  <Button size="xs" radius="xl" variant="light"
+                                    color={s.ratStatus === "RASCUNHO" ? "orange" : "violet"}
+                                    onClick={() => abrirSessaoDetalhe(s)}>
+                                    {s.ratStatus === "RASCUNHO" ? "Continuar" : "Criar RAT"}
+                                  </Button>
                                 </Table.Td>
                               </Table.Tr>
                             );
@@ -1653,67 +1528,6 @@ export default function AdminTrainingRoom() {
                   </Paper>
                 )}
 
-                {/* ── RATs anteriores (criados antes da nova sessão de captura) ── */}
-                {ratsLegado.length > 0 && (
-                  <Stack gap="12px" mt="8px">
-                    <Text fw={700} c="var(--text-primary)" fz="sm">RATs anteriores</Text>
-                    <Paper radius="14px" style={{ background: "var(--app-bg)", border: "1px solid var(--border-color)", overflow: "hidden" }}>
-                      <div style={{ overflowX: "auto" }}>
-                        <Table verticalSpacing="md" horizontalSpacing="md">
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th c="var(--text-primary)">Título</Table.Th>
-                              <Table.Th c="var(--text-primary)">Data</Table.Th>
-                              <Table.Th c="var(--text-primary)">Status</Table.Th>
-                              <Table.Th c="var(--text-primary)">Ações</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {ratsLegado.map((rat) => (
-                              <Table.Tr key={rat.id}>
-                                <Table.Td>
-                                  <Text fz="sm" fw={600} c="var(--text-primary)">{rat.titulo}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  <Text fz="sm" c="var(--text-secondary)">
-                                    {new Date(rat.dataCriacao).toLocaleString("pt-BR")}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                  {rat.status === "FINALIZADO"
-                                    ? <Badge color="green" variant="light" radius="xl">Finalizado</Badge>
-                                    : <Badge color="orange" variant="light" radius="xl">Rascunho</Badge>}
-                                </Table.Td>
-                                <Table.Td>
-                                  <Group gap="xs">
-                                    <Button size="xs" radius="xl" variant="light" color="red"
-                                      leftSection={<IconDownload size={12} />}
-                                      onClick={() => handleDownloadPdfSessao(rat)}>
-                                      PDF
-                                    </Button>
-                                    <Button size="xs" radius="xl" variant="light" color="blue"
-                                      leftSection={<IconFileText size={12} />}
-                                      onClick={() => {
-                                        const texto = stripHtml(rat.conteudo ?? "");
-                                        const blob = new Blob([`${rat.titulo}\n${new Date(rat.dataCriacao).toLocaleString("pt-BR")}\n\n${texto}`], { type: "text/plain;charset=utf-8" });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement("a");
-                                        a.href = url; a.download = `rat-${rat.id}.txt`; a.click();
-                                        URL.revokeObjectURL(url);
-                                      }}>
-                                      TXT
-                                    </Button>
-                                  </Group>
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </div>
-                    </Paper>
-                  </Stack>
-                )}
-
               </Stack>
             )}
 
@@ -1721,36 +1535,6 @@ export default function AdminTrainingRoom() {
 
         </Tabs>
       </Paper>
-
-      {/* ── Modal Reabrir RAT ── */}
-      <Modal
-        opened={reabrirModal}
-        onClose={() => setReatrirModal(false)}
-        title={<Text fw={700} c="var(--text-primary)">Reabrir RAT</Text>}
-        radius="xl"
-        styles={{ content: { background: "var(--card-bg)", border: "1px solid var(--border-color)" }, header: { background: "var(--card-bg)" } }}
-      >
-        <Stack gap="16px">
-          <Text fz="sm" c="var(--text-secondary)">
-            Informe o motivo da reabertura. Mínimo de 10 caracteres. Esta ação será registrada no log de auditoria.
-          </Text>
-          <Textarea
-            label="Motivo"
-            placeholder="Descreva o motivo da reabertura..."
-            minRows={3} autosize
-            value={reabrirMotivo}
-            error={reabrirMotivoError}
-            onChange={(e) => { setReatrirMotivo(e.currentTarget.value); setReatrirMotivoError(""); }}
-            styles={inputStyles}
-          />
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" radius="xl" onClick={() => setReatrirModal(false)}>Cancelar</Button>
-            <Button radius="xl" color="orange" loading={reabrirLoading} onClick={handleReatrirRat}>
-              Confirmar reabertura
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
 
     </Stack>
   );

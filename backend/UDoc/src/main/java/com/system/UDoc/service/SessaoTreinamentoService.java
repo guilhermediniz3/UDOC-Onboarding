@@ -74,14 +74,14 @@ public class SessaoTreinamentoService {
 
     @Transactional(readOnly = true)
     public List<SessaoTreinamentoDTO> listarPorSala(Long trainingRoomId) {
-        List<SessaoTreinamento> sessoes = sessaoRepository
-                .findByTrainingRoomIdOrderByDataHoraInicioAsc(trainingRoomId);
-
-        return sessoes.stream()
+        return sessaoRepository
+                .findByTrainingRoomIdOrderByDataHoraInicioDesc(trainingRoomId)
+                .stream()
                 .map(s -> {
-                    Optional<Rat> rat = ratRepository.findBySessaoId(s.getId());
-                    return new SessaoTreinamentoDTO(s, rat.orElse(null));
+                    Rat rat = ratRepository.findBySessaoId(s.getId()).orElse(null);
+                    return new SessaoTreinamentoDTO(s, rat);
                 })
+                .filter(dto -> !"FINALIZADO".equals(dto.getRatStatus()))
                 .toList();
     }
 }
