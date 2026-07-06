@@ -31,25 +31,20 @@ public class SessaoTreinamentoService {
     }
 
     @Transactional
-    public SessaoTreinamentoDTO criarSessao(Long trainingRoomId, String modoCaptura, User usuario) {
+    public SessaoTreinamentoDTO criarSessao(Long trainingRoomId, User usuario) {
         TrainingRoom room = trainingRoomRepository.findById(trainingRoomId)
                 .orElseThrow(() -> new RuntimeException("Sala não encontrada"));
-
-        ModoCaptura modo = "COMPLETO".equals(modoCaptura) ? ModoCaptura.COMPLETO : ModoCaptura.SOLO;
 
         SessaoTreinamento sessao = new SessaoTreinamento();
         sessao.setTrainingRoom(room);
         sessao.setCriadoPor(usuario);
-        sessao.setModoCaptura(modo);
         SessaoTreinamento saved = sessaoRepository.save(sessao);
 
-        String descricao = "Sessão criada | sala=" + room.getTitle() + " | modo=" + modo.name()
-                + (modo == ModoCaptura.COMPLETO ? " | consentimento=confirmado" : "");
         auditLogRepository.save(new AuditLog(
                 "SESSAO", "CRIAR_SESSAO",
                 "sessao#" + saved.getId(),
                 usuario.getEmail(),
-                descricao));
+                "Sessão criada | sala=" + room.getTitle()));
 
         return new SessaoTreinamentoDTO(saved, null);
     }

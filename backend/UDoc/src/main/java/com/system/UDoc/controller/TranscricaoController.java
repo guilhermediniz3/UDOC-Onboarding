@@ -9,9 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -51,16 +49,5 @@ public class TranscricaoController {
             @AuthenticationPrincipal User usuario) {
         transcricaoService.registrarAcesso(sessaoId, req.ratId(), req.acao(), usuario);
         return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/sessao/{sessaoId}/audio")
-    public ResponseEntity<TranscricaoTrechoDTO> processarAudio(
-            @PathVariable Long sessaoId,
-            @RequestParam("trainingRoomId") Long trainingRoomId,
-            @RequestParam("audio") MultipartFile audio,
-            @AuthenticationPrincipal User usuario) throws IOException {
-        TranscricaoTrechoDTO trecho = transcricaoService.processarAudioChunk(trainingRoomId, sessaoId, audio, usuario);
-        if (trecho == null) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(trecho);
     }
 }
